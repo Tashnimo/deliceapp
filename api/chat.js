@@ -32,10 +32,25 @@ export default async function handler(req, res) {
             body: JSON.stringify(req.body)
         });
 
-        const data = await response.json();
+        const rawText = await response.text();
+        let data;
+        try {
+            data = JSON.parse(rawText);
+        } catch (e) {
+            data = rawText; // Conserver le texte brut si ce n'est pas du JSON (ex: "Not Found")
+        }
 
         if (!response.ok) {
             console.error("DEBUG VERCEL : Hugging Face a répondu avec une erreur :", response.status, data);
+
+            // Message personnalisé pour l'erreur 404 "Not Found" liée aux permissions
+            if (response.status === 404 && typeof data === 'string' && data.includes("Not Found")) {
+                return res.status(404).json({
+                    error: "Le modèle Llama est introuvable ou vous n'y avez pas accès.",
+                    detail: "Sur Hugging Face, vérifiez que votre Token a la permission 'Make calls to Inference Providers' ET que vous avez accepté la licence du modèle 'meta-llama/Llama-3.2-3B-Instruct'."
+                });
+            }
+
             return res.status(response.status).json({
                 error: "Erreur Hugging Face",
                 status: response.status,
