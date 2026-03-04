@@ -19,7 +19,7 @@ export default async function handler(req, res) {
 
     // --- SOLUTION FINALE : API CHAT COMPLETIONS HUGGING FACE ---
     const MODEL_ID = "Qwen/Qwen2.5-72B-Instruct";
-    const HF_MODEL_URL = `https://router.huggingface.co/hf-inference/v1/chat/completions`;
+    const HF_MODEL_URL = `https://router.huggingface.co/hf-inference/models/${MODEL_ID}/v1/chat/completions`;
 
     try {
         const { messages } = req.body;
