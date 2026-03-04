@@ -19,8 +19,8 @@ export default async function handler(req, res) {
 
     // --- SOLUTION FINALE : API CHAT COMPLETIONS HUGGING FACE ---
     // Utilisation de l'endpoint standardisé OpenAI "/v1/chat/completions" de HF
-    // Beaucoup plus robuste, pas besoin de formatter manuellement les prompts.
-    const MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.3"; // Version la plus à jour et stable
+    // On utilise Zephyr, un modèle extrêmement stable sur l'API gratuite de Hugging Face
+    const MODEL_ID = "HuggingFaceH4/zephyr-7b-beta";
     const HF_MODEL_URL = `https://api-inference.huggingface.co/models/${MODEL_ID}/v1/chat/completions`;
 
     try {
