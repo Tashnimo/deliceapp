@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Clé API non configurée sur Vercel (HF_API_KEY)" });
     }
 
-    const HF_API_URL = "https://router.huggingface.co/hf-inference/models/meta-llama/Llama-3.2-3B-Instruct/v1/chat/completions";
+    const HF_API_URL = "https://api-inference.huggingface.co/v1/chat/completions";
 
     try {
         console.log("DEBUG VERCEL : Envoi de la requête à Hugging Face...");
@@ -43,11 +43,11 @@ export default async function handler(req, res) {
         if (!response.ok) {
             console.error("DEBUG VERCEL : Hugging Face a répondu avec une erreur :", response.status, data);
 
-            // Message personnalisé pour l'erreur 404 "Not Found" liée aux permissions
-            if (response.status === 404 && typeof data === 'string' && data.includes("Not Found")) {
+            // Message personnalisé pour l'erreur 404
+            if (response.status === 404) {
                 return res.status(404).json({
-                    error: "Le modèle Llama est introuvable ou vous n'y avez pas accès.",
-                    detail: "Sur Hugging Face, vérifiez que votre Token a la permission 'Make calls to Inference Providers' ET que vous avez accepté la licence du modèle 'meta-llama/Llama-3.2-3B-Instruct'."
+                    error: "Le modèle d'IA est introuvable ou le Token est invalide.",
+                    detail: "Vérifiez que le modèle (ex: Zephyr) existe et que le Token a les bonnes permissions sur Hugging Face."
                 });
             }
 

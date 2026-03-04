@@ -1326,7 +1326,7 @@ INFO : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
     chatHistoryMessages.push({ role: "user", content: userText });
 
     const payload = {
-      model: "meta-llama/Llama-3.2-3B-Instruct",
+      model: "HuggingFaceH4/zephyr-7b-beta",
       messages: chatHistoryMessages,
       max_tokens: 200,
       temperature: 0.6,
