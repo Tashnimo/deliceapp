@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Délice Cake</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="manifest" href="manifest.json">
+</head>
+
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h1 class="login-title">Délice <span>Admin</span></h1>
+            <p class="login-sub">Connectez-vous pour gérer votre vitrine.</p>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label" for="email">Adresse e-mail</label>
+                    <input type="email" id="email" class="form-input" placeholder="admin@delice-cake.com" required
+                        autocomplete="email" autocapitalize="none" autocorrect="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="password">Mot de passe</label>
+                    <input type="password" id="password" class="form-input" placeholder="••••••••" required
+                        autocomplete="current-password">
+                </div>
+                <p id="login-error"
+                    style="color: var(--danger); font-size: 0.85rem; margin-bottom: 0.5rem; display: none;"></p>
+                <p id="debug-info"
+                    style="color: #666; font-size: 0.7rem; font-family: monospace; margin-bottom: 1rem; text-align: left; display: none; background: #eee; padding: 5px; border-radius: 4px; overflow-wrap: break-word;">
+                </p>
+                <button type="submit" class="btn btn--primary btn--full">Connexion</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <!-- SIDEBAR OVERLAY (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboard">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar__brand">
+                <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
+                    <g transform="rotate(-45 24 28)">
+                        <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#E8178A"
+                            stroke-width="2.5" stroke-linecap="round" />
+                        <path d="M 21.5 25 C 15 10, 17 2, 24 2 C 31 2, 33 10, 26.5 25" fill="none" stroke="#E8178A"
+                            stroke-width="2" stroke-linecap="round" />
+                        <line x1="24" y1="25" x2="24" y2="4" stroke="#E8178A" stroke-width="2" stroke-linecap="round" />
+                        <rect x="20" y="24" width="8" height="20" rx="4" fill="#1a0a14" stroke="#E8178A"
+                            stroke-width="2.5" />
+                    </g>
+                    <g transform="rotate(45 24 28)">
+                        <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#E8178A"
+                            stroke-width="2.5" stroke-linecap="round" />
+                        <path d="M 21.5 25 C 15 10, 17 2, 24 2 C 31 2, 33 10, 26.5 25" fill="none" stroke="#E8178A"
+                            stroke-width="2" stroke-linecap="round" />
+                        <line x1="24" y1="25" x2="24" y2="4" stroke="#E8178A" stroke-width="2" stroke-linecap="round" />
+                        <rect x="20" y="24" width="8" height="20" rx="4" fill="#1a0a14" stroke="#E8178A"
+                            stroke-width="2.5" />
+                    </g>
+                </svg>
+                Admin
+            </div>
+
+            <ul class="sidebar__menu">
+                <li><a href="#" class="sidebar__link active" id="nav-products">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path d="M4 6h16M4 12h16M4 18h7" />
+                        </svg>
+                        Produits
+                    </a></li>
+                <li><a href="#" class="sidebar__link" id="nav-orders">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path
+                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                            </path>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                        </svg>
+                        Commandes <span id="new-order-badge" class="badge"
+                            style="background:#E8178A; color:white; padding:2px 6px; font-size:10px; border-radius:10px; margin-left:5px; display:none;">New</span>
+                    </a></li>
+                <li><a href="#" class="sidebar__link" id="nav-knowledge">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" style="display:none;">
+                            </path>
+                            <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                            <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                        </svg>
+                        Cerveau IA
+                    </a></li>
+                <li><a href="#" class="sidebar__link" id="nav-chat">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path
+                                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                            </path>
+                        </svg>
+                        Conversations IA
+                    </a></li>
+                <li><a href="#" class="sidebar__link" id="nav-site">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        Site Web
+                    </a></li>
+                <li><a href="#" class="sidebar__link" id="nav-accounting">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                        Comptabilité
+                    </a></li>
+                <li id="nav-admins-container" style="display: none;"><a href="#" class="sidebar__link" id="nav-admins">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        Gestion Admins
+                    </a></li>
+                <li><a href="index.html" target="_blank" class="sidebar__link">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        Voir le site
+                    </a></li>
+            </ul>
+
+            <!-- Accès Mobile dans la sidebar (mobile uniquement) -->
+            <div class="sidebar__footer" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <a href="#" id="show-qr-btn-mobile" class="sidebar__link" style="display: none;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                        <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                    </svg>
+                    Accès Mobile
+                </a>
+                <a href="#" id="logout-btn" class="sidebar__link" style="color: var(--danger);">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Déconnexion
+                </a>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            <header class="header">
+                <!-- Hamburger button (mobile only) -->
+                <button class="hamburger-btn" id="hamburger-btn" aria-label="Ouvrir le menu">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <h2 class="header__title" id="page-title">Gestion des Produits</h2>
+                <div class="header__user">
+                    <button class="btn btn--secondary" id="show-qr-btn"
+                        style="padding: 0.4rem 0.8rem; font-size: 0.85rem; margin-right: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                        </svg>
+                        Accès Mobile
+                    </button>
+                    <button class="btn btn--secondary" id="test-notif-btn"
+                        style="padding: 0.4rem 0.8rem; font-size: 0.85rem; margin-right: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+                        🔔 Test Notification
+                    </button>
+                    <span>Admin</span>
+                    <div class="header__avatar">A</div>
+                </div>
+            </header>
+            <script>
+                document.getElementById('test-notif-btn').addEventListener('click', function () {
+                    const title = "Test de Notification 🍰";
+                    const options = {
+                        body: "Ceci est un test pour vérifier que les notifications fonctionnent bien !",
+                        icon: 'favicon.svg',
+                        badge: 'favicon.svg',
+                        tag: 'test-notification'
+                    };
+
+                    if (Notification.permission === 'granted') {
+                        // Local notification
+                        new Notification(title, options);
+
+                        // Also try via service worker if available
+                        if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.ready.then(registration => {
+                                registration.showNotification(title, options);
+                            });
+                        }
+                    } else {
+                        alert("Veuillez d'abord autoriser les notifications.");
+                        Notification.requestPermission();
+                    }
+                });
+            </script>
+
+            <div class="page-content">
+
+                <div id="view-products" class="view-section active">
+                    <div class="toolbar">
+                        <div class="search-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" id="search-input" placeholder="Rechercher un produit...">
+                        </div>
+                        <button class="btn btn--primary" id="add-product-btn">+ Nouveau Produit</button>
+                    </div>
+
+                    <div class="data-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Produit</th>
+                                    <th>Prix</th>
+                                    <th>Statut</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table-body">
+                                <!-- Products will be injected here via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="view-orders" class="view-section" style="display: none;">
+                    <div class="toolbar">
+                        <div class="search-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" id="search-orders-input" placeholder="Rechercher une commande...">
+                        </div>
+                        <!-- Filter orders -->
+                        <select id="filter-orders-status" class="form-input"
+                            style="width: auto; height: 100%; margin-left: 1rem;">
+                            <option value="all">Tous les statuts</option>
+                            <option value="new">Nouveau</option>
+                            <option value="processing">En cours</option>
+                            <option value="completed">Terminé</option>
+                            <option value="cancelled">Annulé</option>
+                        </select>
+                    </div>
+
+                    <div class="data-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Détail de la commande</th>
+                                    <th>Total</th>
+                                    <th>Statut</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table-body">
+                                <!-- Orders will be injected here via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ================================================= -->
+                <!-- VUE COMPTABILITE -->
+                <!-- ================================================= -->
+                <div id="view-accounting" class="view-section" style="display: none;">
+                    <!-- FILTRES PERIODE -->
+                    <div class="toolbar" style="gap: 1rem; flex-wrap: wrap;">
+                        <select id="acct-period" class="form-input" style="width: auto;">
+                            <option value="all">Tous les temps</option>
+                            <option value="this_month" selected>Ce mois</option>
+                            <option value="last_month">Mois précédent</option>
+                            <option value="this_year">Cette année</option>
+                        </select>
+                        <button id="acct-refresh-btn" class="btn btn--secondary"
+                            style="gap: 0.4rem; display:flex; align-items:center;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <polyline points="23 4 23 10 17 10" />
+                                <polyline points="1 20 1 14 7 14" />
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                            </svg>
+                            Actualiser
+                        </button>
+                        <button id="acct-export-btn" class="btn btn--primary"
+                            style="gap: 0.4rem; display:flex; align-items:center; margin-left: auto;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            Exporter CSV
+                        </button>
+                    </div>
+
+                    <!-- KPI CARDS -->
+                    <div class="acct-kpi-grid" id="acct-kpi-grid"
+                        style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin: 1.5rem 0;">
+                        <div class="acct-kpi-card"
+                            style="background:#fff; border-radius:14px; padding:1.2rem 1.5rem; box-shadow: 0 2px 15px rgba(0,0,0,0.06); border-left: 4px solid #10B981;">
+                            <p style="font-size:0.8rem; color:var(--grey-text); margin:0;">✅ Chiffre d'Affaires</p>
+                            <p id="kpi-revenue"
+                                style="font-size:1.7rem; font-weight:800; margin:0.3rem 0 0; color:#10B981;">—</p>
+                            <p style="font-size:0.75rem; color:var(--grey-text); margin:0;">FCFA (commandes terminées)
+                            </p>
+                        </div>
+                        <div class="acct-kpi-card"
+                            style="background:#fff; border-radius:14px; padding:1.2rem 1.5rem; box-shadow: 0 2px 15px rgba(0,0,0,0.06); border-left: 4px solid #6366F1;">
+                            <p style="font-size:0.8rem; color:var(--grey-text); margin:0;">🛒 Commandes validées</p>
+                            <p id="kpi-orders"
+                                style="font-size:1.7rem; font-weight:800; margin:0.3rem 0 0; color:#6366F1;">
+                                —</p>
+                        </div>
+                        <div class="acct-kpi-card"
+                            style="background:#fff; border-radius:14px; padding:1.2rem 1.5rem; box-shadow: 0 2px 15px rgba(0,0,0,0.06); border-left: 4px solid var(--pink);">
+                            <p style="font-size:0.8rem; color:var(--grey-text); margin:0;">🛒 Panier Moyen</p>
+                            <p id="kpi-avg"
+                                style="font-size:1.7rem; font-weight:800; margin:0.3rem 0 0; color:var(--pink);">—</p>
+                            <p style="font-size:0.75rem; color:var(--grey-text); margin:0;">FCFA</p>
+                        </div>
+                        <div class="acct-kpi-card"
+                            style="background:#fff; border-radius:14px; padding:1.2rem 1.5rem; box-shadow: 0 2px 15px rgba(0,0,0,0.06); border-left: 4px solid #F59E0B;">
+                            <p style="font-size:0.8rem; color:var(--grey-text); margin:0;">💸 Dépenses saisies</p>
+                            <p id="kpi-expenses"
+                                style="font-size:1.7rem; font-weight:800; margin:0.3rem 0 0; color:#F59E0B;">—</p>
+                            <p style="font-size:0.75rem; color:var(--grey-text); margin:0;">FCFA</p>
+                        </div>
+                        <div class="acct-kpi-card"
+                            style="background:#fff; border-radius:14px; padding:1.2rem 1.5rem; box-shadow: 0 2px 15px rgba(0,0,0,0.06); border-left: 4px solid #1a0a14;">
+                            <p style="font-size:0.8rem; color:var(--grey-text); margin:0;">📊 Bénéfice Net</p>
+                            <p id="kpi-profit"
+                                style="font-size:1.7rem; font-weight:800; margin:0.3rem 0 0; color:#1a0a14;">
+                                —</p>
+                            <p style="font-size:0.75rem; color:var(--grey-text); margin:0;">FCFA (CA - dépenses)</p>
+                        </div>
+                    </div>
+
+                    <!-- TABLEAU MENSUEL & DEPENSES -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
+                        <div>
+                            <h3 style="font-family: var(--font-fancy); font-size:1.1rem; margin-bottom: 1rem;">
+                                Historique par Mois</h3>
+                            <div class="data-table-wrap">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mois</th>
+                                            <th>Commandes</th>
+                                            <th>CA (FCFA)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="acct-monthly-body">
+                                        <tr>
+                                            <td colspan="3" style="text-align:center; color:var(--grey-text);">
+                                                Chargement...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 style="font-family: var(--font-fancy); font-size:1.1rem; margin-bottom: 1rem;">Saisie
+                                des Dépenses</h3>
+                            <div
+                                style="background:#fff; border-radius:14px; padding:1.2rem; box-shadow: 0 2px 15px rgba(0,0,0,0.06);">
+                                <div class="form-group">
+                                    <label class="form-label">Intitulé de la dépense</label>
+                                    <input type="text" id="expense-label" class="form-input"
+                                        placeholder="Ex: Matériaux, Loyer, Livraison...">
+                                </div>
+                                <div class="form-group"
+                                    style="display:grid; grid-template-columns: 2fr 1fr; gap:0.5rem;">
+                                    <div>
+                                        <label class="form-label">Montant (FCFA)</label>
+                                        <input type="number" id="expense-amount" class="form-input"
+                                            placeholder="Ex: 5000">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">Date</label>
+                                        <input type="date" id="expense-date" class="form-input">
+                                    </div>
+                                </div>
+                                <button id="add-expense-btn" class="btn btn--primary" style="width:100%;">+ Ajouter la
+                                    dépense</button>
+
+                                <div style="margin-top:1.2rem;">
+                                    <h4 style="font-size:0.9rem; margin-bottom:0.5rem; color:var(--grey-text);">Dépenses
+                                        récentes :</h4>
+                                    <ul id="expense-list"
+                                        style="list-style:none; padding:0; margin:0; max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:0.5rem;">
+                                        <!-- Injected by JS -->
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VUE GESTION DES ADMINS (Superadmin only) -->
+                <div id="view-admins" class="view-section" style="display: none;">
+                    <div class="toolbar">
+                        <div class="search-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" id="search-admins-input" placeholder="Rechercher un admin...">
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn--secondary" id="cleanup-admins-btn"
+                                title="Supprimer les comptes sans UID">Nettoyer</button>
+                            <button class="btn btn--primary" id="add-admin-btn">+ Nouvel Admin</button>
+                        </div>
+                    </div>
+
+                    <div class="data-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nom / Email</th>
+                                    <th>Rôle</th>
+                                    <th>Accès</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admins-table-body">
+                                <!-- Admins will be injected here via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="view-knowledge" class="view-section" style="display: none;">
+                    <div class="toolbar" style="flex-direction: column; align-items: flex-start; gap: 1rem;">
+                        <p style="color: var(--grey-text); font-size: 0.95rem;">
+                            Enrichissez le cerveau de l'IA avec vos règles, l'histoire de la boutique ou vos FAQs.
+                            Vous pouvez taper du texte directement ou importer des fichiers <b>.txt</b> et <b>.pdf</b>.
+                        </p>
+                        <div style="display: flex; gap: 1rem; width: 100%; align-items: center; max-width: 600px;">
+                            <input type="file" id="kb-file-input" accept=".txt, .pdf" class="form-input"
+                                style="flex: 1;">
+                            <button id="kb-parse-btn" class="btn btn--secondary">Extraire le texte du fichier</button>
+                        </div>
+                        <div id="kb-extract-status" style="font-size: 0.85rem; color: var(--pink); display: none;">
+                            Extraction en cours... Ce processus peut prendre quelques secondes.</div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label class="form-label"
+                            style="display: flex; justify-content: space-between; align-items: center;">
+                            Connaissances accumulées (Texte brut pour l'IA)
+                            <button id="kb-save-btn" class="btn btn--primary">Sauvegarder les connaissances</button>
+                        </label>
+                        <textarea id="kb-editor" class="form-input"
+                            style="height: 400px; resize: vertical; font-family: monospace; font-size: 0.9rem;"
+                            placeholder="Tapez vos règles ici ou utilisez l'importation de fichier ci-dessus pour insérer du contenu..."></textarea>
+                    </div>
+                </div>
+
+                <!-- VUE CONVERSATIONS IA -->
+                <div id="view-chat" class="view-section" style="display: none;">
+                    <div class="view-header" style="margin-bottom: 2rem;">
+                        <h2 class="view-title">Conversations avec Délice IA</h2>
+                        <p class="view-desc">Suivez les échanges entre vos clients et l'intelligence artificielle.</p>
+                    </div>
+
+                    <div class="chat-dashboard"
+                        style="display: grid; grid-template-columns: 350px 1fr; gap: 2rem; align-items: start;">
+                        <!-- Liste des sessions -->
+                        <div class="chat-sessions-card"
+                            style="background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; height: 600px;">
+                            <div
+                                style="padding: 1.2rem; border-bottom: 1px solid var(--grey); background: var(--pink-pale); color: var(--pink); font-weight: 700; display: flex; justify-content: space-between; align-items: center;">
+                                Sessions de Chat
+                                <button id="refresh-chats-btn"
+                                    style="background:none; border:none; cursor:pointer; color:var(--pink);">🔄</button>
+                            </div>
+                            <div id="chat-sessions-body" style="flex: 1; overflow-y: auto;">
+                                <!-- Injected by JS -->
+                                <div style="padding: 2rem; text-align: center; color: var(--grey-text);">Chargement...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fenêtre de conversation -->
+                        <div class="chat-history-card"
+                            style="background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; height: 600px;">
+                            <div id="chat-viewer-header"
+                                style="padding: 1.2rem; border-bottom: 1px solid var(--grey); font-weight: 700; color: var(--black); background: #fafafa;">
+                                Sélectionnez une conversation
+                            </div>
+                            <div id="chat-viewer-body"
+                                style="flex: 1; padding: 1.5rem; background: #fffcfd; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto;">
+                                <!-- Messages injectés -->
+                                <div
+                                    style="margin: auto; text-align: center; color: var(--grey-text); max-width: 300px;">
+                                    <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2"
+                                        viewBox="0 0 24 24" style="margin-bottom: 15px; opacity: 0.2;">
+                                        <path
+                                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                                        </path>
+                                    </svg>
+                                    <p>Toutes les interactions avec l'IA s'afficheront ici en temps réel.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-site" class="view-section" style="display: none;">
+                    <div class="toolbar">
+                        <p style="color: var(--grey-text);">Modifiez les textes et images de la page d'accueil.</p>
+                        <button id="site-save-btn" class="btn btn--primary">Enregistrer les modifications</button>
+                    </div>
+
+                    <form id="site-form" class="site-editor-form">
+                        <!-- HERO SECTION -->
+                        <h3 class="section-divider">Section Hero (Accueil)</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Titre Principal (Hero)</label>
+                                <textarea id="site-hero-title" class="form-input" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Sous-titre (Hero)</label>
+                                <textarea id="site-hero-subtitle" class="form-input" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Badge (ex: Fait maison)</label>
+                                <input type="text" id="site-hero-badge" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Image Hero (URL)</label>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <input type="text" id="site-hero-image" class="form-input">
+                                    <button type="button" class="btn btn--secondary upload-site-media"
+                                        data-target="site-hero-image">Upload</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MARQUEE SECTION -->
+                        <h3 class="section-divider">Bande Défilante (Marquee)</h3>
+                        <div class="form-group">
+                            <label class="form-label">Éléments (séparés par des virgules)</label>
+                            <input type="text" id="site-marquee-items" class="form-input"
+                                placeholder="Fait maison, Artisanal, Livraison rapide...">
+                        </div>
+
+                        <!-- SAVEURS SECTION -->
+                        <h3 class="section-divider">Section Saveurs</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Titre Section</label>
+                                <input type="text" id="site-saveurs-title" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Description Section</label>
+                                <textarea id="site-saveurs-desc" class="form-input" rows="2"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- CONTACT SECTION -->
+                        <h3 class="section-divider">Contact & WhatsApp</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Numéro WhatsApp (Complet avec indicatif, ex:
+                                    22656888972)</label>
+                                <input type="text" id="site-whatsapp-num" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Texte d'appel à l'action (WhatsApp)</label>
+                                <input type="text" id="site-cta-text" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">IDs Telegram pour Notifications (séparés par des
+                                    virgules)</label>
+                                <input type="text" id="site-telegram-ids" class="form-input"
+                                    placeholder="7687122420, 123456789">
+                                <small style="color:var(--grey-text); font-size:0.75rem;">Les admins recevront les
+                                    alertes
+                                    de commandes.</small>
+                            </div>
+                        </div>
+                    </form>
+                    <input type="file" id="site-file-input" style="display: none;" accept="image/*,video/*">
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- PRODUCT MODAL (Hidden Default) -->
+    <div class="modal-overlay" id="product-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">Ajouter un produit</h3>
+                <button class="modal-close" id="close-modal-btn">&times;</button>
+            </div>
+
+            <form id="product-form">
+                <input type="hidden" id="product-id">
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 0 0 160px;">
+                        <label class="form-label">Image</label>
+                        <div class="image-preview" id="image-preview">
+                            <span id="image-placeholder">Aucune image</span>
+                            <img src="" alt="Aperçu" id="image-element" style="display: none;">
+                        </div>
+                        <!-- Bouton upload Cloudinary -->
+                        <button type="button" id="upload-image-btn" class="btn btn--secondary"
+                            style="width:100%; font-size:0.82rem; padding:0.5rem 0.8rem; margin-bottom:0.8rem; display:flex; align-items:center; justify-content:center; gap:0.4rem;">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            Importer une image
+                        </button>
+                        <!-- URL manuelle (optionnelle) -->
+                        <input type="text" id="product-image" class="form-input" placeholder="Ou coller une URL d'image"
+                            style="font-size:0.82rem;">
+                        <input type="file" id="product-file-input" style="display: none;" accept="image/*">
+                    </div>
+
+                    <div class="form-group"
+                        style="display: flex; flex-direction: column; justify-content: space-between;">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label">Nom du produit</label>
+                            <input type="text" id="product-name" class="form-input" placeholder="Ex: Sachet Délice Cake"
+                                required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label">Prix (FCFA)</label>
+                            <input type="number" id="product-price" class="form-input" placeholder="Ex: 500" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Statut</label>
+                            <select id="product-status" class="form-input">
+                                <option value="active">Actif (Visible)</option>
+                                <option value="inactive">Inactif (Masqué)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description Courte</label>
+                    <input type="text" id="product-desc" class="form-input"
+                        placeholder="Ex: 12 petits gâteaux moelleux...">
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--ghost" id="cancel-modal-btn">Annuler</button>
+                    <button type="submit" class="btn btn--primary" id="save-product-btn">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- QR CODE MODAL -->
+    <div class="modal-overlay" id="qr-modal">
+        <div class="modal-box" style="text-align: center; max-width: 380px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Accès Mobile</h3>
+                <button class="modal-close" id="close-qr-btn">&times;</button>
+            </div>
+
+            <!-- Alerte si accès local -->
+            <div id="qr-local-notice"
+                style="display: none; background: rgba(232,23,138,0.07); border: 1px solid rgba(232,23,138,0.3); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; text-align: left;">
+                <p style="font-size: 0.85rem; color: var(--grey-text); margin: 0 0 0.8rem 0;">
+                    <strong>⚠️ Mode Local détecté.</strong><br>
+                    Votre admin est ouvert depuis un fichier local (non accessible sur le réseau). Pour générer un QR
+                    code scannable, entrez l'URL publique de votre site :
+                </p>
+                <input type="url" id="qr-site-url" class="form-input" placeholder="https://monsite.com/admin.html"
+                    style="margin-bottom: 0.8rem;">
+                <button id="generate-manual-qr-btn" class="btn btn--primary" style="width:100%;">Générer le QR
+                    Code</button>
+            </div>
+
+            <!-- QR Code Image -->
+            <p style="font-size: 0.85rem; color: var(--grey-text); margin-bottom: 1rem; text-align: left;"
+                id="qr-scan-notice">
+                Scannez ce QR Code avec l'appareil photo de votre téléphone.
+            </p>
+            <div
+                style="background:#fff; padding:15px; border-radius:10px; display:inline-block; margin-bottom: 1.5rem; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 15px rgba(0,0,0,0.05); aspect-ratio: 1/1;">
+                <img id="qr-code-img" src="" alt="QR Code" style="width: 200px; height: 200px; display: block;"
+                    width="200" height="200" decoding="async">
+            </div>
+            <div class="modal-footer" style="justify-content: center; border-top: none; padding-top: 0;">
+                <button type="button" class="btn btn--primary" id="copy-url-btn" style="width: 100%;">Copier le lien
+                    d'accès</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL GESTION DES ADMINS -->
+    <div class="modal-overlay" id="admin-modal">
+        <div class="modal-box" style="max-width: 500px;">
+            <header class="modal-header">
+                <h3 class="modal-title" id="admin-modal-title">Administrateur</h3>
+                <button class="modal-close" id="close-admin-modal">&times;</button>
+            </header>
+            <form id="admin-form" class="modal-form">
+                <input type="hidden" id="admin-uid">
+
+                <div class="form-group">
+                    <label class="form-label" for="admin-email">Email de l'Administrateur</label>
+                    <input type="email" id="admin-email" class="form-input" placeholder="admin@delice.com" required>
+                    <small
+                        style="color:var(--grey-text); font-size:0.75rem; display:block; margin-top:0.4rem; line-height:1.4;">
+                        Note: Une fois ajouté ici avec son e-mail, cet utilisateur aura accès à ses fonctionnalités dès
+                        sa première connexion.
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="admin-role">Rôle Principal</label>
+                    <select id="admin-role" class="form-input" style="cursor:pointer;">
+                        <option value="admin">Administrateur (Accès Limité)</option>
+                        <option value="superadmin">Super-Administrateur (Accès Total)</option>
+                    </select>
+                </div>
+
+                <div id="permissions-container"
+                    style="background: rgba(0,0,0,0.02); padding: 1.25rem; border-radius: 20px; border: 1px solid rgba(0,0,0,0.04); margin-bottom: 1.5rem;">
+                    <label class="form-label" style="margin-bottom: 0.75rem; font-size: 0.95rem;">Modules
+                        autorisés</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <label class="permission-item">
+                            <input type="checkbox" id="perm-products" checked> <span>Produits</span>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" id="perm-orders" checked> <span>Commandes</span>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" id="perm-accounting"> <span>Comptabilité</span>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" id="perm-knowledge"> <span>Cerveau IA</span>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" id="perm-chat"> <span>Conv. IA</span>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" id="perm-site"> <span>Site Web</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="padding-top: 1rem;">
+                    <button type="button" class="btn btn--ghost" id="cancel-admin-modal"
+                        style="flex:1;">Annuler</button>
+                    <button type="submit" class="btn btn--primary" id="save-admin-btn"
+                        style="flex:2;">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- FIREBASE SDKS (Deferred) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js" defer></script>
+
+
+    <!-- PDF.JS FOR LOCAL PDF PARSING -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js" defer></script>
+    <script>
+        window.addEventListener('load', function () {
+            if (typeof pdfjsLib !== 'undefined') {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+            }
+        });
+    </script>
+
+    <script src="firebase-config.js?v=2024030102" defer></script>
+    <script src="admin.js?v=2024030102" defer></script>
+
+    <!-- MOBILE MENU SCRIPT -->
+    <script defer>
+        (function () {
+            var hamburger = document.getElementById('hamburger-btn');
+            var sidebar = document.querySelector('.sidebar');
+            var overlay = document.getElementById('sidebar-overlay');
+            var qrBtnMobile = document.getElementById('show-qr-btn-mobile');
+            var qrBtn = document.getElementById('show-qr-btn');
+            var navLinks = document.querySelectorAll('.sidebar__link');
+
+            function isMobile() { return window.innerWidth <= 768; }
+
+            function openSidebar() {
+                sidebar.classList.add('open');
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            function updateMobileVisibility() {
+                if (isMobile()) {
+                    qrBtnMobile.style.display = 'flex';
+                } else {
+                    qrBtnMobile.style.display = 'none';
+                    closeSidebar();
+                }
+            }
+
+            if (hamburger) hamburger.addEventListener('click', openSidebar);
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+
+            // Fermer la sidebar après clic sur un lien de nav
+            navLinks.forEach(function (link) {
+                link.addEventListener('click', function () {
+                    if (isMobile()) closeSidebar();
+                });
+            });
+
+            // Bouton QR dans la sidebar mobile : déclencher l'original
+            if (qrBtnMobile && qrBtn) {
+                qrBtnMobile.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    closeSidebar();
+                    setTimeout(function () { qrBtn.click(); }, 300);
+                });
+            }
+
+            updateMobileVisibility();
+            window.addEventListener('resize', updateMobileVisibility);
+        })();
+    </script>
+</body>
+
+</html>

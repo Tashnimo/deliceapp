@@ -1,0 +1,17 @@
+<svg width="256" height="256" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="24" cy="24" r="24" fill="#E8178A"/>
+    <!-- Whisk 1 (Back) -->
+    <g transform="rotate(-45 24 28)">
+        <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#1a0a14" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 21.5 25 C 15 10, 17 2, 24 2 C 31 2, 33 10, 26.5 25" fill="none" stroke="#1a0a14" stroke-width="2" stroke-linecap="round"/>
+        <line x1="24" y1="25" x2="24" y2="4" stroke="#1a0a14" stroke-width="2" stroke-linecap="round"/>
+        <rect x="20" y="24" width="8" height="20" rx="4" fill="#E8178A" stroke="#1a0a14" stroke-width="2.5"/>
+    </g>
+    <!-- Whisk 2 (Front) -->
+    <g transform="rotate(45 24 28)">
+        <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#1a0a14" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 21.5 25 C 15 10, 17 2, 24 2 C 31 2, 33 10, 26.5 25" fill="none" stroke="#1a0a14" stroke-width="2" stroke-linecap="round"/>
+        <line x1="24" y1="25" x2="24" y2="4" stroke="#1a0a14" stroke-width="2" stroke-linecap="round"/>
+        <rect x="20" y="24" width="8" height="20" rx="4" fill="#E8178A" stroke="#1a0a14" stroke-width="2.5"/>
+    </g>
+</svg>

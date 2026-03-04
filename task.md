@@ -1,0 +1,27 @@
+# Task: Optimize Chatbot for Cloudflare & Multi-browser Compatibility
+
+- [x] Planning & Design
+    - [x] Create implementation plan
+- [x] Implement Unified Cloudflare Worker
+    - [x] Consolidate `_worker.js` and `worker.js`
+    - [x] Use environment variables for secrets
+    - [x] Implement robust CORS and error handling
+- [x] Refactor Frontend Chatbot Logic
+    - [x] Switch to relative API path
+    - [x] Remove hardcoded API key from frontend
+    - [x] Enhance error handling and user feedback
+    - [x] Ensure cross-browser compatibility for voice and UI
+- [x] Professional Dynamic Transformation
+    - [x] Create `wrangler.toml` for better Cloudflare recognition
+    - [x] Optimize folder structure for automated deployment
+- [x] Total Security Cleanup
+    - [x] Prepare migration plan
+- [x] Create Serverless Functions (API)
+    - [x] Implementation of `api/chat.js` (Hugging Face)
+    - [x] Implementation of `api/notify.js` (Telegram)
+- [x] Configuration for the new platform
+    - [x] `vercel.json`
+- [x] Update frontend to use new endpoints
+- [x] Verify local execution
+- [x] Provide instructions for configuring environment variables
+- [x] Complete cleanup of legacy debris

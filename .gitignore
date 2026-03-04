@@ -1,0 +1,19 @@
+# Temporary files
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Cloudflare Wrangler files
+.wrangler/
+dist/
+.dev.vars
+
+# Local environment variables
+.env
+.env.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.log

@@ -1,0 +1,22 @@
+{
+  "name": "Délice Cake",
+  "short_name": "Délice Cake",
+  "description": "L'Art de la Pâtisserie - Petits gâteaux fondants au cœur de chocolat.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#E8178A",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "favicon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "gcm_sender_id": "103953800507"
+}

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Délice Cake – L'Art de la Pâtisserie</title>
+    <meta name="description"
+        content="Délice Cake – Des petits gâteaux fondants au coeur de chocolat, faits avec amour. Commandez maintenant au 56 88 89 72." />
+
+    <!-- OpenGraph / Social Preview -->
+    <meta property="og:title" content="Délice Cake – L'Art de la Pâtisserie" />
+    <meta property="og:description"
+        content="Nos fameux gâteaux au cœur de chocolat : frais, moelleux, artisanaux. Réservez votre instant délice !" />
+    <!-- Ideally, update this URL to the actual deployed image URL once the site is live -->
+    <meta property="og:image" content="https://files.oaiusercontent.com/file-K1kYF6A9T5L3jS4wM2B8R7" />
+    <meta property="og:url" content="https://delice-cake.com" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style.css?v=2" />
+    <!-- Site Icon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <!-- Material Symbols for Chatbot Icons -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0" />
+    <!-- Smooth Scroll: Lenis (Defer to bottom for performance) -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#E8178A" />
+    <link rel="apple-touch-icon" href="favicon.svg" />
+    <!-- 3D Model Viewer -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+</head>
+
+<body>
+    <!-- SCROLL PROGRESS -->
+    <div class="scroll-progress" id="scroll-progress"></div>
+
+    <!-- PRELOADER -->
+    <div class="preloader" id="preloader">
+        <div class="preloader__logo">
+            <svg width="100" height="100" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"
+                class="preloader__svg">
+                <!-- Translated circle to the new center (32, 32) -->
+                <circle cx="32" cy="32" r="24" fill="#E8178A" />
+                <!-- Whisk 1 -->
+                <g class="whisker whisker--1">
+                    <g transform="translate(8, 8)">
+                        <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#1a0a14"
+                            stroke-width="2.5" stroke-linecap="round" />
+                        <path d="M 21.5 25 C 15 10, 17 2, 24 2 C 31 2, 33 10, 26.5 25" fill="none" stroke="#1a0a14"
+                            stroke-width="2" stroke-linecap="round" />
+                        <line x1="24" y1="25" x2="24" y2="4" stroke="#1a0a14" stroke-width="2" stroke-linecap="round" />
+                        <rect x="20" y="24" width="8" height="20" rx="4" fill="#E8178A" stroke="#1a0a14"
+                            stroke-width="2.5" />
+                    </g>
+                </g>
+                <!-- Whisk 2 -->
+                <g class="whisker whisker--2">
+                    <g transform="translate(8, 8)">
+                        <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#1a0a14"
+                            stroke-width="2.5" stroke-linecap="round" />
+                        <path d="M 21.5 25 C 15 10, 17 2, 24 2 C 31 2, 33 10, 26.5 25" fill="none" stroke="#1a0a14"
+                            stroke-width="2" stroke-linecap="round" />
+                        <line x1="24" y1="25" x2="24" y2="4" stroke="#1a0a14" stroke-width="2" stroke-linecap="round" />
+                        <rect x="20" y="24" width="8" height="20" rx="4" fill="#E8178A" stroke="#1a0a14"
+                            stroke-width="2.5" />
+                    </g>
+                </g>
+            </svg>
+        </div>
+    </div>
+
+    <!-- CUSTOM CURSOR -->
+    <div class="custom-cursor" id="custom-cursor"></div>
+    <div class="cursor-follower" id="cursor-follower"></div>
+
+    <!-- NAV -->
+    <nav class="nav" id="nav">
+        <div class="nav__logo">
+            <svg class="nav__icon-svg" width="30" height="30" viewBox="0 0 48 48" fill="none"
+                xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                <!-- Whisk 1 (Back) -->
+                <g transform="rotate(-45 24 28)">
+                    <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#1a0a14"
+                        stroke-width="2.5" stroke-linecap="round" />
+                    <path d="M 21.5 25 C 15 10, 17 2, 24 2 C 31 2, 33 10, 26.5 25" fill="none" stroke="#1a0a14"
+                        stroke-width="2" stroke-linecap="round" />
+                    <line x1="24" y1="25" x2="24" y2="4" stroke="#1a0a14" stroke-width="2" stroke-linecap="round" />
+                    <rect x="20" y="24" width="8" height="20" rx="4" fill="#E8178A" stroke="#1a0a14"
+                        stroke-width="2.5" />
+                </g>
+                <!-- Whisk 2 (Front) -->
+                <g transform="rotate(45 24 28)">
+                    <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#1a0a14"
+                        stroke-width="2.5" stroke-linecap="round" />
+                    <path d="M 21.5 25 C 15 10, 17 2, 24 2 C 31 2, 33 10, 26.5 25" fill="none" stroke="#1a0a14"
+                        stroke-width="2" stroke-linecap="round" />
+                    <line x1="24" y1="25" x2="24" y2="4" stroke="#1a0a14" stroke-width="2" stroke-linecap="round" />
+                    <rect x="20" y="24" width="8" height="20" rx="4" fill="#E8178A" stroke="#1a0a14"
+                        stroke-width="2.5" />
+                </g>
+            </svg>
+            Délice Cake
+        </div>
+        <div class="nav__links">
+            <a href="#hero">Accueil</a>
+            <a href="#produits">Produits</a>
+            <a href="#saveurs">Saveurs</a>
+            <a href="#contact">Contact</a>
+            <a href="#" id="track-order-nav"
+                style="color: var(--pink); font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                Suivi <span class="track-badge" id="nav-track-badge"></span>
+            </a>
+        </div>
+        <a href="https://wa.me/22656808872" class="nav__cta" id="nav-cta" target="_blank">Commander</a>
+        <button class="nav__burger" id="burger" aria-label="menu">&#9776;</button>
+    </nav>
+
+    <!-- MOBILE MENU -->
+    <div class="mobile-menu" id="mobile-menu">
+        <button class="mobile-menu__close" id="mobile-close">&times;</button>
+        <a href="#hero" class="mobile-menu__link" onclick="closeMobile()">Accueil</a>
+        <a href="#produits" class="mobile-menu__link" onclick="closeMobile()">Produits</a>
+        <a href="#saveurs" class="mobile-menu__link" onclick="closeMobile()">Saveurs</a>
+        <a href="#contact" class="mobile-menu__link" onclick="closeMobile()">Contact</a>
+        <a href="#" class="mobile-menu__link" id="track-order-mobile"
+            style="color: var(--pink); display: flex; align-items: center; justify-content: space-between;">
+            Suivre ma commande <span class="track-badge" id="mobile-track-badge"></span>
+        </a>
+        <a href="https://wa.me/22656808872" class="mobile-menu__link cta" target="_blank">Commander via WhatsApp</a>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero" id="hero">
+        <div class="hero__content">
+            <div class="hero__badge" id="site-hero-badge-display">Fait maison · Artisanal</div>
+            <h1 class="hero__title" id="site-hero-title-display">
+                L'art du<br />
+                <em>petit gâteau</em><br />
+                fondant
+            </h1>
+            <p class="hero__subtitle" id="site-hero-subtitle-display">
+                Chaque bouchée révèle un cœur de chocolat irrésistible.<br />
+                Livraison disponible — Commandez dès maintenant.
+            </p>
+            <div class="hero__actions">
+                <a href="https://wa.me/22656808872" class="btn btn--primary" target="_blank" id="hero-order-btn"
+                    data-magnetic>
+                    Commander maintenant
+                </a>
+                <a href="#produits" class="btn btn--ghost" id="hero-discover-btn">Découvrir</a>
+            </div>
+        </div>
+        <div class="hero__visual">
+            <div class="hero__glow"></div>
+            <!-- Interactive 3D Model Replacement -->
+            <model-viewer src="cake.glb" poster="hero_cake.webp" alt="Un gâteau 3D Délice Cake" auto-rotate
+                camera-controls interaction-prompt="none" shadow-intensity="1.5" exposure="2.0"
+                environment-image="neutral" camera-orbit="45deg 75deg 105%" min-camera-orbit="auto auto 80%"
+                max-camera-orbit="auto auto 150%" loading="eager" reveal="auto" class="hero__model" id="hero-3d-model">
+            </model-viewer>
+            <div class="hero__ring hero__ring--1"></div>
+            <div class="hero__ring hero__ring--2"></div>
+        </div>
+        <!-- Floating tag removed to prevent overlapping buttons -->
+    </section>
+
+    <!-- MARQUEE STRIP -->
+    <div class="strip">
+        <div class="strip__track">
+            <span>Fait maison</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Cœur chocolat</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Artisanal</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Livraison rapide</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Sans conservateurs</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24"
+                fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Fait maison</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Cœur chocolat</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Artisanal</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Livraison rapide</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Sans conservateurs</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24"
+                fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Fait maison</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Cœur chocolat</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Artisanal</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Livraison rapide</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Sans conservateurs</span><svg class="strip-sep" width="14" height="14" viewBox="0 0 24 24"
+                fill="none">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" fill="#fff" stroke="#fff" stroke-width="1.5"
+                    stroke-linejoin="round" />
+            </svg>
+        </div>
+    </div>
+
+    <!-- PRODUITS -->
+    <section class="produits" id="produits">
+        <div class="produits__header reveal-clip">
+            <span class="section-label">Notre Spécialité</span>
+            <h2 class="section-title" id="site-saveurs-title-display">La boule de <em>neige</em></h2>
+            <p class="section-sub" id="site-saveurs-desc-display">Un extérieur doré et moelleux, un intérieur généreux
+                en chocolat fondant.</p>
+        </div>
+
+        <div class="produits__showcase reveal-clip" style="transition-delay: 0.1s;">
+            <div class="produits__card produits__card--main">
+                <div class="produits__img-wrap" id="main-product" data-parallax="0.08">
+                    <img src="logo_bag.webp" alt="Sachet Délice Cake – 12 pièces" class="produits__img" width="450"
+                        height="550" loading="lazy" decoding="async" />
+                    <div class="produits__badge-img">Bestseller</div>
+                </div>
+                <div class="produits__info">
+                    <h3 class="produits__name">Sachet Délice Cake</h3>
+                    <p class="produits__desc">
+                        12 petits gâteaux moelleux au cœur de chocolat, conditionnés dans un sachet fraîcheur scellé.
+                        Parfaits pour les goûters, événements ou cadeaux gourmands.
+                    </p>
+                    <div class="produits__features reveal-stagger-parent">
+                        <div class="produits__feat reveal-stagger-item" data-parallax="0.05">
+                            <!-- Cupcake icon -->
+                            <svg class="feat-svg" width="40" height="40" viewBox="0 0 48 48" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <!-- Cream swirl -->
+                                <path
+                                    d="M24 5c-3 0-5 1.5-6 4-1-1-2.5-1.5-4-1-2.5.8-3.5 3.5-2.5 5.5H36.5c1-2-0-4.7-2.5-5.5-1.5-.5-3 0-4 1-1-2.5-3-4-6-4z"
+                                    fill="#E8178A" stroke="#1a0a14" stroke-width="2" stroke-linejoin="round" />
+                                <!-- Lighter highlight on cream -->
+                                <path d="M18 9c1-1.5 2.5-2 4-2" stroke="#fff" stroke-width="1.5"
+                                    stroke-linecap="round" />
+                                <!-- Cup body -->
+                                <path d="M12 22l3 16h18l3-16H12z" fill="#fff" stroke="#1a0a14" stroke-width="2"
+                                    stroke-linejoin="round" />
+                                <!-- Cup stripes -->
+                                <path d="M17 22v16M24 22v16M31 22v16" stroke="#E8178A" stroke-width="1.5"
+                                    stroke-linecap="round" />
+                                <!-- Cup wrapper bottom -->
+                                <rect x="12" y="22" width="24" height="4" rx="1" fill="#E8178A" stroke="#1a0a14"
+                                    stroke-width="2" />
+                            </svg>
+                            <span>12 pièces / sachet</span>
+                        </div>
+                        <div class="produits__feat reveal-stagger-item" data-parallax="0.12">
+                            <!-- Chocolate heart icon -->
+                            <svg class="feat-svg" width="40" height="40" viewBox="0 0 48 48" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M24 40S8 28 8 17a9 9 0 0116-5.6A9 9 0 0140 17c0 11-16 23-16 23z" fill="#E8178A"
+                                    stroke="#1a0a14" stroke-width="2.2" stroke-linejoin="round" />
+                                <!-- Chocolate drip -->
+                                <path d="M20 24c1 3 3 5 4 7" stroke="#1a0a14" stroke-width="1.8"
+                                    stroke-linecap="round" />
+                                <!-- Shine -->
+                                <path d="M15 18c0-2 1-4 3-5" stroke="#fff" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                            <span>Cœur chocolat fondant</span>
+                        </div>
+                        <div class="produits__feat reveal-stagger-item" data-parallax="0.08">
+                            <!-- Star/fresh icon -->
+                            <svg class="feat-svg" width="40" height="40" viewBox="0 0 48 48" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <!-- Main star -->
+                                <path d="M24 6l3.5 11H39l-9.5 6.5 3.5 11L24 28l-9 6.5 3.5-11L9 17h11.5z" fill="#E8178A"
+                                    stroke="#1a0a14" stroke-width="2" stroke-linejoin="round" />
+                                <!-- Shine dots -->
+                                <circle cx="10" cy="10" r="2" fill="#E8178A" stroke="#1a0a14" stroke-width="1.5" />
+                                <circle cx="38" cy="8" r="1.5" fill="#E8178A" stroke="#1a0a14" stroke-width="1.2" />
+                                <circle cx="40" cy="38" r="2" fill="#E8178A" stroke="#1a0a14" stroke-width="1.5" />
+                                <!-- Center highlight -->
+                                <path d="M21 20c1-1.5 3-2 4-1" stroke="#fff" stroke-width="1.5"
+                                    stroke-linecap="round" />
+                            </svg>
+                            <span>Frais et moelleux</span>
+                        </div>
+                    </div>
+                    <a href="https://wa.me/22656808872" class="btn btn--primary" target="_blank" id="product-order-btn"
+                        data-magnetic>Commander via WhatsApp</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SAVEURS -->
+    <section class="saveurs" id="saveurs">
+        <div class="saveurs__header reveal-clip">
+            <span class="section-label">L'Intérieur</span>
+            <h2 class="section-title">Coupez, savourez, <em>craquez</em></h2>
+        </div>
+        <div class="saveurs__split">
+            <div class="saveurs__visual reveal-clip" style="transition-delay: 0.2s;">
+                <div class="cake-image-wrapper" id="cake-interactive" data-parallax="0.06">
+                    <img src="cake_photo_hq.webp" alt="Délice Cake coupé en deux" class="cake-photo-main" width="420"
+                        height="420" loading="lazy" decoding="async" />
+
+                    <!-- Hotspots -->
+                    <div class="hotspot hotspot--crust" data-target="saveur-1">
+                        <div class="hotspot__ring"></div>
+                        <div class="hotspot__dot"></div>
+                        <div class="hotspot__tooltip">
+                            <span class="hotspot__title">Croûte</span>
+                            <span class="hotspot__line"></span>
+                        </div>
+                    </div>
+
+                    <div class="hotspot hotspot--sponge" data-target="saveur-3">
+                        <div class="hotspot__ring"></div>
+                        <div class="hotspot__dot"></div>
+                        <div class="hotspot__tooltip">
+                            <span class="hotspot__line"></span>
+                            <span class="hotspot__title">Mie</span>
+                        </div>
+                    </div>
+
+                    <div class="hotspot hotspot--chocolate" data-target="saveur-2">
+                        <div class="hotspot__ring"></div>
+                        <div class="hotspot__dot"></div>
+                        <div class="hotspot__tooltip">
+                            <span class="hotspot__line"></span>
+                            <span class="hotspot__title">Chocolat</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="saveurs__details reveal-stagger-parent">
+                <div class="saveurs__item reveal-stagger-item" id="saveur-1">
+                    <svg class="saveur-icon" width="44" height="44" viewBox="0 0 48 48" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <!-- Bread/pastry -->
+                        <ellipse cx="24" cy="28" rx="14" ry="8" fill="#fff" stroke="#1a0a14" stroke-width="2" />
+                        <path d="M10 28c0-7 6-14 14-14s14 7 14 14" fill="#E8178A" stroke="#1a0a14" stroke-width="2" />
+                        <path d="M14 22c2-4 5-6 10-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                    <div>
+                        <h4>Pâte moelleuse</h4>
+                        <p>Une mie tendre et légère, dorée à la perfection pour une texture parfaite.</p>
+                    </div>
+                </div>
+                <div class="saveurs__item reveal-stagger-item" id="saveur-2">
+                    <svg class="saveur-icon" width="44" height="44" viewBox="0 0 48 48" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path d="M24 40S8 28 8 17a9 9 0 0116-5.6A9 9 0 0140 17c0 11-16 23-16 23z" fill="#E8178A"
+                            stroke="#1a0a14" stroke-width="2.2" stroke-linejoin="round" />
+                        <path d="M15 18c0-2 1-4 3-5" stroke="#fff" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <div>
+                        <h4>Cœur coulant au chocolat</h4>
+                        <p>Un généreux cœur de chocolat fondant qui se révèle à chaque bouchée.</p>
+                    </div>
+                </div>
+                <div class="saveurs__item reveal-stagger-item" id="saveur-3">
+                    <svg class="saveur-icon" width="44" height="44" viewBox="0 0 48 48" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <!-- House/home -->
+                        <path d="M8 24L24 10l16 14" fill="#E8178A" stroke="#1a0a14" stroke-width="2"
+                            stroke-linejoin="round" />
+                        <rect x="14" y="24" width="20" height="16" rx="2" fill="#fff" stroke="#1a0a14"
+                            stroke-width="2" />
+                        <rect x="20" y="30" width="8" height="10" rx="1" fill="#E8178A" stroke="#1a0a14"
+                            stroke-width="1.5" />
+                        <path d="M18 27h3M27 27h3" stroke="#1a0a14" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                    <div>
+                        <h4>Recette maison exclusive</h4>
+                        <p>Préparés chaque jour avec des ingrédients frais, sans conservateurs.</p>
+                    </div>
+                </div>
+                <a href="https://wa.me/22656808872" class="btn btn--primary" style="margin-top:2rem;" target="_blank"
+                    id="saveurs-order-btn">Je commande</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- AUTRES PRODUITS MARQUEE -->
+    <section class="other-products" id="autres-produits">
+        <div class="other-products__header reveal-clip" style="text-align: center; margin-bottom: 2rem;">
+            <span class="section-label">Pour varier les plaisirs</span>
+            <h2 class="section-title">Nos autres <em>douceurs</em></h2>
+        </div>
+
+        <div class="products-marquee">
+            <div class="products-marquee__track" id="dynamic-marquee-track">
+                <!-- Les produits seront injectés ici par script.js via Firebase/DataService -->
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats reveal-stagger-parent">
+        <div class="stats__grid">
+            <div class="stats__item reveal-stagger-item" data-parallax="0.05">
+                <span class="stats__num">100<span class="stats__plus">%</span></span>
+                <span class="stats__label">Fait maison</span>
+            </div>
+            <div class="stats__item reveal-stagger-item" data-parallax="-0.02">
+                <span class="stats__num">0<span class="stats__plus">%</span></span>
+                <span class="stats__label">Conservateurs</span>
+            </div>
+            <div class="stats__item reveal-stagger-item" data-parallax="0.08">
+                <span class="stats__num">12<span class="stats__plus">+</span></span>
+                <span class="stats__label">Pièces / sachet</span>
+            </div>
+            <div class="stats__item reveal-stagger-item" data-parallax="-0.05">
+                <span class="stats__num">24<span class="stats__plus">h</span></span>
+                <span class="stats__label">Livraison express</span>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- CONTACT / ORDER -->
+    <section class="contact" id="contact">
+        <div class="contact__inner reveal-clip">
+            <span class="section-label" style="color:#f9a8d4;">Commander</span>
+            <h2 class="section-title contact-title-animated">Envie d'un <em>Délice&nbsp;Cake&nbsp;?</em></h2>
+            <p class="section-sub" style="color:rgba(255,255,255,0.75);">Contactez-nous directement via
+                WhatsApp,<br />nous vous répondons en quelques minutes.</p>
+            <a href="https://wa.me/22656808872" class="btn btn--white" target="_blank" id="contact-whatsapp-btn"
+                data-magnetic>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
+                    style="vertical-align:middle;margin-right:8px">
+                    <path
+                        d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+                56 88 89 72 – Écrire sur WhatsApp
+            </a>
+        </div>
+    </section>
+
+    <!-- CUSTOM ORDER MODAL -->
+    <div class="modal-overlay" id="order-modal">
+        <div class="modal-box">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <h3 class="modal-title">Votre Commande</h3>
+            <p class="modal-desc">Sélectionnez vos douceurs, nous les préparons pour vous avec amour.</p>
+
+            <form id="order-form" class="order-form">
+                <!-- Products Selection -->
+                <div class="form-group">
+                    <label class="form-label">Nos délices à la carte :</label>
+                    <div id="dynamic-order-products">
+                        <p style="text-align:center; padding: 1rem; color: var(--pink);">Chargement de nos délices...
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Total Amount -->
+                <div class="form-total"
+                    style="display: flex; justify-content: space-between; align-items: center; background: var(--pink-pale); padding: 1rem 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; border: 2px solid var(--pink);">
+                    <span
+                        style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--black);">Total
+                        estimé</span>
+                    <span id="order-total"
+                        style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--pink);">0
+                        FCFA</span>
+                </div>
+
+                <!-- Custom Note -->
+                <div class="form-group">
+                    <label for="order-note" class="form-label">Un besoin particulier ? (optionnel)</label>
+                    <textarea id="order-note" name="order-note" class="form-input form-textarea"
+                        placeholder="Ex: Sans sucre ajouté, glaçage chocolat blanc, livraison ce soir..."></textarea>
+                </div>
+
+                <!-- Error Message (Hidden by default) -->
+                <p id="form-error" class="form-error">Veuillez sélectionner au moins un délice.</p>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn--primary btn--full" id="submit-order-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                        fill="currentColor" style="vertical-align:middle;margin-right:8px">
+                        <path
+                            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                    </svg>
+                    Envoyer ma commande
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer__inner reveal-clip">
+            <div class="footer__top"
+                style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2rem;">
+                <div class="footer__brand-info" style="max-width: 300px;">
+                    <div class="footer__brand" style="margin-bottom: 1rem;">
+                        <svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"
+                            style="margin-right: 8px;">
+                            <!-- Whisk 1 (Back) -->
+                            <g transform="rotate(-45 24 28)">
+                                <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#E8178A"
+                                    stroke-width="2.5" stroke-linecap="round" />
+                                <path d="M 21.5 25 C 15 10, 17 2, 24 2 C 31 2, 33 10, 26.5 25" fill="none"
+                                    stroke="#E8178A" stroke-width="2" stroke-linecap="round" />
+                                <line x1="24" y1="25" x2="24" y2="4" stroke="#E8178A" stroke-width="2"
+                                    stroke-linecap="round" />
+                                <rect x="20" y="24" width="8" height="20" rx="4" fill="#1a0a14" stroke="#E8178A"
+                                    stroke-width="2.5" />
+                            </g>
+                            <!-- Whisk 2 (Front) -->
+                            <g transform="rotate(45 24 28)">
+                                <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#E8178A"
+                                    stroke-width="2.5" stroke-linecap="round" />
+                                <path d="M 21.5 25 C 15 10, 17 2, 24 2 C 31 2, 33 10, 26.5 25" fill="none"
+                                    stroke="#E8178A" stroke-width="2" stroke-linecap="round" />
+                                <line x1="24" y1="25" x2="24" y2="4" stroke="#E8178A" stroke-width="2"
+                                    stroke-linecap="round" />
+                                <rect x="20" y="24" width="8" height="20" rx="4" fill="#1a0a14" stroke="#E8178A"
+                                    stroke-width="2.5" />
+                            </g>
+                        </svg>
+                        Délice Cake
+                    </div>
+                    <p style="color: rgba(255,255,255,0.7); font-size: 0.95rem; line-height: 1.5; margin: 0;">L'art du
+                        petit gâteau avec un cœur de chocolat irrésistible, préparé chaque jour avec passion.</p>
+                </div>
+
+                <div class="footer__links" style="display: flex; gap: 4rem; flex-wrap: wrap;">
+                    <div class="sitemap-col">
+                        <h4
+                            style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; margin-bottom: 1rem; color: #fff; font-weight: 600;">
+                            Plan du site</h4>
+                        <ul
+                            style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
+                            <li><a href="#hero"
+                                    style="color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.95rem; transition: color 0.3s;"
+                                    onmouseover="this.style.color='#E8178A'"
+                                    onmouseout="this.style.color='rgba(255,255,255,0.7)'">Accueil</a></li>
+                            <li><a href="#produits"
+                                    style="color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.95rem; transition: color 0.3s;"
+                                    onmouseover="this.style.color='#E8178A'"
+                                    onmouseout="this.style.color='rgba(255,255,255,0.7)'">Produits</a></li>
+                            <li><a href="#saveurs"
+                                    style="color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.95rem; transition: color 0.3s;"
+                                    onmouseover="this.style.color='#E8178A'"
+                                    onmouseout="this.style.color='rgba(255,255,255,0.7)'">Saveurs</a></li>
+                            <li><a href="#contact"
+                                    style="color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.95rem; transition: color 0.3s;"
+                                    onmouseover="this.style.color='#E8178A'"
+                                    onmouseout="this.style.color='rgba(255,255,255,0.7)'">Contact</a></li>
+                        </ul>
+                    </div>
+                    <div class="sitemap-col">
+                        <h4
+                            style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; margin-bottom: 1rem; color: #fff; font-weight: 600;">
+                            Légal</h4>
+                        <ul
+                            style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
+                            <li><a href="sitemap.xml" target="_blank"
+                                    style="color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.95rem; transition: color 0.3s;"
+                                    onmouseover="this.style.color='#E8178A'"
+                                    onmouseout="this.style.color='rgba(255,255,255,0.7)'">Sitemap XML</a></li>
+                            <li><span
+                                    style="color: rgba(255,255,255,0.4); font-size: 0.95rem; cursor: default;">Mentions
+                                    légales</span></li>
+                            <li><span
+                                    style="color: rgba(255,255,255,0.4); font-size: 0.95rem; cursor: default;">Politique
+                                    de confidentialité</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <p class="footer__copy" style="text-align: center; margin-top: 1rem;">© 2026 Délice Cake · Tous droits
+                réservés · Fait avec <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    style="vertical-align:middle">
+                    <path d="M12 20S4 14 4 8.5a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 8.5C20 14 12 20 12 20z" fill="#E8178A"
+                        stroke="#E8178A" stroke-width="1.5" />
+                </svg></p>
+        </div>
+    </footer>
+
+    <!-- TRACK ORDER MODAL -->
+    <div class="modal-overlay" id="track-modal">
+        <div class="modal-box" style="max-width: 450px;">
+            <button class="modal-close" id="track-modal-close">&times;</button>
+            <h3 class="modal-title">Suivre ma commande</h3>
+            <p class="modal-desc">Consultez l'état de votre dernière commande en temps réel.</p>
+
+            <div id="track-content">
+                <!-- Content injected by JS -->
+                <div style="text-align: center; padding: 2rem;">
+                    <p style="color: var(--grey-text);">Aucune commande trouvée sur cet appareil.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELICE AI CHATBOT -->
+    <div class="chatbot-container" id="chatbot-container">
+        <!-- Floating Button -->
+        <button class="chatbot-toggler" id="chatbot-toggler" aria-label="Ouvrir l'assistant Délice AI">
+            <span class="chatbot-toggler-icon">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path
+                        d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                    </path>
+                </svg>
+            </span>
+            <span class="chatbot-toggler-close">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </span>
+        </button>
+
+        <!-- Chat Window -->
+        <div class="chatbot-window" id="chatbot-window">
+            <div class="chatbot-header">
+                <div class="chatbot-header-info">
+                    <div class="chatbot-avatar">
+                        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+                            <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#E8178A"
+                                stroke-width="2.5" stroke-linecap="round" />
+                            <path d="M 21.5 25 C 15 10, 17 2, 24 2 C 31 2, 33 10, 26.5 25" fill="none" stroke="#E8178A"
+                                stroke-width="2" stroke-linecap="round" />
+                            <line x1="24" y1="25" x2="24" y2="4" stroke="#E8178A" stroke-width="2"
+                                stroke-linecap="round" />
+                            <rect x="20" y="24" width="8" height="20" rx="4" fill="#1a0a14" stroke="#E8178A"
+                                stroke-width="2.5" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>Délice AI</h3>
+                        <p>Assistant Pâtissier</p>
+                    </div>
+                </div>
+                <button class="chatbot-close-btn" id="chatbot-close-btn">&times;</button>
+            </div>
+
+            <ul class="chatbot-messages" id="chatbot-messages">
+                <li class="chat incoming">
+                    <div class="chat-content">
+                        <p>Bonjour ! 👋 Je suis Délice AI, votre assistant gourmand virtuel. Que puis-je vous préparer
+                            aujourd'hui ou avez-vous une question sur nos pâtisseries ?</p>
+                    </div>
+                </li>
+            </ul>
+
+            <div class="chatbot-input-area">
+                <textarea id="chatbot-input" placeholder="Écrivez votre message ici..." spellcheck="false"
+                    required></textarea>
+                <button id="chatbot-send-btn" class="chatbot-send-btn" aria-label="Envoyer">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE SDKS -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
+
+    <!-- Smooth Scroll: Lenis (Deferred) -->
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="script.js?v=vercel_ai_fix_final_2" defer></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                    .then(reg => console.log('Service Worker registered', reg))
+                    .catch(err => console.log('Service Worker registration failed', err));
+            });
+        }
+    </script>
+</body>
+
+</html>
