@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Clé API non configurée sur Vercel (HF_API_KEY)" });
     }
 
-    const HF_API_URL = "https://api-inference.huggingface.co/v1/chat/completions";
+    const HF_API_URL = "https://router.huggingface.co/v1/chat/completions";
 
     try {
         console.log("DEBUG VERCEL : Envoi de la requête à Hugging Face...");
