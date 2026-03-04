@@ -19,10 +19,10 @@ export default async function handler(req, res) {
 
     // --- SOLUTION FINALE : API CHAT COMPLETIONS HUGGING FACE ---
     // Utilisation de l'endpoint standardisé global de HF pour le chat
-    // URL: https://api-inference.huggingface.co/v1/chat/completions
+    // URL: https://router.huggingface.co/hf-inference/v1/chat/completions
     // Le modèle est précisé dans le body de la requête.
     const MODEL_ID = "Qwen/Qwen2.5-72B-Instruct"; // Modèle ouvert, puissant et recommandé pour l'API gratuite HF
-    const HF_MODEL_URL = `https://api-inference.huggingface.co/v1/chat/completions`;
+    const HF_MODEL_URL = `https://router.huggingface.co/hf-inference/v1/chat/completions`;
 
     try {
         const { messages } = req.body;

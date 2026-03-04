@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Test Hugging Face API</title>
+</head>
+
+<body>
+    <h1>Test API Hugging Face</h1>
+    <label>Token HF: <input type="password" id="token" placeholder="hf_..."></label>
+    <button onclick="testAPI()">Tester</button>
+    <pre id="output" style="background:#eee; padding:10px; margin-top:20px; white-space:pre-wrap;"></pre>
+
+    <script>
+        async function testAPI() {
+            const token = document.getElementById('token').value;
+            const output = document.getElementById('output');
+            output.textContent = "Test en cours...\n";
+
+            if (!token) {
+                output.textContent += "Veuillez entrer un token HF.\n";
+                // essayer sans token (souvent interdit mais on teste)
+            }
+
+            const modelsToTest = [
+                { url: "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct/v1/chat/completions", body: { model: "meta-llama/Meta-Llama-3-8B-Instruct", messages: [{ role: "user", content: "Salut" }], max_tokens: 20 } },
+                { url: "https://api-inference.huggingface.co/v1/chat/completions", body: { model: "Qwen/Qwen2.5-72B-Instruct", messages: [{ role: "user", content: "Salut" }], max_tokens: 20 } },
+                { url: "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta/v1/chat/completions", body: { model: "HuggingFaceH4/zephyr-7b-beta", messages: [{ role: "user", content: "Salut" }], max_tokens: 20 } }
+            ];
+
+            for (const test of modelsToTest) {
+                output.textContent += `\n--- Test: ${test.body.model} ---\n`;
+                output.textContent += `URL: ${test.url}\n`;
+
+                try {
+                    const res = await fetch(test.url, {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${token}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(test.body)
+                    });
+
+                    output.textContent += `Status: ${res.status}\n`;
+                    const text = await res.text();
+                    output.textContent += `Réponse: ${text.substring(0, 300)}...\n`;
+                } catch (e) {
+                    output.textContent += `Erreur réseau: ${e.message}\n`;
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
