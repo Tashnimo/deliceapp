@@ -1383,5 +1383,5 @@ INFO : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
 
 });
 
-// Vercel Cache Busting Version: 04/03/2026 - AI Fix Version 6 (Zephyr Model)
-// Trigger Vercel Deploy 3
+// Vercel Cache Busting Version: 04/03/2026 - AI Fix Version 7 (Global HF API URL with Qwen)
+// Trigger Vercel Deploy 4

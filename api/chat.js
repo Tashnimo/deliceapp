@@ -18,10 +18,11 @@ export default async function handler(req, res) {
     }
 
     // --- SOLUTION FINALE : API CHAT COMPLETIONS HUGGING FACE ---
-    // Utilisation de l'endpoint standardisé OpenAI "/v1/chat/completions" de HF
-    // On utilise Zephyr, un modèle extrêmement stable sur l'API gratuite de Hugging Face
-    const MODEL_ID = "HuggingFaceH4/zephyr-7b-beta";
-    const HF_MODEL_URL = `https://api-inference.huggingface.co/models/${MODEL_ID}/v1/chat/completions`;
+    // Utilisation de l'endpoint standardisé global de HF pour le chat
+    // URL: https://api-inference.huggingface.co/v1/chat/completions
+    // Le modèle est précisé dans le body de la requête.
+    const MODEL_ID = "Qwen/Qwen2.5-72B-Instruct"; // Modèle ouvert, puissant et recommandé pour l'API gratuite HF
+    const HF_MODEL_URL = `https://api-inference.huggingface.co/v1/chat/completions`;
 
     try {
         const { messages } = req.body;
