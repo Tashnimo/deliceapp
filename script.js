@@ -1326,7 +1326,7 @@ INFO : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
     chatHistoryMessages.push({ role: "user", content: userText });
 
     const payload = {
-      model: "HuggingFaceH4/zephyr-7b-beta",
+      model: "mistralai/Mistral-7B-Instruct-v0.2",
       messages: chatHistoryMessages,
       max_tokens: 200,
       temperature: 0.6,
