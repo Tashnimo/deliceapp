@@ -1348,9 +1348,9 @@ INFO : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
         const errorData = await response.json().catch(() => ({}));
         let errorMessage = errorData.error ? (typeof errorData.error === 'string' ? errorData.error : JSON.stringify(errorData.error)) : "Unknown error";
 
-        if (errorMessage.includes("is currently loading")) {
+        if (response.status === 503 || errorMessage.includes("is currently loading") || errorMessage.includes("se réveille")) {
           chatHistoryMessages.pop();
-          return "Le cerveau de Délice AI se réveille... 🤖 Patientez 10s.";
+          return "Le cerveau de Délice AI se réveille... 🤖 Patientez 10s et réessayez.";
         }
         throw new Error(`Status: ${response.status} - ${errorMessage}`);
       }
@@ -1377,11 +1377,11 @@ INFO : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
       return botText;
     } catch (error) {
       console.error("DEBUG AI - Erreur critique :", error);
-      return `Erreur de connexion : ${error.message}. L'IA est peut-être mal configurée sur Vercel.`;
+      return `Désolé, l'IA est indisponible pour le moment. Veuillez réessayer plus tard. (${error.message})`;
     }
   };
 
 });
 
-// Vercel Cache Busting Version: 04/03/2026 - AI Fix Version 4 (Proxy Securisé)
-// Trigger Vercel Deploy 1
+// Vercel Cache Busting Version: 04/03/2026 - AI Fix Version 5 (Native HF Chat Completions)
+// Trigger Vercel Deploy 2

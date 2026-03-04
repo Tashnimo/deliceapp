@@ -17,26 +17,17 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Clé API non configurée sur Vercel (HF_API_KEY)" });
     }
 
-    // --- SOLUTION ROBUSTE : APPEL DIRECT AU MODÈLE MISTRAL ---
-    // On utilise l'endpoint de base du modèle, beaucoup plus stable que le "Router"
-    const HF_MODEL_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
+    // --- SOLUTION FINALE : API CHAT COMPLETIONS HUGGING FACE ---
+    // Utilisation de l'endpoint standardisé OpenAI "/v1/chat/completions" de HF
+    // Beaucoup plus robuste, pas besoin de formatter manuellement les prompts.
+    const MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.3"; // Version la plus à jour et stable
+    const HF_MODEL_URL = `https://api-inference.huggingface.co/models/${MODEL_ID}/v1/chat/completions`;
 
     try {
         const { messages } = req.body;
 
-        // TRADUCTION : OpenAI Format -> Mistral Prompt
-        // Mistral format: <s>[INST] Instruction [/INST] Model answer</s>[INST] Follow-up [/INST]
-        let prompt = "";
-        if (messages && Array.isArray(messages)) {
-            messages.forEach(msg => {
-                if (msg.role === 'system') {
-                    prompt += `<s>[INST] ${msg.content} [/INST] D'accord, je suis prêt à aider.</s>`;
-                } else if (msg.role === 'user') {
-                    prompt += `[INST] ${msg.content} [/INST]`;
-                } else if (msg.role === 'assistant') {
-                    prompt += ` ${msg.content}</s>`;
-                }
-            });
+        if (!messages || !Array.isArray(messages)) {
+            return res.status(400).json({ error: "Le format des messages est invalide" });
         }
 
         const response = await fetch(HF_MODEL_URL, {
@@ -46,42 +37,30 @@ export default async function handler(req, res) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                inputs: prompt,
-                parameters: {
-                    max_new_tokens: 250,
-                    temperature: 0.7,
-                    top_p: 0.9,
-                    return_full_text: false
-                }
+                model: MODEL_ID,
+                messages: messages,
+                max_tokens: 250,
+                temperature: 0.7,
+                top_p: 0.9,
+                stream: false
             })
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            console.error("HF Error:", data);
-            return res.status(response.status).json({ error: "Hugging Face Error", detail: data });
+            console.error("HF API Error:", data);
+
+            // Gestion du modèle en cours de chargement (erreur classique HF)
+            if (data.error && typeof data.error === 'string' && data.error.includes("is currently loading")) {
+                return res.status(503).json({ error: "Le cerveau de Délice AI se réveille... 🤖 Patientez 10s." });
+            }
+
+            return res.status(response.status).json({ error: "Erreur de l'API Hugging Face", detail: data });
         }
 
-        // TRADUCTION : Hugging Face Output -> OpenAI Format
-        // HF renvoie souvent un tableau [{ generated_text: "..." }]
-        let botText = "";
-        if (Array.isArray(data) && data[0] && data[0].generated_text) {
-            botText = data[0].generated_text;
-        } else {
-            botText = JSON.stringify(data);
-        }
-
-        // On renvoie un objet compatible avec le script.js actuel
-        return res.status(200).json({
-            choices: [
-                {
-                    message: {
-                        content: botText
-                    }
-                }
-            ]
-        });
+        // Renvoie exactement le format OpenAI attendu par le frontend
+        return res.status(200).json(data);
 
     } catch (err) {
         console.error("Critical Proxy Error:", err);
