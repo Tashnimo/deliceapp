@@ -992,149 +992,260 @@ function initOrderTracking() {
   // ==============================
   function generateInvoicePDF(order) {
     if (!window.jspdf || !window.jspdf.jsPDF) {
-      alert("Le générateur de facture n'est pas chargé. Veuillez rafraîchir la page.");
+      alert("Le generateur de facture n'est pas charge. Veuillez rafraichir la page.");
       return;
     }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    const PINK = [232, 23, 138];
-    const DARK_PINK = [180, 10, 100];
-    const LIGHT_PINK = [255, 220, 240];
-    const GOLD = [212, 175, 55];
-    const DARK = [30, 20, 26];
-    const GREY = [140, 120, 130];
-    const WHITE = [255, 255, 255];
+    const PINK       = [232, 23, 138];
+    const DARK_PINK  = [180, 10, 100];
+    const LIGHT_PINK = [255, 230, 245];
+    const GOLD       = [212, 175, 55];
+    const DARK       = [30, 20, 26];
+    const GREY       = [110, 90, 100];
+    const WHITE      = [255, 255, 255];
+    const LIGHT_GREY = [245, 245, 248];
 
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
+    const margin = 14;
 
-    // ---- FOND HAUT ----
+    // Safe date parser (handles Firestore Timestamp, seconds, and Date strings)
+    function getDateStr(raw) {
+      let d;
+      if (!raw) return new Date().toLocaleDateString('fr-FR');
+      if (raw.toDate) d = raw.toDate();
+      else if (raw.seconds) d = new Date(raw.seconds * 1000);
+      else d = new Date(raw);
+      return isNaN(d.getTime()) ? new Date().toLocaleDateString('fr-FR') :
+        d.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    const dateStr = getDateStr(order.createdAt);
+    const ref = (order.id || 'N/A').substring(0, 12).toUpperCase();
+
+    // ============================================
+    // HEADER
+    // ============================================
     doc.setFillColor(...PINK);
-    doc.roundedRect(0, 0, pageW, 55, 0, 0, 'F');
-
-    // Cercle décoratif
+    doc.rect(0, 0, pageW, 60, 'F');
     doc.setFillColor(...DARK_PINK);
-    doc.circle(pageW - 20, -10, 40, 'F');
-    doc.setFillColor(255, 100, 180);
-    doc.circle(20, 60, 25, 'F');
+    doc.circle(pageW + 6, -8, 44, 'F');
+    doc.setFillColor(255, 80, 170);
+    doc.circle(-6, 62, 22, 'F');
 
-    // Logo Text
+    // Logo
+    doc.setFontSize(28);
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(...GOLD);
-    doc.setFontSize(26);
-    doc.setFont("helvetica", "bold");
-    doc.text("Délice", 15, 22);
+    doc.text('Delice', margin, 26);
+    const deliceW = doc.getTextWidth('Delice ');
     doc.setTextColor(...WHITE);
-    doc.text("Cake", 15 + doc.getTextWidth("Délice "), 22);
-
-    // Tagline
-    doc.setFontSize(8.5);
-    doc.setTextColor(255, 200, 230);
-    doc.setFont("helvetica", "italic");
-    doc.text("Pâtisserie Artisanale • Burkina Faso", 15, 29);
-
-    // Badge FACTURE
-    doc.setFillColor(...GOLD);
-    doc.roundedRect(pageW - 50, 10, 38, 12, 3, 3, 'F');
-    doc.setTextColor(...DARK);
-    doc.setFont("helvetica", "bold");
+    doc.text('Cake', margin + deliceW, 26);
     doc.setFontSize(9);
-    doc.text("FACTURE", pageW - 47, 18.5);
-
-    // Order ID & date
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(255, 200, 230);
+    doc.text('Patisserie Artisanale  -  Burkina Faso', margin, 33);
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(255, 220, 240);
-    doc.setFont("helvetica", "normal");
-    const dateStr = order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
-    doc.text(`Date : ${dateStr}`, pageW - 50, 28);
-    doc.text(`Réf : ${(order.id || 'N/A').substring(0, 12).toUpperCase()}`, pageW - 50, 34);
+    doc.text('Commande en ligne', margin, 40);
+    doc.text('www.delicecake.com', margin, 46);
 
-    // Separateur déco
-    doc.setDrawColor(...LIGHT_PINK);
-    doc.setLineWidth(0.5);
-    for (let i = 0; i <= pageW; i += 8) { doc.circle(i, 57, 0.8, 'F'); }
+    // Badge FACTURE (colonne droite)
+    doc.setFillColor(...GOLD);
+    doc.roundedRect(pageW - 56, 8, 44, 14, 3, 3, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...DARK);
+    doc.text('FACTURE', pageW - 50, 17);
 
-    // -- Section "Client" --
-    let y = 68;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(255, 220, 240);
+    doc.text('Reference :', pageW - 56, 28);
+    doc.setFont('helvetica', 'bold');
+    doc.text(ref, pageW - 12, 28, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.text('Date :', pageW - 56, 35);
+    doc.text(dateStr, pageW - 12, 35, { align: 'right' });
+    doc.text('Statut :', pageW - 56, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...GOLD);
+    doc.text('LIVRE / TERMINE', pageW - 12, 42, { align: 'right' });
+
+    // --- Separateur pointille ---
     doc.setFillColor(...LIGHT_PINK);
-    doc.roundedRect(10, y - 5, pageW - 20, 18, 3, 3, 'F');
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...DARK_PINK);
-    doc.text("INFORMATIONS CLIENT", 15, y + 2);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...GREY);
-    doc.text(`Note : ${order.note || 'Client en ligne'}`, 15, y + 8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...PINK);
-    doc.text("Statut : LIVR\u00c9E \u2705", pageW - 55, y + 5);
+    for (let i = margin; i <= pageW - margin; i += 6) { doc.circle(i, 63, 0.7, 'F'); }
 
-    // -- Tableau produits --
-    y += 26;
+    // ============================================
+    // SECTION 2 COLONNES : infos client / livraison
+    // ============================================
+    let y = 72;
+    const sectionW = pageW - margin * 2;
+    const halfW = sectionW / 2 - 4;
+    const colL = margin;
+    const colR = margin + halfW + 8;
+
+    // Colonne gauche
+    doc.setFillColor(...LIGHT_PINK);
+    doc.roundedRect(colL, y, halfW, 28, 3, 3, 'F');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK_PINK);
+    doc.text('INFORMATIONS CLIENT', colL + 4, y + 6);
+    doc.setFillColor(...DARK_PINK);
+    doc.rect(colL + 4, y + 8, halfW - 8, 0.4, 'F');
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GREY);
+    doc.text('Type : Commande en ligne', colL + 4, y + 14);
+    const noteText = (order.note || 'Client standard').substring(0, 32);
+    doc.text('Note : ' + noteText, colL + 4, y + 20);
+    doc.text('Paiement : A la livraison', colL + 4, y + 26);
+
+    // Colonne droite
+    doc.setFillColor(250, 235, 245);
+    doc.roundedRect(colR, y, halfW, 28, 3, 3, 'F');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK_PINK);
+    doc.text('DETAILS LIVRAISON', colR + 4, y + 6);
+    doc.setFillColor(...DARK_PINK);
+    doc.rect(colR + 4, y + 8, halfW - 8, 0.4, 'F');
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GREY);
+    doc.text('Mode : Livraison a domicile', colR + 4, y + 14);
+    doc.text('Date : ' + dateStr, colR + 4, y + 20);
+    doc.text('Reference : ' + ref, colR + 4, y + 26);
+
+    // ============================================
+    // TABLEAU PRODUITS
+    // ============================================
+    y += 36;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    doc.text('DETAIL DE LA COMMANDE', colL, y);
+    doc.setFillColor(...PINK);
+    doc.rect(colL, y + 2, sectionW, 0.8, 'F');
+    y += 6;
+
     const tableBody = order.items.map((item, i) => [
-      (i + 1).toString(),
-      item.name,
-      item.quantity.toString(),
-      `${item.unitPrice.toLocaleString('fr-FR')} FCFA`,
-      `${item.totalPrice.toLocaleString('fr-FR')} FCFA`
+      String(i + 1),
+      item.name || '',
+      String(item.quantity || 1),
+      (item.unitPrice || 0).toLocaleString('fr-FR') + ' FCFA',
+      (item.totalPrice || 0).toLocaleString('fr-FR') + ' FCFA'
     ]);
 
     doc.autoTable({
       startY: y,
-      head: [['#', 'Article', 'Qté', 'Prix Unitaire', 'TOTAL']],
+      margin: { left: margin, right: margin },
+      head: [["N\xB0", "Designation de l'article", "Qte", "Prix Unitaire", "Montant Total"]],
       body: tableBody,
       theme: 'plain',
       headStyles: {
-        fillColor: PINK,
-        textColor: WHITE,
-        fontStyle: 'bold',
-        fontSize: 9,
-        halign: 'center',
-        cellPadding: 3
+        fillColor: PINK, textColor: WHITE, fontStyle: 'bold', fontSize: 9,
+        halign: 'center', cellPadding: { top: 4, bottom: 4, left: 4, right: 4 }
       },
-      bodyStyles: { textColor: DARK, fontSize: 9, cellPadding: 3, valign: 'middle' },
+      bodyStyles: { textColor: DARK, fontSize: 9, cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 }, valign: 'middle' },
       columnStyles: {
         0: { halign: 'center', cellWidth: 10 },
+        1: { halign: 'left', cellWidth: 'auto' },
         2: { halign: 'center', cellWidth: 14 },
-        3: { halign: 'right', cellWidth: 35 },
-        4: { halign: 'right', cellWidth: 38, fontStyle: 'bold', textColor: DARK_PINK }
+        3: { halign: 'right', cellWidth: 44 },
+        4: { halign: 'right', cellWidth: 44, fontStyle: 'bold', textColor: DARK_PINK }
       },
-      alternateRowStyles: { fillColor: [255, 240, 250] },
-      tableLineColor: LIGHT_PINK,
-      tableLineWidth: 0.3
+      alternateRowStyles: { fillColor: [255, 243, 251] },
+      tableLineColor: [230, 200, 220],
+      tableLineWidth: 0.25
     });
 
-    // -- Total Box --
-    const finalY = doc.lastAutoTable.finalY + 6;
-    doc.setFillColor(...PINK);
-    doc.roundedRect(pageW - 75, finalY, 65, 16, 4, 4, 'F');
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...GOLD);
-    doc.text("TOTAL", pageW - 71, finalY + 7);
-    doc.setTextColor(...WHITE);
-    doc.text(`${order.totalAmount.toLocaleString('fr-FR')} FCFA`, pageW - 12, finalY + 7, { align: 'right' });
+    // ============================================
+    // RECAP FINANCIER
+    // ============================================
+    const afterTable = doc.lastAutoTable.finalY + 6;
+    const boxX = pageW / 2 + 2;
 
-    // -- Merci --
-    const ty = finalY + 28;
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(...PINK);
-    doc.text("Merci de votre confiance ! 🍰", pageW / 2, ty, { align: 'center' });
-    doc.setFontSize(8);
+    doc.setFillColor(...LIGHT_GREY);
+    doc.roundedRect(margin, afterTable, sectionW, 30, 3, 3, 'F');
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
     doc.setTextColor(...GREY);
-    doc.text("Délice Cake • Burkina Faso • délicecake.com", pageW / 2, ty + 7, { align: 'center' });
+    doc.text('Sous-total :', boxX, afterTable + 9);
+    doc.text((order.totalAmount || 0).toLocaleString('fr-FR') + ' FCFA', pageW - margin, afterTable + 9, { align: 'right' });
+    doc.text('Remise :', boxX, afterTable + 16);
+    doc.text('0 FCFA', pageW - margin, afterTable + 16, { align: 'right' });
 
-    // -- Footer bande bas --
+    doc.setFillColor(...DARK_PINK);
+    doc.rect(boxX, afterTable + 19, pageW - margin - boxX, 0.4, 'F');
+
     doc.setFillColor(...PINK);
-    doc.rect(0, pageH - 12, pageW, 12, 'F');
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(255, 200, 230);
-    doc.text(`Délice Cake • Facture N° ${(order.id || '').substring(0, 8).toUpperCase()} • ${dateStr}`, pageW / 2, pageH - 5, { align: 'center' });
+    doc.roundedRect(boxX - 1, afterTable + 20, pageW - margin - boxX + 1, 9, 1, 1, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...GOLD);
+    doc.text('TOTAL A PAYER', boxX + 3, afterTable + 26.5);
+    doc.setTextColor(...WHITE);
+    doc.text((order.totalAmount || 0).toLocaleString('fr-FR') + ' FCFA', pageW - margin, afterTable + 26.5, { align: 'right' });
 
-    doc.save(`Facture_DeliceCake_${(order.id || 'commande').substring(0, 8).toUpperCase()}.pdf`);
+    // ============================================
+    // SECTION MERCI
+    // ============================================
+    const thankY = afterTable + 44;
+    doc.setFillColor(252, 240, 250);
+    doc.roundedRect(margin, thankY, sectionW, 32, 4, 4, 'F');
+    doc.setFillColor(...PINK);
+    doc.roundedRect(margin, thankY, 3, 32, 2, 2, 'F');
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bolditalic');
+    doc.setTextColor(...DARK_PINK);
+    doc.text('Merci pour votre confiance !', pageW / 2, thankY + 10, { align: 'center' });
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GREY);
+    doc.text('Nous esperons que vous avez apprecie vos delices Delice Cake.', pageW / 2, thankY + 18, { align: 'center' });
+    doc.text('Pour toute reclamation, contactez-nous via notre site web ou WhatsApp.', pageW / 2, thankY + 24, { align: 'center' });
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...PINK);
+    doc.text('www.delicecake.com', pageW / 2, thankY + 30, { align: 'center' });
+
+    // ============================================
+    // CONDITIONS GENERALES
+    // ============================================
+    const cgY = thankY + 46;
+    doc.setDrawColor(...LIGHT_PINK);
+    doc.setLineWidth(0.3);
+    doc.line(margin, cgY, pageW - margin, cgY);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GREY);
+    doc.text("CONDITIONS : Les produits livres restent la propriete de Delice Cake jusqu'au paiement integral.", margin, cgY + 5);
+    doc.text("Les reclamations doivent etre signalees dans les 24h suivant la livraison. Merci de conserver cette facture.", margin, cgY + 10);
+
+    // ============================================
+    // FOOTER
+    // ============================================
+    doc.setFillColor(...PINK);
+    doc.rect(0, pageH - 14, pageW, 14, 'F');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...GOLD);
+    doc.text('Delice Cake', margin, pageH - 6);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(255, 210, 235);
+    doc.text('Patisserie Artisanale - Burkina Faso', margin + 30, pageH - 6);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...WHITE);
+    doc.text('Facture N\xB0 ' + ref, pageW / 2, pageH - 6, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(255, 210, 235);
+    doc.text(dateStr, pageW - margin, pageH - 6, { align: 'right' });
+
+    doc.save('Facture_DeliceCake_' + ref + '.pdf');
   }
+
 
   const trackBtnNav = document.getElementById('track-order-nav');
   const trackBtnMobile = document.getElementById('track-order-mobile');
