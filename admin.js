@@ -181,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const priceInput = document.getElementById('product-price');
     const statusInput = document.getElementById('product-status');
     const descInput = document.getElementById('product-desc');
+    const featuredInput = document.getElementById('product-featured');
 
     const imageElement = document.getElementById('image-element');
     const imagePlaceholder = document.getElementById('image-placeholder');
@@ -229,6 +230,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let products = [];
 
+    // --- Helper: Google Drive Direct Link Converter ---
+    function convertToDirectDriveLink(url) {
+        if (!url) return url;
+        // Support standard /file/d/ID links
+        const driveRegex = /\/file\/d\/([^\/]+)/;
+        const match = url.match(driveRegex);
+        if (match && match[1]) {
+            return `https://lh3.googleusercontent.com/d/${match[1]}`;
+        }
+        // Support uc?id=ID and open?id=ID links
+        const idRegex = /[?&]id=([^&]+)/;
+        const idMatch = url.match(idRegex);
+        if (url.includes('drive.google.com') && idMatch && idMatch[1]) {
+            return `https://lh3.googleusercontent.com/d/${idMatch[1]}`;
+        }
+        return url;
+    }
+
     // --- Authentication ---
     DataService.onAuthStateChanged(async (user) => {
         try {
@@ -272,6 +291,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadConversations();
                 initFCM(); // Initialize FCM after login
                 initLeadSubscription(); // Start listening for leads
+
+                // One-time cleanup of corrupted image URLs (only once per session for superadmin)
+                if (profile.role === 'superadmin') {
+                    setTimeout(async () => {
+                        const allProds = await DataService.getProducts();
+                        for (const p of allProds) {
+                            if (p.image && (p.image.includes('">') || p.image === '>')) {
+                                console.log("Cleaning up corrupted image URL for:", p.name);
+                                const cleanImage = p.image.replace(/[">]/g, '');
+                                await DataService.saveProduct({ ...p, image: cleanImage });
+                            }
+                        }
+                    }, 2000);
+                }
             } else {
                 dashboard.classList.remove('visible');
                 loginScreen.classList.remove('hidden');
@@ -414,20 +447,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 : '<span class="badge badge--inactive">Inactif</span>';
 
             const getOptimizedUrl = (url, width = 100) => {
-                if (!url) return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="%23E8178A" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
-                if (url.includes('cloudinary.com')) {
+                if (!url) return 'logo_bag.webp';
+                if (url.includes('cloudinary.com') && !url.includes('/upload/f_auto')) {
                     return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width},c_thumb/`);
                 }
                 return url;
             };
 
             const imgUrl = getOptimizedUrl(p.image, 80);
+            // Sanitize to prevent HTML injection if URL is corrupted (like the "> issue)
+            const safeImgUrl = imgUrl.replace(/"/g, '&quot;').replace(/>/g, '&gt;');
 
             tr.innerHTML = `
                 <td>
                     <div class="product-cell">
-                        <img src="${imgUrl}" alt="${p.name}" width="50" height="50" 
-                            style="aspect-ratio: 1/1; object-fit: cover; border-radius: 8px;" decoding="async">
+                        <img src="${safeImgUrl}" alt="${p.name.replace(/"/g, '&quot;')}" width="50" height="50" 
+                            style="aspect-ratio: 1/1; object-fit: cover; border-radius: 8px;" decoding="async"
+                            onerror="this.src='logo_bag.webp'; this.onerror=null;">
                         <div class="product-cell-info">
                             <strong>${p.name}</strong>
                             <span>${p.desc || '—'}</span>
@@ -473,12 +509,14 @@ document.addEventListener('DOMContentLoaded', () => {
             priceInput.value = product.price;
             statusInput.value = product.status;
             descInput.value = product.desc || '';
-            updateImagePreview();
+            if (featuredInput) featuredInput.checked = !!product.isFeatured;
+            updateImagePreview(product.image);
         } else {
             modalTitle.textContent = 'Ajouter un produit';
             productForm.reset();
             idInput.value = '';
-            updateImagePreview();
+            if (featuredInput) featuredInput.checked = false;
+            updateImagePreview('');
         }
         productModal.classList.add('active');
     }
@@ -492,49 +530,96 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelModalBtn.addEventListener('click', closeModal);
 
     // Live image preview (via URL field)
-    imageInput.addEventListener('input', updateImagePreview);
+    const imageRemoveBtn = document.getElementById('image-remove-btn');
+    const imageLoadingOverlay = document.getElementById('image-loading-overlay');
 
+    // Helper: Update Image Preview
     function updateImagePreview(url) {
-        const src = typeof url === 'string' ? url : imageInput.value.trim();
-        if (src) {
-            imageElement.src = src;
+        if (url) {
+            imageElement.src = url;
             imageElement.style.display = 'block';
             imagePlaceholder.style.display = 'none';
+            if (imageRemoveBtn) imageRemoveBtn.style.display = 'flex';
         } else {
+            imageElement.src = '';
             imageElement.style.display = 'none';
             imagePlaceholder.style.display = 'block';
+            if (imageRemoveBtn) imageRemoveBtn.style.display = 'none';
         }
     }
 
-    // --- Firebase Storage Upload Logic ---
-    if (uploadImageBtn && productFileInput) {
-        uploadImageBtn.addEventListener('click', () => {
+    // Click on preview box to upload
+    const productPreviewBox = document.getElementById('image-preview');
+    if (productPreviewBox) {
+        productPreviewBox.addEventListener('click', (e) => {
+            // Don't trigger if clicking the remove button
+            if (e.target.closest('#image-remove-btn')) return;
             productFileInput.click();
         });
+    }
 
+    // Product File Input change
+    if (productFileInput) {
         productFileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
+            // Check file size (Firestore fallback limit is ~1MB if no Storage)
+            if (file.size > 1024 * 1024 && !isFirebaseConfigured) {
+                alert("Attention: Ce fichier est volumineux (> 1Mo). En mode local/sans stockage Firebase, cela pourrait échouer.");
+            }
+
             try {
+                if (imageLoadingOverlay) imageLoadingOverlay.style.display = 'flex';
+                uploadImageBtn.disabled = true;
                 const originalText = uploadImageBtn.textContent;
                 uploadImageBtn.textContent = 'Téléchargement...';
-                uploadImageBtn.disabled = true;
 
+                console.log("Starting upload for:", file.name);
                 const url = await DataService.uploadFile(file, 'products');
+                console.log("Upload success, URL:", url);
+
                 imageInput.value = url;
                 updateImagePreview(url);
+                showToast("Image téléchargée !", "success");
 
                 uploadImageBtn.textContent = originalText;
                 uploadImageBtn.disabled = false;
             } catch (error) {
-                console.error("Upload failed", error);
-                alert("Erreur lors du téléchargement de l'image.");
+                console.error("Upload error:", error);
+                alert("Erreur lors de l'upload : " + error.message);
                 uploadImageBtn.textContent = 'Importer une image';
                 uploadImageBtn.disabled = false;
+            } finally {
+                if (imageLoadingOverlay) imageLoadingOverlay.style.display = 'none';
+                productFileInput.value = ''; // Reset input to allow same file again
             }
         });
     }
+
+    // Remove Image
+    if (imageRemoveBtn) {
+        imageRemoveBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm("Supprimer cette image ?")) {
+                imageInput.value = '';
+                updateImagePreview('');
+            }
+        });
+    }
+
+    uploadImageBtn.addEventListener('click', () => productFileInput.click());
+
+    // Update preview when manual URL is pasted
+    imageInput.addEventListener('input', () => {
+        const val = imageInput.value.trim();
+        const converted = convertToDirectDriveLink(val);
+        if (converted !== val) {
+            imageInput.value = converted;
+            showToast("Lien Google Drive converti !", "success");
+        }
+        updateImagePreview(imageInput.value);
+    });
 
     // --- Form Submit ---
     productForm.addEventListener('submit', async (e) => {
@@ -550,7 +635,8 @@ document.addEventListener('DOMContentLoaded', () => {
             price: parseInt(priceInput.value, 10),
             status: statusInput.value,
             desc: descInput.value,
-            image: imageInput.value
+            isFeatured: featuredInput ? featuredInput.checked : false,
+            image: convertToDirectDriveLink(imageInput.value).replace(/[">]/g, '') // Sanitize on save
         };
 
         if (idInput.value) {
@@ -969,6 +1055,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (DEFAULT_SITE_SETTINGS.telegramChatIds) {
                     siteTelegramIds.value = DEFAULT_SITE_SETTINGS.telegramChatIds.join(", ");
                 }
+
+                // Update Mini-preview for Hero if exists
+                const heroPreview = document.getElementById('preview-site-hero-image');
+                if (heroPreview) {
+                    const imgUrl = siteHeroImage.value.trim();
+                    const converted = convertToDirectDriveLink(imgUrl);
+                    if (converted !== imgUrl) {
+                        siteHeroImage.value = converted;
+                    }
+                    if (converted) {
+                        heroPreview.style.backgroundImage = `url('${converted}')`;
+                        heroPreview.style.display = 'block';
+                    } else {
+                        heroPreview.style.backgroundImage = 'none';
+                    }
+                }
             }
         } catch (error) {
             console.error("Erreur chargement réglages", error);
@@ -984,7 +1086,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 heroTitle: siteHeroTitle.value,
                 heroSubtitle: siteHeroSubtitle.value,
                 heroBadge: siteHeroBadge.value,
-                heroImage: siteHeroImage.value,
+                heroImage: convertToDirectDriveLink(siteHeroImage.value),
                 marqueeItems: siteMarqueeItems.value.split(",").map(i => i.trim()).filter(i => i !== ""),
                 saveursTitle: siteSaveursTitle.value,
                 saveursDesc: siteSaveursDesc.value,
@@ -1020,14 +1122,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetId = currentSiteMediaBtn.getAttribute('data-target');
         const targetInput = document.getElementById(targetId);
         const originalText = currentSiteMediaBtn.textContent;
+        const previewDiv = document.getElementById('preview-' + targetId);
 
         try {
-            currentSiteMediaBtn.textContent = 'En cours...';
+            currentSiteMediaBtn.textContent = 'Téléchargement...';
             currentSiteMediaBtn.disabled = true;
 
             const url = await DataService.uploadFile(file, 'site');
             targetInput.value = url;
 
+            if (previewDiv) {
+                previewDiv.style.backgroundImage = `url(${url})`;
+            }
+
+            showToast("Médias du site mis à jour !", "success");
             currentSiteMediaBtn.textContent = originalText;
             currentSiteMediaBtn.disabled = false;
         } catch (error) {
@@ -1035,6 +1143,8 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Erreur lors du téléchargement du média.");
             currentSiteMediaBtn.textContent = originalText;
             currentSiteMediaBtn.disabled = false;
+        } finally {
+            siteFileInput.value = '';
         }
     });
 
@@ -1106,6 +1216,69 @@ document.addEventListener('DOMContentLoaded', () => {
             qrCodeImg.style.display = 'block';
             document.getElementById('qr-local-notice').style.display = 'none';
             if (copyUrlBtn) copyUrlBtn.dataset.url = url;
+        });
+    }
+
+    // --- Site Editor Image Uploads ---
+    document.querySelectorAll('.upload-site-media').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.dataset.target;
+            siteFileInput.dataset.currentTarget = targetId;
+            siteFileInput.click();
+        });
+    });
+
+    if (siteFileInput) {
+        siteFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            const targetId = siteFileInput.dataset.currentTarget;
+            if (!file || !targetId) return;
+
+            const btn = document.querySelector(`.upload-site-media[data-target="${targetId}"]`);
+            const originalText = btn ? btn.textContent : 'Importer';
+
+            try {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Téléchargement...';
+                }
+
+                const url = await DataService.uploadFile(file, 'site');
+                const targetInput = document.getElementById(targetId);
+                if (targetInput) {
+                    targetInput.value = url;
+                    // Trigger input event to update preview if it exists
+                    targetInput.dispatchEvent(new Event('input'));
+                    showToast("Média mis à jour !", "success");
+                }
+            } catch (error) {
+                console.error("Site media upload error:", error);
+                showToast("Erreur d'upload : " + error.message, "error");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
+                siteFileInput.value = '';
+            }
+        });
+    }
+
+    // Site Image Previews (Mini)
+    const siteHeroImageInput = document.getElementById('site-hero-image');
+    if (siteHeroImageInput) {
+        siteHeroImageInput.addEventListener('input', () => {
+            const val = siteHeroImageInput.value.trim();
+            const preview = document.getElementById('preview-site-hero-image');
+            if (preview) {
+                const url = convertToDirectDriveLink(val);
+                if (url) {
+                    preview.style.backgroundImage = `url(${url})`;
+                    preview.style.backgroundSize = 'cover';
+                } else {
+                    preview.style.backgroundImage = 'none';
+                }
+            }
         });
     }
 

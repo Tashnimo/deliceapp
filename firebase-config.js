@@ -11,6 +11,11 @@ const firebaseConfig = {
 // Initialisation de Firebase uniquement si la configuration a été modifiée
 const isFirebaseConfigured = true;
 
+// CONFIGURATION CLOUDINARY (Optionnel mais recommandé pour les images)
+// Récupérez ces infos sur votre tableau de bord Cloudinary.com
+const CLOUDINARY_CLOUD_NAME = "dt3rgieaf"; // Ex: "votre_cloud_name"
+const CLOUDINARY_UPLOAD_PRESET = "Delice_cake_preset"; // Ex: "votre_preset_non_signe"
+
 let db = null;
 let auth = null;
 let messaging = null;
@@ -55,7 +60,7 @@ const DEFAULT_SITE_SETTINGS = {
     saveursDesc: "Un extérieur doré et moelleux, un intérieur généreux en chocolat fondant.",
     whatsappNum: "22656808872",
     ctaText: "Commander",
-    telegramChatIds: [] // Gardez ceci vide, utilisez les Secrets Cloudflare pour la sécurité
+    telegramChatIds: ["1870863898"] // Gardez ceci vide, utilisez les Secrets Cloudflare pour la sécurité
 };
 
 // Service de données abstrait (permet de basculer entre Firebase et Local Storage/Mock)
@@ -75,6 +80,13 @@ const DataService = {
     saveProduct: async (product) => {
         if (isFirebaseConfigured && db) {
             const { id, ...data } = product;
+            // Vérification de taille pour les images en Base64 (limite Firestore ~1Mo)
+            if (data.image && data.image.startsWith('data:image')) {
+                const sizeInBytes = Math.round((data.image.length * 3) / 4);
+                if (sizeInBytes > 800000) { // 800Ko par sécurité
+                    throw new Error("L'image est trop volumineuse pour être sauvegardée ainsi. Assurez-vous que Cloudinary est bien configuré.");
+                }
+            }
             if (id && !id.startsWith('new_')) {
                 await db.collection('products').doc(id).update(data);
             } else {
@@ -446,6 +458,13 @@ const DataService = {
 
     saveSiteSettings: async (settings) => {
         if (isFirebaseConfigured && db) {
+            // Vérification de taille pour les images en Base64
+            if (settings.heroImage && settings.heroImage.startsWith('data:image')) {
+                const sizeInBytes = Math.round((settings.heroImage.length * 3) / 4);
+                if (sizeInBytes > 800000) {
+                    throw new Error("L'image Hero est trop volumineuse. Vérifiez Cloudinary.");
+                }
+            }
             await db.collection('site_settings').doc('main').set({
                 ...settings,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -480,18 +499,58 @@ const DataService = {
      * @returns {Promise<string>}
      */
     uploadFile: async (file, folder = 'misc') => {
-        if (isFirebaseConfigured && storage) {
-            const fileName = `${Date.now()}_${file.name}`;
-            const storageRef = storage.ref(`${folder}/${fileName}`);
-            await storageRef.put(file);
-            return await storageRef.getDownloadURL();
-        } else {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(file);
-            });
+        // PRIORITÉ 1 : Cloudinary (Plus fiable et gratuit)
+        if (CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                formData.append('folder', `delice_cake/${folder}`);
+
+                const response = await fetch(
+                    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                    {
+                        method: 'POST',
+                        body: formData
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error ? errorData.error.message : "Erreur Cloudinary");
+                }
+
+                const data = await response.json();
+                console.log("Cloudinary upload success:", data.secure_url);
+                // Ajout d'un cache-buster pour éviter que l'ancienne image ne s'affiche
+                return `${data.secure_url}?v=${Date.now()}`;
+            } catch (error) {
+                console.error("Cloudinary upload failed:", error);
+                // Si Cloudinary est configuré mais échoue, c'est probablement une erreur de configuration (ex: Preset non signé).
+                // On arrête l'upload ici pour avertir l'utilisateur au lieu de bloquer indéfiniment sur Firebase Storage.
+                throw new Error("Échec Cloudinary (" + error.message + "). Vérifiez que votre Upload Preset '" + CLOUDINARY_UPLOAD_PRESET + "' est bien en mode 'Unsigned' (Non signé) dans vos paramètres Cloudinary.");
+            }
         }
+
+        // PRIORITÉ 2 : Firebase Storage
+        if (isFirebaseConfigured && storage) {
+            try {
+                const fileName = `${Date.now()}_${file.name}`;
+                const storageRef = storage.ref(`${folder}/${fileName}`);
+                await storageRef.put(file);
+                return await storageRef.getDownloadURL();
+            } catch (error) {
+                console.error("Firebase Storage upload failed, falling back...", error);
+            }
+        }
+
+        // PRIORITÉ 3 : Base64 (Dernier recours, limité par la taille Firestore)
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = (e) => reject(new Error("Erreur de lecture du fichier"));
+            reader.readAsDataURL(file);
+        });
     },
 
     /**

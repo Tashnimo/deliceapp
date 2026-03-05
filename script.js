@@ -1,11 +1,43 @@
 // TELEGRAM Notification via Worker Proxy (Sécurisé)
+const TELEGRAM_CONFIG = {
+  chatIds: []
+};
+
+// --- Helper: Google Drive Direct Link Converter ---
+function convertToDirectDriveLink(url) {
+  if (!url) return url;
+  // Support standard /file/d/ID links
+  const driveRegex = /\/file\/d\/([^\/]+)/;
+  const match = url.match(driveRegex);
+  if (match && match[1]) {
+    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  }
+  // Support uc?id=ID and open?id=ID links
+  const idRegex = /[?&]id=([^&]+)/;
+  const idMatch = url.match(idRegex);
+  if (url.includes('drive.google.com') && idMatch && idMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${idMatch[1]}`;
+  }
+  return url;
+}
 
 async function sendTelegramNotification(message) {
   try {
+    // Dynamically fetch chat IDs from site settings so it works without redeploying
+    let chatIds = [];
+    try {
+      const settings = await DataService.getSiteSettings();
+      if (settings && settings.telegramChatIds) {
+        chatIds = settings.telegramChatIds;
+      }
+    } catch (e) {
+      console.warn("Could not fetch dynamic Telegram IDs, falling back to ENV only.", e);
+    }
+
     await fetch("/api/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
+      body: JSON.stringify({ message, chatIds })
     });
   } catch (e) {
     console.error("Telegram notification error", e);
@@ -452,7 +484,7 @@ async function loadSiteSettings() {
     }
     if (settings.heroImage) {
       const heroImg = document.getElementById('hero-cake-img');
-      if (heroImg) heroImg.src = settings.heroImage;
+      if (heroImg) heroImg.src = convertToDirectDriveLink(settings.heroImage);
     }
 
     // 2. Marquee Section
@@ -562,12 +594,29 @@ async function loadDynamicProducts() {
         // Helper to optimize Cloudinary URLs on the fly
         const getOptimizedUrl = (url, width = 300) => {
           if (!url) return 'product_cupcake.webp';
-          if (url.includes('cloudinary.com')) {
+
+          // First, convert Google Drive links if necessary
+          const directUrl = convertToDirectDriveLink(url);
+
+          if (directUrl.includes('cloudinary.com') && !directUrl.includes('/upload/f_auto')) {
             // Insert optimization parameters after /upload/
-            return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width},c_limit/`);
+            return directUrl.replace('/upload/', `/upload/f_auto,q_auto,w_${width},c_limit/`);
           }
-          return url;
+          return directUrl;
         };
+
+        // --- 0. Populate Main (Featured) Product ---
+        const featuredProduct = activeProducts.find(p => p.isFeatured) || activeProducts[0];
+        const mainProductImg = document.querySelector('#main-product img');
+        const mainProductName = document.querySelector('.produits__name');
+        const mainProductDesc = document.querySelector('.produits__desc');
+
+        if (featuredProduct && mainProductImg) {
+          mainProductImg.src = getOptimizedUrl(featuredProduct.image, 600);
+          mainProductImg.alt = featuredProduct.name;
+          if (mainProductName) mainProductName.textContent = featuredProduct.name;
+          if (mainProductDesc) mainProductDesc.textContent = featuredProduct.desc || '';
+        }
 
         // Need 2 groups for infinite CSS loop
         for (let i = 0; i < 2; i++) {
@@ -592,8 +641,10 @@ async function loadDynamicProducts() {
             marqueeHtml += `
                             <div class="marquee-card">
                                 <div class="marquee-card__img-ph">
-                                    <img src="${imgUrl}" alt="${p.name}" loading="lazy" decoding="async"
+                                    <img src="${imgUrl.replace(/"/g, '&quot;').replace(/>/g, '&gt;')}" 
+                                        alt="${p.name.replace(/"/g, '&quot;')}" loading="lazy" decoding="async"
                                         width="120" height="120"
+                                        onerror="this.src='product_cupcake.webp'; this.onerror=null;"
                                         style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
                                 </div>
                                 <h3 class="marquee-card__title">${p.name}</h3>
@@ -1242,7 +1293,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (settings.heroImage) {
         const hi = document.getElementById('hero-cake-img');
-        if (hi) hi.src = settings.heroImage;
+        if (hi) hi.src = convertToDirectDriveLink(settings.heroImage);
       }
 
       // Saveurs section

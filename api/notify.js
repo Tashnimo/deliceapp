@@ -12,18 +12,32 @@ export default async function handler(req, res) {
     }
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatIdsRaw = process.env.TELEGRAM_CHAT_IDS;
+    const chatIdsRaw = process.env.TELEGRAM_CHAT_IDS || "";
 
-    if (!botToken || !chatIdsRaw) {
-        console.error("ERREUR : Configuration Telegram manquante.");
-        return res.status(500).json({ error: "Configuration Telegram incomplète" });
+    if (!botToken) {
+        console.error("ERREUR : TELEGRAM_BOT_TOKEN manquant.");
+        return res.status(500).json({ error: "Configuration Telegram incomplète (Token manquant)" });
     }
 
     try {
-        const { message } = req.body;
-        const ids = chatIdsRaw.split(",").map(id => id.trim());
+        const { message, chatIds: extraIds } = req.body;
 
-        await Promise.all(ids.map(id =>
+        // Build final list of IDs (Env IDs + Optional Body IDs)
+        const envIds = chatIdsRaw.split(",").map(id => id.trim()).filter(id => id);
+        const finalIds = new Set([...envIds]);
+
+        if (Array.isArray(extraIds)) {
+            extraIds.forEach(id => {
+                if (id) finalIds.add(String(id).trim());
+            });
+        }
+
+        if (finalIds.size === 0) {
+            console.error("ERREUR : Aucun chat_id spécifié (Env ou Body).");
+            return res.status(400).json({ error: "Aucun destinataire Telegram configuré" });
+        }
+
+        await Promise.all(Array.from(finalIds).map(id =>
             fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

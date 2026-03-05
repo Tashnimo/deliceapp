@@ -576,11 +576,19 @@
                                 <input type="text" id="site-hero-badge" class="form-input">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Image Hero (URL)</label>
-                                <div style="display:flex; gap:0.5rem;">
-                                    <input type="text" id="site-hero-image" class="form-input">
-                                    <button type="button" class="btn btn--secondary upload-site-media"
-                                        data-target="site-hero-image">Upload</button>
+                                <label class="form-label">Image Hero</label>
+                                <div style="display:flex; gap:0.5rem; align-items: start;">
+                                    <div class="site-image-preview-mini" id="preview-site-hero-image"></div>
+                                    <div style="flex:1;">
+                                        <input type="text" id="site-hero-image" class="form-input"
+                                            placeholder="Lien d'image ou Google Drive">
+                                        <small
+                                            style="display:block; font-size:0.7rem; color:var(--grey-text); margin-top:2px;">Google
+                                            Drive supporté</small>
+                                        <button type="button" class="btn btn--secondary upload-site-media"
+                                            data-target="site-hero-image"
+                                            style="margin-top:0.5rem; width:100%;">Importer</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -650,9 +658,14 @@
                 <div class="form-row">
                     <div class="form-group" style="flex: 0 0 160px;">
                         <label class="form-label">Image</label>
-                        <div class="image-preview" id="image-preview">
+                        <div class="image-preview" id="image-preview" title="Cliquez pour importer une image">
                             <span id="image-placeholder">Aucune image</span>
                             <img src="" alt="Aperçu" id="image-element" style="display: none;">
+                            <div class="image-loading-overlay" id="image-loading-overlay" style="display: none;">
+                                <div class="spinner"></div>
+                            </div>
+                            <button type="button" class="image-remove-btn" id="image-remove-btn"
+                                title="Supprimer l'image" style="display: none;">&times;</button>
                         </div>
                         <!-- Bouton upload Cloudinary -->
                         <button type="button" id="upload-image-btn" class="btn btn--secondary"
@@ -665,9 +678,6 @@
                             </svg>
                             Importer une image
                         </button>
-                        <!-- URL manuelle (optionnelle) -->
-                        <input type="text" id="product-image" class="form-input" placeholder="Ou coller une URL d'image"
-                            style="font-size:0.82rem;">
                         <input type="file" id="product-file-input" style="display: none;" accept="image/*">
                     </div>
 
@@ -682,6 +692,13 @@
                             <label class="form-label">Prix (FCFA)</label>
                             <input type="number" id="product-price" class="form-input" placeholder="Ex: 500" required>
                         </div>
+                        <div class="form-group">
+                            <label class="form-label">URL de l'image (Lien direct ou Google Drive)</label>
+                            <input type="text" id="product-image" class="form-input" placeholder="https://...">
+                            <small
+                                style="display:block; font-size:0.7rem; color:var(--grey-text); margin-top:2px;">Supporté
+                                : drive.google.com/file/d/...</small>
+                        </div>
                         <div class="form-group" style="margin-bottom: 0;">
                             <label class="form-label">Statut</label>
                             <select id="product-status" class="form-input">
@@ -690,6 +707,16 @@
                             </select>
                         </div>
                     </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label class="product-checkbox"
+                        style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="product-featured"
+                            style="width: 18px; height: 18px; accent-color: var(--pink);">
+                        <span style="font-size: 0.9rem; color: var(--black); font-weight: 500;">Mettre ce produit en
+                            avant (Bestseller)</span>
+                    </label>
                 </div>
 
                 <div class="form-group">
