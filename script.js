@@ -1405,7 +1405,7 @@ INFO : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
     const payload = {
       model: "mistralai/Mistral-7B-Instruct-v0.2",
       messages: chatHistoryMessages,
-      max_tokens: 200,
+      max_tokens: 800,
       temperature: 0.6,
       top_p: 0.9,
       stream: false
