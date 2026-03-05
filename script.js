@@ -606,7 +606,7 @@ async function loadDynamicProducts() {
         };
 
         // --- 0. Populate Main (Featured) Product ---
-        const featuredProduct = activeProducts.find(p => p.isFeatured) || activeProducts[0];
+        const featuredProduct = activeProducts.find(p => p.isFeatured);
         const mainProductImg = document.querySelector('#main-product img');
         const mainProductName = document.querySelector('.produits__name');
         const mainProductDesc = document.querySelector('.produits__desc');
