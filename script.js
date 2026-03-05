@@ -1199,8 +1199,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (orderMatchRaw) {
         try {
+          // 3. SANITIZATION: L'IA Llama 3 fait souvent des erreurs de syntaxe JSON (virgules en trop, markdown, etc.)
+          let sanitizedJsonString = orderMatchRaw
+            .replace(/```json/gi, '') // Enlever les balises markdown possibles
+            .replace(/```/g, '')
+            .replace(/,\s*}/g, '}') // Enlever les trailing commas: {"a": 1,} -> {"a": 1}
+            .replace(/,\s*]/g, ']') // Enlever les trailing commas listes: [1, 2,] -> [1, 2]
+            .trim();
+
           // On essaie de parser le JSON (qui peut contenir des retours à la ligne générés par l'IA)
-          const orderData = JSON.parse(orderMatchRaw);
+          const orderData = JSON.parse(sanitizedJsonString);
           console.log("AI detected an order:", orderData);
 
           // 1. Process the order
@@ -1365,9 +1373,10 @@ document.addEventListener('DOMContentLoaded', () => {
 Sois chaleureux, concis et utilise des emojis. 
 
 IMPORTANT - PRISE DE COMMANDE :
-Si le client confirme vouloir commander un produit, tu DOIS ABSOLUMENT inclure à la fin de ta réponse un bloc JSON de cette forme exacte :
+Dès que le client dit OUI pour confirmer une commande, tu DOIS ABSOLUMENT ajouter à la toute fin de ton message CE BLOC EXACT (remplace juste les valeurs, ne mets pas de code markdown \`\`\` autour) :
 [ORDER_JSON: {"items":[{"name":"Sachet Délice Cake", "qty":2, "price":500}], "total":1000}]
-Ne fais ça QUE si le client confirme l'achat. Calcule le "total" correctement.
+ATTENTION : Fais un JSON 100% valide. Pas de virgule à la fin de la liste.
+Ne fais ça QUE pour finalmer une commande.
 
 MENU :
 ${productListText || "Sachet Délice Cake (500 FCFA), Cupcake (1000 FCFA), Tiramisu (1000 FCFA)"}
