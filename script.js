@@ -1182,15 +1182,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const botResponse = await generateAIResponse(userMessage);
 
       // --- ORDER DETECTION LOGIC ---
-      // We explicitly remove the tag FIRST, so the user never sees it, even if JSON parsing fails.
-      let cleanResponse = botResponse.replace(/\[ORDER_JSON:[\s\S]*?\]/gi, "").trim();
+      // 1. EXTRAIRE le bloc potentiel avec une regex basique et ultra tolérante
+      const tagStartIdx = botResponse.indexOf('[ORDER_JSON:');
+      let orderMatchRaw = null;
+      let cleanResponse = botResponse;
 
-      const orderMatch = botResponse.match(/\[ORDER_JSON:\s*([\s\S]*?)\]/i);
+      if (tagStartIdx !== -1) {
+        const tagEndIdx = botResponse.indexOf(']', tagStartIdx);
+        if (tagEndIdx !== -1) {
+          orderMatchRaw = botResponse.substring(tagStartIdx + 12, tagEndIdx).trim(); // +12 pour passer '[ORDER_JSON:'
+          // 2. RETIRER le bloc de la réponse (pour ne pas l'afficher à l'utilisateur)
+          cleanResponse = botResponse.substring(0, tagStartIdx) + botResponse.substring(tagEndIdx + 1);
+          cleanResponse = cleanResponse.trim();
+        }
+      }
 
-      if (orderMatch) {
+      if (orderMatchRaw) {
         try {
-          const jsonString = orderMatch[1].trim();
-          const orderData = JSON.parse(jsonString);
+          // On essaie de parser le JSON (qui peut contenir des retours à la ligne générés par l'IA)
+          const orderData = JSON.parse(orderMatchRaw);
           console.log("AI detected an order:", orderData);
 
           // 1. Process the order
@@ -1225,7 +1235,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         } catch (parseErr) {
-          console.error("Failed to parse AI order JSON:", parseErr);
+          console.error("Failed to parse AI order JSON. Raw string was:", orderMatchRaw, parseErr);
+          // Si on n'arrive pas à lire le JSON de l'IA, on prévient quand même l'admin !
+          const messageTelegramError = `⚠️ <b>ERREUR COMMANDE IA</b>\n\nLe client a passé commande mais l'IA a mal formaté les données.\nAllez voir la conversation : ${chatId}\n\nDonnées brutes reçues :\n${orderMatchRaw}`;
+          sendTelegramNotification(messageTelegramError).catch(() => console.log("Failed to send error notification"));
         }
       }
       // --- END ORDER DETECTION ---
