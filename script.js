@@ -987,6 +987,155 @@ function initOrderModal() {
 let orderSubscription = null;
 
 function initOrderTracking() {
+  // ==============================
+  // PDF INVOICE GENERATOR (jsPDF)
+  // ==============================
+  function generateInvoicePDF(order) {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert("Le générateur de facture n'est pas chargé. Veuillez rafraîchir la page.");
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const PINK = [232, 23, 138];
+    const DARK_PINK = [180, 10, 100];
+    const LIGHT_PINK = [255, 220, 240];
+    const GOLD = [212, 175, 55];
+    const DARK = [30, 20, 26];
+    const GREY = [140, 120, 130];
+    const WHITE = [255, 255, 255];
+
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+
+    // ---- FOND HAUT ----
+    doc.setFillColor(...PINK);
+    doc.roundedRect(0, 0, pageW, 55, 0, 0, 'F');
+
+    // Cercle décoratif
+    doc.setFillColor(...DARK_PINK);
+    doc.circle(pageW - 20, -10, 40, 'F');
+    doc.setFillColor(255, 100, 180);
+    doc.circle(20, 60, 25, 'F');
+
+    // Logo Text
+    doc.setTextColor(...GOLD);
+    doc.setFontSize(26);
+    doc.setFont("helvetica", "bold");
+    doc.text("Délice", 15, 22);
+    doc.setTextColor(...WHITE);
+    doc.text("Cake", 15 + doc.getTextWidth("Délice "), 22);
+
+    // Tagline
+    doc.setFontSize(8.5);
+    doc.setTextColor(255, 200, 230);
+    doc.setFont("helvetica", "italic");
+    doc.text("Pâtisserie Artisanale • Burkina Faso", 15, 29);
+
+    // Badge FACTURE
+    doc.setFillColor(...GOLD);
+    doc.roundedRect(pageW - 50, 10, 38, 12, 3, 3, 'F');
+    doc.setTextColor(...DARK);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("FACTURE", pageW - 47, 18.5);
+
+    // Order ID & date
+    doc.setFontSize(8);
+    doc.setTextColor(255, 220, 240);
+    doc.setFont("helvetica", "normal");
+    const dateStr = order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
+    doc.text(`Date : ${dateStr}`, pageW - 50, 28);
+    doc.text(`Réf : ${(order.id || 'N/A').substring(0, 12).toUpperCase()}`, pageW - 50, 34);
+
+    // Separateur déco
+    doc.setDrawColor(...LIGHT_PINK);
+    doc.setLineWidth(0.5);
+    for (let i = 0; i <= pageW; i += 8) { doc.circle(i, 57, 0.8, 'F'); }
+
+    // -- Section "Client" --
+    let y = 68;
+    doc.setFillColor(...LIGHT_PINK);
+    doc.roundedRect(10, y - 5, pageW - 20, 18, 3, 3, 'F');
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...DARK_PINK);
+    doc.text("INFORMATIONS CLIENT", 15, y + 2);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...GREY);
+    doc.text(`Note : ${order.note || 'Client en ligne'}`, 15, y + 8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...PINK);
+    doc.text("Statut : LIVR\u00c9E \u2705", pageW - 55, y + 5);
+
+    // -- Tableau produits --
+    y += 26;
+    const tableBody = order.items.map((item, i) => [
+      (i + 1).toString(),
+      item.name,
+      item.quantity.toString(),
+      `${item.unitPrice.toLocaleString('fr-FR')} FCFA`,
+      `${item.totalPrice.toLocaleString('fr-FR')} FCFA`
+    ]);
+
+    doc.autoTable({
+      startY: y,
+      head: [['#', 'Article', 'Qté', 'Prix Unitaire', 'TOTAL']],
+      body: tableBody,
+      theme: 'plain',
+      headStyles: {
+        fillColor: PINK,
+        textColor: WHITE,
+        fontStyle: 'bold',
+        fontSize: 9,
+        halign: 'center',
+        cellPadding: 3
+      },
+      bodyStyles: { textColor: DARK, fontSize: 9, cellPadding: 3, valign: 'middle' },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 10 },
+        2: { halign: 'center', cellWidth: 14 },
+        3: { halign: 'right', cellWidth: 35 },
+        4: { halign: 'right', cellWidth: 38, fontStyle: 'bold', textColor: DARK_PINK }
+      },
+      alternateRowStyles: { fillColor: [255, 240, 250] },
+      tableLineColor: LIGHT_PINK,
+      tableLineWidth: 0.3
+    });
+
+    // -- Total Box --
+    const finalY = doc.lastAutoTable.finalY + 6;
+    doc.setFillColor(...PINK);
+    doc.roundedRect(pageW - 75, finalY, 65, 16, 4, 4, 'F');
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...GOLD);
+    doc.text("TOTAL", pageW - 71, finalY + 7);
+    doc.setTextColor(...WHITE);
+    doc.text(`${order.totalAmount.toLocaleString('fr-FR')} FCFA`, pageW - 12, finalY + 7, { align: 'right' });
+
+    // -- Merci --
+    const ty = finalY + 28;
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(...PINK);
+    doc.text("Merci de votre confiance ! 🍰", pageW / 2, ty, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setTextColor(...GREY);
+    doc.text("Délice Cake • Burkina Faso • délicecake.com", pageW / 2, ty + 7, { align: 'center' });
+
+    // -- Footer bande bas --
+    doc.setFillColor(...PINK);
+    doc.rect(0, pageH - 12, pageW, 12, 'F');
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(255, 200, 230);
+    doc.text(`Délice Cake • Facture N° ${(order.id || '').substring(0, 8).toUpperCase()} • ${dateStr}`, pageW / 2, pageH - 5, { align: 'center' });
+
+    doc.save(`Facture_DeliceCake_${(order.id || 'commande').substring(0, 8).toUpperCase()}.pdf`);
+  }
+
   const trackBtnNav = document.getElementById('track-order-nav');
   const trackBtnMobile = document.getElementById('track-order-mobile');
   const navBadge = document.getElementById('nav-track-badge');
@@ -1056,8 +1205,25 @@ function initOrderTracking() {
           <span style="font-weight: 700; font-size: 1.1rem;">Total</span>
           <span style="color: var(--pink); font-size: 1.4rem; font-weight: 800;">${order.totalAmount.toLocaleString('fr-FR')} FCFA</span>
         </div>
-      </div>
+      ${order.status === 'completed' ? `
+      <button id="download-invoice-btn" style="
+        width: 100%; margin-top: 1rem; padding: 1rem;
+        background: linear-gradient(135deg, #E8178A, #ff6bbd);
+        color: white; border: none; border-radius: 16px;
+        font-size: 1rem; font-weight: 700; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        gap: 0.5rem; box-shadow: 0 4px 20px rgba(232,23,138,0.4);
+        transition: all 0.2s ease; font-family: var(--font-body);
+      " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+        📥 Télécharger ma Facture
+      </button>` : ''}
+    </div>
     `;
+
+    if (order.status === 'completed') {
+      const dlBtn = document.getElementById('download-invoice-btn');
+      if (dlBtn) dlBtn.addEventListener('click', () => generateInvoicePDF(order));
+    }
   };
 
   const startTracking = () => {
