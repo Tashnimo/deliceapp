@@ -1006,6 +1006,12 @@ function initOrderTracking() {
     const GREY       = [110, 90, 100];
     const WHITE      = [255, 255, 255];
     const LIGHT_GREY = [245, 245, 248];
+    // Safe number formatter for jsPDF (avoids non-breaking spaces from fr-FR locale)
+    function fmtAmount(n) {
+      const num = Number(n) || 0;
+      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+    }
+
 
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
@@ -1134,8 +1140,8 @@ function initOrderTracking() {
       String(i + 1),
       item.name || '',
       String(item.quantity || 1),
-      (item.unitPrice || 0).toLocaleString('fr-FR') + ' FCFA',
-      (item.totalPrice || 0).toLocaleString('fr-FR') + ' FCFA'
+      fmtAmount(item.unitPrice || 0),
+      fmtAmount(item.totalPrice || 0)
     ]);
 
     doc.autoTable({
@@ -1174,7 +1180,7 @@ function initOrderTracking() {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...GREY);
     doc.text('Sous-total :', boxX, afterTable + 9);
-    doc.text((order.totalAmount || 0).toLocaleString('fr-FR') + ' FCFA', pageW - margin, afterTable + 9, { align: 'right' });
+    doc.textfmtAmount((order.totalAmount || 0), pageW - margin, afterTable + 9, { align: 'right' });
     doc.text('Remise :', boxX, afterTable + 16);
     doc.text('0 FCFA', pageW - margin, afterTable + 16, { align: 'right' });
 
@@ -1188,7 +1194,7 @@ function initOrderTracking() {
     doc.setTextColor(...GOLD);
     doc.text('TOTAL A PAYER', boxX + 3, afterTable + 26.5);
     doc.setTextColor(...WHITE);
-    doc.text((order.totalAmount || 0).toLocaleString('fr-FR') + ' FCFA', pageW - margin, afterTable + 26.5, { align: 'right' });
+    doc.textfmtAmount((order.totalAmount || 0), pageW - margin, afterTable + 26.5, { align: 'right' });
 
     // ============================================
     // SECTION MERCI
