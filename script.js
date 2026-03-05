@@ -1182,12 +1182,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const botResponse = await generateAIResponse(userMessage);
 
       // --- ORDER DETECTION LOGIC ---
-      let cleanResponse = botResponse;
-      const orderMatch = botResponse.match(/\[ORDER_JSON:\s*(\{.*?\})\s*\]/s);
+      // We explicitly remove the tag FIRST, so the user never sees it, even if JSON parsing fails.
+      let cleanResponse = botResponse.replace(/\[ORDER_JSON:[\s\S]*?\]/gi, "").trim();
+
+      const orderMatch = botResponse.match(/\[ORDER_JSON:\s*([\s\S]*?)\]/i);
 
       if (orderMatch) {
         try {
-          const orderData = JSON.parse(orderMatch[1]);
+          const jsonString = orderMatch[1].trim();
+          const orderData = JSON.parse(jsonString);
           console.log("AI detected an order:", orderData);
 
           // 1. Process the order
@@ -1221,10 +1224,6 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             }
           }
-
-          // Remove the technical tag from the message shown to the user
-          cleanResponse = botResponse.replace(/\[ORDER_JSON:\s*(\{.*?\})\s*\]/gs, "").trim();
-
         } catch (parseErr) {
           console.error("Failed to parse AI order JSON:", parseErr);
         }
