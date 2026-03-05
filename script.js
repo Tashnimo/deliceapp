@@ -991,10 +991,34 @@ function initOrderTracking() {
   // PDF INVOICE GENERATOR (jsPDF)
   // ==============================
   function generateInvoicePDF(order) {
+    // Dynamic loader: if jsPDF not yet available, load it on demand then retry
+    function doGenerate() {
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        console.error("jsPDF still not loaded after dynamic attempt.");
+        alert("Impossible de generer la facture. Verifiez votre connexion et reessayez.");
+        return;
+      }
+      _buildAndDownload(order);
+    }
     if (!window.jspdf || !window.jspdf.jsPDF) {
-      alert("Le generateur de facture n'est pas charge. Veuillez rafraichir la page.");
+      console.warn("jsPDF not preloaded - loading dynamically...");
+      var s1 = document.createElement('script');
+      s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s1.onload = function() {
+        var s2 = document.createElement('script');
+        s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js';
+        s2.onload = doGenerate;
+        s2.onerror = function() { alert("Erreur de chargement AutoTable."); };
+        document.head.appendChild(s2);
+      };
+      s1.onerror = function() { alert("Erreur de chargement jsPDF."); };
+      document.head.appendChild(s1);
       return;
     }
+    _buildAndDownload(order);
+  }
+
+  function _buildAndDownload(order) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
@@ -1249,7 +1273,20 @@ function initOrderTracking() {
     doc.setTextColor(255, 210, 235);
     doc.text(dateStr, pageW - margin, pageH - 6, { align: 'right' });
 
-    doc.save('Facture_DeliceCake_' + ref + '.pdf');
+    // Blob URL download (more compatible than doc.save() on mobile)
+    try {
+      const blob = doc.output('blob');
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'Facture_DeliceCake_' + ref + '.pdf';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 3000);
+    } catch(e) {
+      // Last resort: open in new tab
+      doc.output('dataurlnewwindow');
+    }
   }
 
 
