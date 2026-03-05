@@ -13,6 +13,21 @@
   --radius-lg: 20px;
   --shadow-sm: 0 4px 12px rgba(232, 23, 138, 0.08);
   --shadow: 0 12px 32px rgba(232, 23, 138, 0.12);
+  --border-color: rgba(232, 23, 138, 0.1);
+}
+
+body.dark-mode {
+  --pink: #E8178A;
+  --pink-light: #f9a8d4;
+  --pink-pale: #3d1b2e;
+  --black: #ffffff;
+  --dark: #f3edf0;
+  --grey: #12080f;
+  --grey-text: #a88a99;
+  --white: #1a0a14;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
 }
 
 * {
@@ -28,6 +43,7 @@ body {
   height: 100vh;
   overflow: hidden;
   display: flex;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 /* ================= HAMBURGER BUTTON ================= */
@@ -223,7 +239,7 @@ h4 {
 .sidebar {
   width: 260px;
   background: var(--white);
-  border-right: 1px solid rgba(232, 23, 138, 0.1);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   padding: 2rem 1.5rem;
@@ -282,15 +298,15 @@ h4 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #f8f9fa;
-  /* slightly off white */
+  background: var(--grey);
   overflow: hidden;
+  transition: background-color 0.3s;
 }
 
 .header {
   height: 80px;
   background: var(--white);
-  border-bottom: 1px solid rgba(232, 23, 138, 0.1);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -379,7 +395,7 @@ h4 {
 .data-table td {
   padding: 1.2rem 1.5rem;
   text-align: left;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .data-table th {
@@ -562,7 +578,7 @@ h4 {
   gap: 1rem;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  border-top: 1px solid var(--border-color);
 }
 
 .image-preview {

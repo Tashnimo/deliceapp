@@ -165,6 +165,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const debugInfo = document.getElementById('debug-info');
     const logoutBtn = document.getElementById('logout-btn');
 
+    // --- Dark Mode ---
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    if (darkModeToggle) {
+        if (localStorage.getItem('adminDarkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+            darkModeToggle.textContent = '☀️';
+        }
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('adminDarkMode', isDark);
+            darkModeToggle.textContent = isDark ? '☀️' : '🌙';
+        });
+    }
+
     const productsTableBody = document.getElementById('products-table-body');
     const searchInput = document.getElementById('search-input');
 
