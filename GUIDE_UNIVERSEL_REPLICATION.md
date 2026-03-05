@@ -261,6 +261,7 @@ Le panneau `admin.html` / `admin.js` comprend :
 - **Conversations IA** — Historique des chats clients
 - **Gestion Admins** — Système multi-admin avec rôles (superadmin, admin, comptable)
 - **Notifications Telegram** — Alertes en temps réel sur mobile
+- **Mode Sombre** — Bascule Lune/Soleil dans le header, préférence sauvegardée en `localStorage`
 
 **Rôles disponibles :**
 | Rôle | Accès |
@@ -300,7 +301,8 @@ Le panneau `admin.html` / `admin.js` comprend :
 
 ### Tests finaux
 - [ ] Tester le chatbot IA (envoyer "Bonjour")
-- [ ] Passer une commande test → Vérifier notification Telegram
+- [ ] **Passer une commande test via le chatbot** → Confirmer → Vérifier notification Telegram "COMMANDE VIA IA"
+- [ ] **Changer le statut** d'une commande en "Prête / Livrée" dans l'admin → Vérifier le bouton de facture côté client
 - [ ] Tester la connexion admin
 - [ ] Tester sur mobile (responsive)
 
@@ -366,5 +368,117 @@ Pour ajouter une nouvelle page (ex: `/a-propos`, `/galerie`, `/blog`) :
 
 ---
 
-*Document généré le 4 Mars 2026 — Version 2.0 (Groq AI Edition)*
+## 🤖 13. Prise de Commande par Chatbot IA
+
+Le chatbot peut enregistrer les commandes automatiquement. Il utilise un système de **mot-clé secret** plutôt qu'un JSON inline (car les LLM génèrent parfois du JSON mal formaté).
+
+**Comment ça marche :**
+1. L'IA discute avec le client, présente les produits et demande confirmation
+2. Quand le client confirme, l'IA écrit `[CONFIRM_ORDER]` à la fin de son message
+3. Le JavaScript détecte cette balise, la cache à l'utilisateur, et **analyse l'historique des derniers messages** pour reconstruire le panier (en comparant les mots avec le catalogue Firebase)
+4. La commande est sauvegardée dans Firestore via `DataService.saveOrder()`
+5. Une notification Telegram est envoyée à l'admin
+
+**Prompt système à adapter dans `script.js` :**
+```javascript
+systemContext = `Tu es [NOM_ASSISTANT], assistant de [NOM_ENTREPRISE].
+Sois chaleureux, concis et utilise des emojis.
+
+IMPORTANT - PRISE DE COMMANDE :
+Dès que le client confirme vouloir commander (dit OUI, confirme l'achat, etc.),
+tu DOIS ajouter à la toute fin de ton message CE MOT CLÉ EXACT :
+[CONFIRM_ORDER]
+Ne fais ça QUE pour finaliser une commande confirmée.
+
+MENU :
+${productListText}
+INFO : ${kbContent}`;
+```
+
+**Paramètres `api/chat.js` recommandés :**
+```javascript
+const MODEL = "llama-3.1-8b-instant"; // rapide et gratuit
+// max_tokens: 800  ← Indispensable pour éviter que la réponse soit tronquée
+```
+
+> ⚠️ **Attention :** Mettre `max_tokens` trop bas (200-300) était la cause de JSON/réponses tronquées. Toujours mettre **800 minimum** pour les commandes.
+
+---
+
+## 📄 14. Facture PDF Téléchargeable
+
+Les clients peuvent télécharger leur facture dès que leur commande est au statut **"Prête / Livrée"** (`completed`).
+
+**Dépendances à ajouter dans `index.html` (avant `firebase-config.js`) :**
+```html
+<!-- PDF Invoice Generator -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+```
+
+**Architecture du système de facture :**
+- `generateInvoicePDF(order)` dans `script.js` — Génère le PDF avec jsPDF et les couleurs de la marque
+- `_printInvoiceFallback(order)` — Ouvre une page HTML stylisable avec bouton Imprimer (100% compatible si jsPDF échoue)
+- Le bouton de téléchargement apparaît **uniquement** quand `order.status === 'completed'` dans la fonction `updateUI()`
+
+**Points clés d'implémentation :**
+
+| Écueil | Solution |
+|:---|:---|
+| `toLocaleString('fr-FR')` génère des espaces insécables (`\u00A0`) illisibles dans jsPDF | Utiliser une fonction `fmtAmount(n)` custom avec regex |
+| `order.createdAt` est un Firestore Timestamp (objet avec `.toDate()`) | Toujours tester `raw.toDate ? raw.toDate() : new Date(raw)` |
+| Les emojis dans jsPDF s'affichent en caractères bizarres | Utiliser du texte ASCII uniquement dans les appels `doc.text()` |
+| `doc.save()` peut être bloqué sur mobile | Utiliser `doc.output('blob')` + `URL.createObjectURL()` |
+
+**Formatter de montants compatible jsPDF :**
+```javascript
+function fmtAmount(n) {
+  return (Number(n) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+}
+```
+
+---
+
+## 🌙 15. Mode Sombre Admin
+
+Le panneau admin supporte un thème sombre basculé par un bouton dans le header.
+
+**Dans `admin.html`** — Ajouter ce bouton avant l'avatar utilisateur :
+```html
+<button id="dark-mode-toggle" class="dark-mode-btn" title="Basculer mode sombre">🌙</button>
+```
+
+**Dans `admin.js`** :
+```javascript
+const darkToggle = document.getElementById('dark-mode-toggle');
+if (darkToggle) {
+  // Restaurer la préférence
+  if (localStorage.getItem('adminDarkMode') === 'true') {
+    document.body.classList.add('dark-mode');
+    darkToggle.textContent = '☀️';
+  }
+  darkToggle.addEventListener('click', () => {
+    const isDark = document.body.classList.toggle('dark-mode');
+    darkToggle.textContent = isDark ? '☀️' : '🌙';
+    localStorage.setItem('adminDarkMode', isDark);
+  });
+}
+```
+
+**Dans `admin.css`** — Ajouter les variables sombres :
+```css
+body.dark-mode {
+  --bg: #1a0a12;
+  --surface: #2d1520;
+  --text: #f5e6ef;
+  --border: #4a2535;
+  /* Surcharger toutes les valeurs de couleur de fond et texte ici */
+}
+```
+
+> La couleur principale de la marque (rose `#E8178A`) reste intacte en mode sombre pour garder la cohérence visuelle.
+
+---
+
+*Document mis à jour le 5 Mars 2026 — Version 3.0 (AI Orders + PDF Invoice Edition)*
 *Architecture validée en production sur : Délice Cake, Ouagadougou (delcakebf.vercel.app)*
