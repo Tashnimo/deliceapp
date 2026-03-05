@@ -1182,45 +1182,63 @@ document.addEventListener('DOMContentLoaded', () => {
       const botResponse = await generateAIResponse(userMessage);
 
       // --- ORDER DETECTION LOGIC ---
-      // 1. EXTRAIRE le bloc potentiel avec une regex basique et ultra tolérante
-      const tagStartIdx = botResponse.indexOf('[ORDER_JSON:');
-      let orderMatchRaw = null;
-      let cleanResponse = botResponse;
+      // Llama 3 galère trop avec le JSON complexe en plein texte.
+      // Nouvelle stratégie : L'IA écrit juste un tag secret à la fin. 
+      // Si on le détecte, le JavaScript va analyser l'historique récent pour créer le panier.
 
-      if (tagStartIdx !== -1) {
-        const tagEndIdx = botResponse.indexOf(']', tagStartIdx);
-        if (tagEndIdx !== -1) {
-          orderMatchRaw = botResponse.substring(tagStartIdx + 12, tagEndIdx).trim(); // +12 pour passer '[ORDER_JSON:'
-          // 2. RETIRER le bloc de la réponse (pour ne pas l'afficher à l'utilisateur)
-          cleanResponse = botResponse.substring(0, tagStartIdx) + botResponse.substring(tagEndIdx + 1);
-          cleanResponse = cleanResponse.trim();
-        }
+      const confirmTag = "[CONFIRM_ORDER]";
+      let cleanResponse = botResponse;
+      let orderConfirmed = false;
+
+      if (botResponse.includes(confirmTag)) {
+        orderConfirmed = true;
+        cleanResponse = botResponse.replace(confirmTag, "").trim();
+        // Remove trailing commas, or weird leftover symbols the AI might drop near the tag
+        cleanResponse = cleanResponse.replace(/[,\s"]+$/g, "").trim();
       }
 
-      if (orderMatchRaw) {
+      if (orderConfirmed) {
         try {
-          // 3. SANITIZATION: L'IA Llama 3 fait souvent des erreurs de syntaxe JSON (virgules en trop, markdown, etc.)
-          let sanitizedJsonString = orderMatchRaw
-            .replace(/```json/gi, '') // Enlever les balises markdown possibles
-            .replace(/```/g, '')
-            .replace(/,\s*}/g, '}') // Enlever les trailing commas: {"a": 1,} -> {"a": 1}
-            .replace(/,\s*]/g, ']') // Enlever les trailing commas listes: [1, 2,] -> [1, 2]
-            .trim();
+          console.log("AI confirmed an order! Reconstructing basket from chat context...");
 
-          // On essaie de parser le JSON (qui peut contenir des retours à la ligne générés par l'IA)
-          const orderData = JSON.parse(sanitizedJsonString);
-          console.log("AI detected an order:", orderData);
+          // On va chercher dans les derniers messages de l'historique quels produits le client a demandé
+          // C'est basique mais beaucoup plus robuste que d'attendre du JSON de l'IA.
+          const lastMessages = chatHistoryMessages.slice(-4).map(m => m.content).join(" ");
+          const combinedLog = lastMessages + " " + cleanResponse;
 
-          // 1. Process the order
-          if (orderData.items && orderData.items.length > 0) {
+          // Petit parseur heuristique pour retrouver les produits (très simplifié)
+          // Dans une vraie app, on utiliserait le "Function Calling" natif de l'API.
+          // On s'appuie sur le catalogue global
+          const products = typeof DataService !== 'undefined' ? await DataService.getProducts() : [];
+
+          let detectedItems = [];
+          let estimatedTotal = 0;
+
+          products.forEach(p => {
+            // Si le nom du produit est mentionné dans le contexte récent
+            if (combinedLog.toLowerCase().includes(p.name.toLowerCase())) {
+              // Extraction basique de quantité juste avant le nom (ex: "2 Tiramisu")
+              const qtyRegex = new RegExp(`(\\d+)\\s*(?:x|d(?:es|e))?\\s*${p.name}`, 'i');
+              const match = combinedLog.match(qtyRegex);
+              let qty = 1;
+              if (match && match[1]) {
+                qty = parseInt(match[1], 10);
+              }
+
+              detectedItems.push({
+                name: p.name,
+                quantity: qty,
+                unitPrice: p.price,
+                totalPrice: p.price * qty
+              });
+              estimatedTotal += (p.price * qty);
+            }
+          });
+
+          if (detectedItems.length > 0) {
             const finalOrder = {
-              items: orderData.items.map(item => ({
-                name: item.name,
-                quantity: item.qty || 1,
-                unitPrice: item.price || 0,
-                totalPrice: (item.price || 0) * (item.qty || 1)
-              })),
-              totalAmount: orderData.total || 0,
+              items: detectedItems,
+              totalAmount: estimatedTotal,
               note: `Commande via Délice AI Chat (${chatId})`,
               status: 'new'
             };
@@ -1241,12 +1259,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 await sendTelegramNotification(messageTelegram);
               }
             }
+          } else {
+            console.warn("L'IA a confirmé mais aucun produit reconnu dans le texte.");
+            sendTelegramNotification(`⚠️ <b>ERREUR IA</b>\nTag [CONFIRM_ORDER] détecté mais impossible d'extraire les produits.\nConversation : ${chatId}`).catch(e => e);
           }
         } catch (parseErr) {
-          console.error("Failed to parse AI order JSON. Raw string was:", orderMatchRaw, parseErr);
-          // Si on n'arrive pas à lire le JSON de l'IA, on prévient quand même l'admin !
-          const messageTelegramError = `⚠️ <b>ERREUR COMMANDE IA</b>\n\nLe client a passé commande mais l'IA a mal formaté les données.\nAllez voir la conversation : ${chatId}\n\nDonnées brutes reçues :\n${orderMatchRaw}`;
-          sendTelegramNotification(messageTelegramError).catch(() => console.log("Failed to send error notification"));
+          console.error("Order process failed:", parseErr);
         }
       }
       // --- END ORDER DETECTION ---
@@ -1373,10 +1391,9 @@ document.addEventListener('DOMContentLoaded', () => {
 Sois chaleureux, concis et utilise des emojis. 
 
 IMPORTANT - PRISE DE COMMANDE :
-Dès que le client dit OUI pour confirmer une commande, tu DOIS ABSOLUMENT ajouter à la toute fin de ton message CE BLOC EXACT (remplace juste les valeurs, ne mets pas de code markdown \`\`\` autour) :
-[ORDER_JSON: {"items":[{"name":"Sachet Délice Cake", "qty":2, "price":500}], "total":1000}]
-ATTENTION : Fais un JSON 100% valide. Pas de virgule à la fin de la liste.
-Ne fais ça QUE pour finalmer une commande.
+Dès que le client dit OUI pour confirmer une commande et payer (une fois le prix annoncé), tu DOIS ABSOLUMENT ajouter à la toute fin de ton message CE MOT DE PASSE EXACT :
+[CONFIRM_ORDER]
+Ne fais ça QUE pour finaliser une commande confirmée par le client. N'essaie pas d'écrire des données informatiques, ajoute juste ce mot clé.
 
 MENU :
 ${productListText || "Sachet Délice Cake (500 FCFA), Cupcake (1000 FCFA), Tiramisu (1000 FCFA)"}
