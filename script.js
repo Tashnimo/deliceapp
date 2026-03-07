@@ -1979,13 +1979,27 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           console.log("AI confirmed an order! Reconstructing basket from chat context...");
 
-          // On va chercher dans les derniers messages de l'historique quels produits le client a demandé
-          // C'est basique mais beaucoup plus robuste que d'attendre du JSON de l'IA.
-          const lastMessages = chatHistoryMessages.slice(-4).map(m => m.content).join(" ");
-          const combinedLog = lastMessages + " " + cleanResponse;
+          // Helper for fuzzy matching: remove accents, lowercase, remove plurals
+          const normalize = (str) => {
+            if (!str) return "";
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+          };
 
-          // Petit parseur heuristique pour retrouver les produits (très simplifié)
-          // Dans une vraie app, on utiliserait le "Function Calling" natif de l'API.
+          // Get search term: e.g. "Tiramisu Maison" -> "tiramisu"
+          const getSearchTerm = (name) => {
+            return normalize(name)
+              .replace(/\(.*\)/g, "") // remove (12 pcs)
+              .replace(/\b(maison|signature|artisanale?|assortis?)\b/g, "")
+              .replace(/s\b/g, "") // simple plural removal at word end
+              .trim();
+          };
+
+          // On va chercher dans les derniers messages de l'historique quels produits le client a demandé
+          // Augmentation du contexte à 10 messages pour ne rien rater
+          const lastMessages = chatHistoryMessages.slice(-10).map(m => m.content).join(" ");
+          const combinedLog = lastMessages + " " + cleanResponse;
+          const combinedLogNorm = normalize(combinedLog);
+
           // On s'appuie sur le catalogue global
           const products = typeof DataService !== 'undefined' ? await DataService.getProducts() : [];
 
@@ -1993,10 +2007,11 @@ document.addEventListener('DOMContentLoaded', () => {
           let estimatedTotal = 0;
 
           products.forEach(p => {
-            // Si le nom du produit est mentionné dans le contexte récent
-            if (combinedLog.toLowerCase().includes(p.name.toLowerCase())) {
-              // Extraction basique de quantité juste avant le nom (ex: "2 Tiramisu")
-              const qtyRegex = new RegExp(`(\\d+)\\s*(?:x|d(?:es|e))?\\s*${p.name}`, 'i');
+            const searchTerm = getSearchTerm(p.name);
+            // Vérification si le terme de recherche (nettoyé) est dans le log (nettoyé)
+            if (searchTerm && combinedLogNorm.includes(searchTerm)) {
+              // Extraction basique de quantité juste avant le terme ou le nom complet
+              const qtyRegex = new RegExp(`(\\d+)\\s*(?:x|d(?:es|e))?\\s*${searchTerm}`, 'i');
               const match = combinedLog.match(qtyRegex);
               let qty = 1;
               if (match && match[1]) {
@@ -2069,7 +2084,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
           } else {
             console.warn("L'IA a confirmé mais aucun produit reconnu dans le texte.");
-            sendTelegramNotification(`⚠️ <b>ERREUR IA</b>\nTag [CONFIRM_ORDER] détecté mais impossible d'extraire les produits.\nConversation : ${chatId}`).catch(e => e);
+            const debugLog = combinedLog.slice(-200); // Send last 200 chars for context
+            sendTelegramNotification(`⚠️ <b>ERREUR IA</b>\nTag [CONFIRM_ORDER] détecté mais impossible d'extraire les produits.\n\n<b>Contexte :</b> <i>...${debugLog}</i>\n\nConversation : ${chatId}`).catch(e => e);
           }
         } catch (parseErr) {
           console.error("Order process failed:", parseErr);
