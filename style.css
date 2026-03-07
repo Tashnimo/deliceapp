@@ -2926,3 +2926,99 @@ h3,
 .toast--success {
   border-left: 4px solid #10b981;
 }
+
+/* ======= PROACTIVE NOTIFICATION PROMPT ======= */
+.notif-prompt {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  width: 90%;
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  z-index: 9999;
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notif-prompt.active {
+  transform: translateX(-50%) translateY(0);
+}
+
+.notif-prompt__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.notif-prompt__icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--pink), #ff6bbd);
+  color: white;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 6px 15px rgba(232, 23, 138, 0.25);
+}
+
+.notif-prompt__text h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 3px;
+  color: var(--black);
+}
+
+.notif-prompt__text p {
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: #666;
+}
+
+.notif-prompt__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.notif-prompt__btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: none;
+  font-family: var(--font-body);
+}
+
+.notif-prompt__btn--primary {
+  background: var(--pink);
+  color: white;
+  box-shadow: 0 4px 12px rgba(232, 23, 138, 0.2);
+}
+
+.notif-prompt__btn--primary:hover {
+  background: #d4147c;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(232, 23, 138, 0.3);
+}
+
+.notif-prompt__btn--secondary {
+  background: rgba(0, 0, 0, 0.05);
+  color: #666;
+}
+
+.notif-prompt__btn--secondary:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
