@@ -122,7 +122,7 @@ setTimeout(() => {
     flavor: { value: 'choc', color: '#4A2C2A', label: 'Chocolat Noir' },
     color: { value: 'pink', color: '#E8178A', label: 'Rose Délice' },
     size: { value: 'small', tiers: 1, label: 'Standard (1 étage)' },
-    shape: { value: 'round', label: 'Rond classique' },
+    shape: { value: 'square', label: 'Carré élégant' },
     customShape: '',
     parts: { value: '8', label: '8 parts (petit)' },
     occasion: { value: 'birthday', label: 'Anniversaire 🎂' },
@@ -227,8 +227,7 @@ setTimeout(() => {
     );
 
     // ------ Shape morphing via SVG clipPath ------
-    const shapeMap = { round: 'round', square: 'square', heart: 'heart', hexagon: 'hexagon', star: 'star', triangle: 'triangle' };
-    const s = shapeMap[shape] || 'square';
+    const s = 'square';
 
     const t3 = document.getElementById('tier-3');
     const t2g = document.getElementById('tier-2');
@@ -273,7 +272,7 @@ setTimeout(() => {
 
   // --- CTA → WhatsApp with full spec ---
   if (orderBtn) {
-    orderBtn.addEventListener('click', () => {
+    orderBtn.addEventListener('click', async () => {
       const shapeDisplay = cakeState.customShape ? `${cakeState.shape.label} (Détail: ${cakeState.customShape})` : cakeState.shape.label;
       const msg =
         `Bonjour Délice Cake ! 🍰\n` +
@@ -286,6 +285,54 @@ setTimeout(() => {
         `🎉 Occasion      : ${cakeState.occasion.label}\n` +
         (cakeState.message ? `✍️  Message       : "${cakeState.message}"\n` : '') +
         `\nMerci de me contacter pour confirmer et finaliser ma commande ! 😊`;
+
+      // Save to Firestore and notify Telegram
+      try {
+        const orderData = {
+          type: 'cake_studio',
+          items: [{
+            name: `Gâteau Personnalisé (${cakeState.size.label})`,
+            details: {
+              flavor: cakeState.flavor.label,
+              color: cakeState.color.label,
+              shape: shapeDisplay,
+              parts: cakeState.parts.label,
+              occasion: cakeState.occasion.label,
+              message: cakeState.message || ''
+            },
+            quantity: 1,
+            unitPrice: PRICES[cakeState.size.value] || 0,
+            totalPrice: PRICES[cakeState.size.value] || 0
+          }],
+          totalAmount: PRICES[cakeState.size.value] || 0,
+          status: 'new',
+          customerNote: cakeState.message || ''
+        };
+
+        if (typeof DataService !== 'undefined') {
+          await DataService.saveOrder(orderData);
+
+          // Notify Telegram
+          const telegramMsg = `🍰 <b>Nouvelle commande Cake Studio !</b>\n\n` +
+            `🍫 Saveur: ${cakeState.flavor.label}\n` +
+            `🎨 Glaçage: ${cakeState.color.label}\n` +
+            `⬟ Forme: ${shapeDisplay}\n` +
+            `🎂 Format: ${cakeState.size.label}\n` +
+            `🍽 Parts: ${cakeState.parts.label}\n` +
+            `🎉 Occasion: ${cakeState.occasion.label}\n` +
+            (cakeState.message ? `✍️ Message: "${cakeState.message}"\n` : '') +
+            `💰 Total: ${orderData.totalAmount} FCFA`;
+
+          fetch('/api/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: telegramMsg })
+          }).catch(e => console.error("Telegram notify failed", e));
+        }
+      } catch (err) {
+        console.error("Order save failed", err);
+      }
+
       window.open(`https://wa.me/22656808872?text=${encodeURIComponent(msg)}`, '_blank');
     });
   }

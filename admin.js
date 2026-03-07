@@ -887,6 +887,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (o.items && Array.isArray(o.items)) {
                 o.items.forEach(item => {
                     itemsHtml += `<li><b>${item.quantity}x</b> ${item.name}</li>`;
+                    if (item.details) {
+                        itemsHtml += `<div style="font-size:0.75rem; margin:4px 0 10px 1.2rem; color:var(--pink); background:rgba(232, 23, 138, 0.05); padding:6px; border-radius:6px; border-left:2px solid var(--pink);">`;
+                        const labelMap = {
+                            flavor: 'Saveur',
+                            color: 'Glaçage',
+                            shape: 'Forme',
+                            parts: 'Parts',
+                            occasion: 'Occasion',
+                            message: 'Message'
+                        };
+                        for (const [key, val] of Object.entries(item.details)) {
+                            if (val) {
+                                const label = labelMap[key] || key;
+                                itemsHtml += `<b>${label}:</b> ${val}<br>`;
+                            }
+                        }
+                        itemsHtml += `</div>`;
+                    }
                 });
             }
             itemsHtml += '</ul>';
