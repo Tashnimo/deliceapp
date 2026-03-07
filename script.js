@@ -1529,7 +1529,7 @@ td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FF
   const STATUS_REELS = {
     'new': { label: 'Reçue', icon: '📝', color: '#E8178A', desc: 'Nous avons bien reçu votre commande.', class: 'status-new' },
     'processing': { label: 'En préparation', icon: '👨‍🍳', color: '#F59E0B', desc: 'Nos pâtissiers préparent vos délices.', class: 'status-processing' },
-    'completed': { label: 'Prête ! 🎁', icon: '✨', color: '#10B981', desc: 'Bonne nouvelle ! Votre délice est prêt à être dégusté.', class: 'status-completed' },
+    'completed': { label: 'Prête ! ✦', icon: 'auto', color: '#10B981', desc: 'Bonne nouvelle ! Votre création est prête à être dégustée.', class: 'status-completed' },
     'cancelled': { label: 'Annulée', icon: '❌', color: '#EF4444', desc: 'La commande a été annulée.', class: 'status-cancelled' }
   };
 
@@ -1548,14 +1548,39 @@ td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FF
       }
     });
 
-    const headerClass = order.status === 'completed' ? 'track-status-header status-ready-box' : 'track-status-header';
-    const iconClass = order.status === 'completed' ? 'wow-icon' : '';
+    const isCompleted = order.status === 'completed';
+    const headerClass = isCompleted ? 'track-status-header status-ready-box' : 'track-status-header';
+
+    // Premium SVG Illustration for "Ready"
+    const readySvg = `
+        <svg class="wow-icon" viewBox="0 0 100 100" width="120" height="120">
+          <defs>
+            <linearGradient id="readyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#34D399;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <path d="M50 15 L60 40 L85 45 L65 65 L70 90 L50 75 L30 90 L35 65 L15 45 L40 40 Z" fill="url(#readyGrad)" />
+          <circle cx="50" cy="50" r="45" fill="none" stroke="url(#readyGrad)" stroke-width="2" stroke-dasharray="5,5">
+            <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="10s" repeatCount="indefinite" />
+          </circle>
+          <path d="M35 50 L45 60 L65 40" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      `;
+
+    const confettiHtml = isCompleted ? `
+        <div class="confetti-container">
+          ${Array(12).fill(0).map((_, i) => `<div class="confetti" style="left:${Math.random() * 100}%; background:${['#E8178A', '#10B981', '#FFD0EB'][i % 3]}; animation-delay:${Math.random() * 3}s; animation-duration:${3 + Math.random() * 2}s;"></div>`).join('')}
+        </div>` : '';
 
     content.innerHTML = `
-        <div class="${headerClass}" style="background: ${status.color}10; border-color: ${status.color}30;">
-          <div class="${iconClass}" style="font-size: 3.5rem; margin-bottom: 0.5rem; filter: drop-shadow(0 4px 10px ${status.color}30);">${status.icon}</div>
-          <h4 style="color: ${status.color}; font-size: 1.5rem; margin-bottom: 0.3rem; font-family: var(--font-fancy);">${status.label}</h4>
-          <p style="font-size: 0.95rem; color: #6b4557; opacity: 0.8;">${status.desc}</p>
+        <div class="${headerClass}">
+          ${confettiHtml}
+          <div class="wow-icon-container">
+            <div style="margin-bottom: 1rem;">${isCompleted ? readySvg : `<span style="font-size: 3.5rem;">${status.icon}</span>`}</div>
+            <h4 class="${isCompleted ? 'ready-title-premium' : ''}" style="color: ${isCompleted ? 'inherit' : status.color}; font-size: 1.5rem; margin-bottom: 0.3rem;">${status.label}</h4>
+            <p class="${isCompleted ? 'ready-desc-premium' : ''}">${status.desc}</p>
+          </div>
         </div>
 
       <div class="track-stepper">
