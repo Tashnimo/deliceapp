@@ -2008,14 +2008,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
           products.forEach(p => {
             const searchTerm = getSearchTerm(p.name);
-            // Vérification si le terme de recherche (nettoyé) est dans le log (nettoyé)
             if (searchTerm && combinedLogNorm.includes(searchTerm)) {
-              // Extraction basique de quantité juste avant le terme ou le nom complet
-              const qtyRegex = new RegExp(`(\\d+)\\s*(?:x|d(?:es|e))?\\s*${searchTerm}`, 'i');
+              // Enhanced regex for quantities: "2 cupcakes", "un sachet", "une douzaine", "12x", etc.
+              const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*(?:x|d(?:es|e))?\\s*${searchTerm}`, 'i');
               const match = combinedLog.match(qtyRegex);
+
               let qty = 1;
               if (match && match[1]) {
-                qty = parseInt(match[1], 10);
+                const val = match[1].toLowerCase();
+                if (val === 'un' || val === 'une') qty = 1;
+                else if (val === 'douzaine') qty = 12;
+                else qty = parseInt(val, 10) || 1;
               }
 
               detectedItems.push({
@@ -2038,14 +2041,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // INJECT CONFIRMATION UI instead of saving immediately
             const confirmId = 'ai-confirm-' + Math.floor(Math.random() * 10000);
+            const itemsTable = detectedItems.map(it => `• ${it.quantity}x ${it.name}`).join('<br/>');
             const confirmHtml = `
               <div class="chat-confirmation-box" style="margin-top:10px; padding:12px; background:#fff0f6; border-radius:12px; border: 2px solid #E8178A; color: #1a0a14;">
-                <strong style="color:#E8178A; font-family:'Outfit',sans-serif;">🛒 Commande détectée</strong><br/>
-                Total estimé : <strong>${estimatedTotal.toLocaleString('fr-FR')} FCFA</strong><br/>
-                <span style="font-size: 0.9em; opacity: 0.8;">Voulez-vous valider définitivement cette commande ?</span>
+                <strong style="color:#E8178A; font-family:'Outfit',sans-serif;">🛒 Validation de commande</strong><br/>
+                <div style="font-size: 0.9em; margin: 8px 0; border-bottom: 1px solid #ffdeed; padding-bottom: 8px;">
+                  ${itemsTable}
+                </div>
+                Total : <strong>${estimatedTotal.toLocaleString('fr-FR')} FCFA</strong><br/>
+                <span style="font-size: 0.85em; opacity: 0.8;">Est-ce correct ?</span>
                 <div style="margin-top:12px; display:flex; gap:10px; justify-content: center;">
-                  <button id="${confirmId}-yes" class="btn btn--primary" style="padding: 6px 16px; font-size: 0.9em; min-height: 0;">✅ Oui</button>
-                  <button id="${confirmId}-no" class="btn btn--ghost" style="padding: 6px 16px; font-size: 0.9em; min-height: 0; color: #E8178A; border: 1px solid #E8178A;">❌ Non</button>
+                  <button id="${confirmId}-yes" class="btn btn--primary" style="padding: 6px 16px; font-size: 0.9em; min-height: 0;">✅ Confirmer</button>
+                  <button id="${confirmId}-no" class="btn btn--ghost" style="padding: 6px 16px; font-size: 0.9em; min-height: 0; color: #E8178A; border: 1px solid #E8178A;">❌ Modifier</button>
                 </div>
               </div>
             `;
@@ -2211,19 +2218,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let productListText = activeProducts.map(p => `- ${p.name} : ${p.price} FCFA`).join("\n");
 
-      systemContext = `Tu es Délice AI, assistant de la pâtisserie Délice Cake au Burkina Faso. 
-Sois chaleureux, concis et utilise des emojis. 
+      systemContext = `Tu es Délice AI, l'assistant expert de la pâtisserie Délice Cake au Burkina Faso. 
+Sois chaleureux, très pro et utilise des emojis.
 
-IMPORTANT - PRISE DE COMMANDE :
-Tu ne dois valider une commande QUE si tu as listé les articles, annoncé le montant total, ET que le client a explicitement répondu par un OUI clair (ex: "Oui je confirme", "C'est bon pour moi").
-ATTENTION : Si et SEULEMENT SI le client donne cet accord explicite et final, ajoute EXACTEMENT ce mot-clé à la toute fin de ton message :
-[CONFIRM_ORDER]
-Ne mets JAMAIS ce mot-clé si le client ne fait que s'informer, discuter, ou dire "bonjour". C'est une action irréversible.
+MODE OPÉRATOIRE - PRISE DE COMMANDE :
+1. Aide le client à choisir parmi le MENU ci-dessous.
+2. Lorsqu'un client veut commander, tu DOIS calculer le montant total toi-même très précisément.
+   - Formule : (Prix Unitaire x Quantité) de chaque article.
+   - Exemple : "2 Cupcakes (2000) + 1 Tiramisu (1000) = 3000 FCFA".
+3. Ne valide JAMAIS une commande sans avoir :
+   - Listé clairement les articles et quantités.
+   - Annoncé le TOTAL exact.
+   - Obtenu un "OUI" de confirmation final.
 
-MENU :
-${productListText || "Sachet Délice Cake (500 FCFA), Cupcake (1000 FCFA), Tiramisu (1000 FCFA)"}
+MOT-CLÉ DE VALIDATION :
+Ajoute EXACTEMENT [CONFIRM_ORDER] à la toute fin de ton message UNIQUEMENT quand le client a dit OUI au récapitulatif financier que tu as présenté.
 
-INFO : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
+MENU ACTUEL :
+${productListText || "- Sachet Délice Cake (12 pcs) : 500 FCFA\n- Cupcake Signature : 1000 FCFA\n- Tiramisu Maison : 1000 FCFA"}
+
+INFOS BOUTIQUE : ${kbContent || "Pâtisseries artisanales, livraison rapide."}`;
     } catch (e) {
       console.error("AI Context Init Fail:", e);
       systemContext = "Assistant Délice Cake. Aidez le client avec le menu.";
