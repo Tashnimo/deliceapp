@@ -2055,6 +2055,7 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           if (detectedItems.length > 0) {
+            // ... (rest of existing confirmed items logic) ...
             const finalOrder = {
               items: detectedItems,
               totalAmount: estimatedTotal,
@@ -2062,7 +2063,6 @@ document.addEventListener('DOMContentLoaded', () => {
               status: 'new'
             };
 
-            // INJECT CONFIRMATION UI instead of saving immediately
             const confirmId = 'ai-confirm-' + Math.floor(Math.random() * 10000);
             const itemsTable = detectedItems.map(it => `• ${it.quantity}x ${it.name}`).join('<br/>');
             const confirmHtml = `
@@ -2085,24 +2085,15 @@ document.addEventListener('DOMContentLoaded', () => {
             chatbotMessages.appendChild(promptChatLi);
             chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
 
-            // Bind Events
             document.getElementById(`${confirmId}-yes`).addEventListener('click', async (e) => {
               e.target.parentElement.innerHTML = `<span style="color: green; font-weight: bold;">Commande validée avec succès ! 🎉</span>`;
-              chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
-
-              // Save to DB
               if (typeof DataService !== 'undefined' && DataService.saveOrder) {
                 const orderId = await DataService.saveOrder(finalOrder);
                 if (orderId) {
                   localStorage.setItem('delice_last_order_id', orderId);
                   if (window.refreshOrderTracking) window.refreshOrderTracking();
-
-                  // Send Telegram
                   const adminLink = window.location.origin + "/admin";
-                  const messageTelegram = `🤖 <b>COMMANDE VIA IA (Confirmée par client) !</b>\n\n` +
-                    `💰 Total : ${finalOrder.totalAmount.toLocaleString('fr-FR')} FCFA\n` +
-                    `📝 Chat ID : ${chatId}\n\n` +
-                    `<a href="${adminLink}">Accéder Admin</a>`;
+                  const messageTelegram = `🤖 <b>COMMANDE VIA IA !</b>\n💰 Total : ${finalOrder.totalAmount.toLocaleString('fr-FR')} FCFA\n📝 Chat ID : ${chatId}\n\n<a href="${adminLink}">Accéder Admin</a>`;
                   await sendTelegramNotification(messageTelegram);
                 }
               }
@@ -2113,10 +2104,29 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
           } else {
+            // HALLUCINATION DETECTION: AI thinks it sold something not in DB
             console.warn("L'IA a confirmé mais aucun produit reconnu dans le texte.");
-            const debugLog = combinedLog.slice(-400); // More context
+
+            // Try to find if the AI listed anything at all with numbers
+            const anyProductRegex = /[\*\-]\s*(\d+)\s+([^:\n]+)/g;
+            let hallucinations = [];
+            let m;
+            while ((m = anyProductRegex.exec(cleanResponse)) !== null) {
+              hallucinations.push(`${m[1]}x ${m[2].trim()}`);
+            }
+
+            const errorMsg = hallucinations.length > 0
+              ? `Désolé, j'ai essayé de commander : <b>${hallucinations.join(', ')}</b>. Malheureusement, ces articles ne sont pas dans notre menu actuel. Veuillez choisir parmi nos produits disponibles.`
+              : `Désolé, je n'ai pas réussi à lister vos produits. Pouvez-vous répéter votre commande en utilisant les noms du menu ?`;
+
+            const errorChatLi = createChatLi('', 'incoming');
+            errorChatLi.innerHTML = `<div class="chat-content" style="color: #E8178A; background: #fff5f8; border-left: 4px solid #E8178A; padding: 10px; margin-top: 10px; border-radius: 4px;">${errorMsg}</div>`;
+            chatbotMessages.appendChild(errorChatLi);
+
+            // Log to admin for fix
             const availableProdNames = products.map(p => p.name).join(", ");
-            sendTelegramNotification(`⚠️ <b>ERREUR IA</b>\nTag [CONFIRM_ORDER] détecté mais extraction impossible.\n\n<b>Contexte :</b> <i>...${debugLog}</i>\n\n<b>Produits en DB :</b> ${availableProdNames}\n\nConversation : ${chatId}`).catch(e => e);
+            const debugLog = cleanResponse.slice(0, 300);
+            sendTelegramNotification(`⚠️ <b>HALLUCINATION IA</b>\nLe bot tente de vendre des produits inconnus : <i>${hallucinations.join(', ') || 'Inconnu'}</i>\n\n<b>Réponse bot :</b> ${debugLog}\n\n<b>Menu en DB :</b> ${availableProdNames}`).catch(e => e);
           }
         } catch (parseErr) {
           console.error("Order process failed:", parseErr);
