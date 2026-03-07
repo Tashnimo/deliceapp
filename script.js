@@ -205,19 +205,31 @@ setTimeout(() => {
     });
   }
 
-  // --- SVG Render ---
   function renderCakePreview() {
     const icing = cakeState.color.color;
     const flavorColor = cakeState.flavor.color;
     const tiers = cakeState.size.tiers;
+    const shape = cakeState.shape.value;
 
-    // Icing color
+    // Icing color — update all .cake-body elements
     document.querySelectorAll('.cake-body').forEach(el => el.setAttribute('fill', icing));
 
     // Flavor layer color
     document.querySelectorAll('.flavor-line').forEach(el =>
       el.setAttribute('stroke', hexToRgba(flavorColor, 0.35))
     );
+
+    // ------ Shape morphing via SVG clipPath ------
+    const shapeMap = { round: 'round', square: 'square', heart: 'heart', hexagon: 'hexagon', star: 'star', triangle: 'triangle' };
+    const s = shapeMap[shape] || 'square';
+
+    const t3 = document.getElementById('tier-3');
+    const t2g = document.getElementById('tier-2');
+    const t1g = document.getElementById('tier-1');
+
+    if (t3) t3.setAttribute('clip-path', `url(#clip-${s}-b)`);
+    if (t2g) t2g.setAttribute('clip-path', `url(#clip-${s}-m)`);
+    if (t1g) t1g.setAttribute('clip-path', `url(#clip-${s}-t)`);
 
     // Tier 2 visibility
     if (tier2) {
@@ -226,17 +238,17 @@ setTimeout(() => {
       tier2.style.transform = show2 ? 'translateY(0)' : 'translateY(20px)';
     }
 
-    // Tier 1 (top tier) visibility
+    // Tier 1 (top) visibility
     if (tier1el) {
       const show3 = tiers >= 3;
       tier1el.style.opacity = show3 ? '1' : '0';
       tier1el.style.transform = show3 ? 'translateY(0)' : 'translateY(20px)';
     }
 
-    // Topper (crown/star) decoration
+    // Topper
     if (topper) topper.style.opacity = tiers >= 3 ? '1' : '0';
 
-    // Price update
+    // Price + parts update
     const price = PRICES[cakeState.size.value] || 2000;
     if (ctaHint) {
       ctaHint.textContent = `💰 Estimé à partir de ${price.toLocaleString('fr-FR')} FCFA · ${cakeState.parts.label}`;

@@ -1908,6 +1908,51 @@ h3,
   opacity: 0.8;
 }
 
+/* Shape mini-icon SVGs inside buttons */
+.shape-preview-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--pink);
+  transition: color 0.2s ease;
+}
+
+.config-opt.active .shape-preview-icon {
+  color: var(--pink);
+}
+
+.config-opt:not(.active) .shape-preview-icon {
+  color: #9b7790;
+}
+
+/* Material symbols option icons */
+.opt-icon {
+  font-size: 1.4rem !important;
+  color: #9b7790;
+  transition: color 0.2s ease;
+}
+
+.config-opt.active .opt-icon {
+  color: var(--pink) !important;
+}
+
+/* Tab icon sizing */
+.config-tab .material-symbols-outlined {
+  font-size: 1rem;
+  vertical-align: -2px;
+}
+
+/* Color swatches grid — 4 columns */
+.config-grid--colors {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 480px) {
+  .config-grid--colors {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 /* ======= PERSONALIZATION ======= */
 .personalization {
   padding: 8rem 5%;
