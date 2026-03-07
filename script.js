@@ -1994,6 +1994,9 @@ document.addEventListener('DOMContentLoaded', () => {
               .trim();
           };
 
+          // Helper to escape regex special characters
+          const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
           // On va chercher dans les derniers messages de l'historique quels produits le client a demandé
           // Augmentation du contexte à 10 messages pour ne rien rater
           const lastMessages = chatHistoryMessages.slice(-10).map(m => m.content).join(" ");
@@ -2009,9 +2012,10 @@ document.addEventListener('DOMContentLoaded', () => {
           products.forEach(p => {
             const searchTerm = getSearchTerm(p.name);
             if (searchTerm && combinedLogNorm.includes(searchTerm)) {
-              // Enhanced regex for quantities: "2 cupcakes", "un sachet", "une douzaine", "12x", etc.
-              const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*(?:x|d(?:es|e))?\\s*${searchTerm}`, 'i');
-              const match = combinedLog.match(qtyRegex);
+              // IMPORTANT: match on combinedLogNorm for accent-insensitivity
+              const escapedTerm = escapeRegExp(searchTerm);
+              const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*(?:x|d(?:es|e))?\\s*${escapedTerm}`, 'i');
+              const match = combinedLogNorm.match(qtyRegex);
 
               let qty = 1;
               if (match && match[1]) {
