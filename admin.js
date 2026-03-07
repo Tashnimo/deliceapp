@@ -909,13 +909,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 itemsHtml += `<div style="margin-top:0.5rem; font-size:0.85rem; padding:0.4rem; background:rgba(232, 23, 138, 0.1); border-left:2px solid var(--primary); border-radius:4px;"><i>Note: ${o.note}</i></div>`;
             }
 
-            const currentStatus = o.status || 'new';
-            const statusInfo = STATUS_MAP[currentStatus];
-            const badgeHtml = `<span class="badge ${statusInfo.class}" style="${!statusInfo.class ? `background-color:${statusInfo.color}20; color:${statusInfo.color}; border:1px solid ${statusInfo.color}40;` : ''}">${statusInfo.label}</span>`;
+            const hasToken = !!o.pushToken;
+            const tokenIcon = hasToken ?
+                `<span title="Appareil enregistré" style="color:#10B981; cursor:help;">🔔 Enregistré</span>` :
+                `<span title="Aucun appareil" style="color:var(--grey-text); opacity:0.5; font-size:0.8rem;">🔕 Non lié</span>`;
 
             tr.innerHTML = `
                 <td style="white-space:nowrap; font-size:0.9rem;">${dateStr}</td>
-                <td style="max-width:300px;">${itemsHtml}</td>
+                <td style="max-width:300px;">
+                    ${itemsHtml}
+                    <div style="margin-top:5px; font-size:0.75rem;">${tokenIcon}</div>
+                </td>
                 <td><strong>${new Intl.NumberFormat('fr-FR').format(o.totalAmount || 0)}</strong> FCFA</td>
                 <td>
                     <select class="form-input status-dropdown" data-id="${o.id}" style="padding:0.2rem; width:120px; font-size:0.85rem; margin-bottom:0.3rem;">
@@ -928,6 +932,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
                 <td style="text-align:right;">
                     <div class="actions">
+                        ${hasToken ? `
+                        <button class="action-btn test-push" data-id="${o.id}" title="Tester Notification" style="color:var(--primary); border-color:var(--primary);">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        </button>` : ''}
                         <button class="action-btn delete delete-order" data-id="${o.id}" title="Supprimer">
                             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
@@ -938,6 +946,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Attach events
+        document.querySelectorAll('.test-push').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const orderId = e.currentTarget.getAttribute('data-id');
+                const order = orders.find(o => o.id === orderId);
+                if (order && order.pushToken) {
+                    try {
+                        const btn = e.currentTarget;
+                        const originalHtml = btn.innerHTML;
+                        btn.innerHTML = '...';
+                        btn.disabled = true;
+
+                        const res = await fetch('/api/push-notify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                token: order.pushToken,
+                                title: "Test de Notification 🔔",
+                                body: "Ceci est un test réussi ! Votre appareil est bien connecté à Délice Cake."
+                            })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            alert("Succès ! La notification a été envoyée à l'appareil du client.");
+                        } else {
+                            alert("Erreur serveur : " + data.details);
+                        }
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
+                    } catch (err) {
+                        alert("Erreur réseau : " + err.message);
+                    }
+                }
+            });
+        });
         document.querySelectorAll('.status-dropdown').forEach(select => {
             select.addEventListener('change', async (e) => {
                 const orderId = e.target.getAttribute('data-id');

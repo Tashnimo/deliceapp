@@ -1304,6 +1304,18 @@ async function getAndStoreFCMToken() {
   }
 }
 
+// Helper: Check if iOS
+function isIOS() {
+  return [
+    'iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'
+  ].includes(navigator.platform) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+}
+
+// Helper: Check if PWA (standalone)
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
 async function requestNotificationPermission() {
   if (!("Notification" in window)) return false;
 
@@ -1335,18 +1347,24 @@ function showProactiveNotifPrompt() {
   // Don't show if recently dismissed
   if (localStorage.getItem('delice_notif_prompt_dismissed')) return;
 
+  // Custom message for iOS
+  let promptBody = "Activez les notifications pour savoir exactement quand votre commande est prête, même hors du site. 🍰";
+  if (isIOS() && !isStandalone()) {
+    promptBody = "<strong>Spécial iPhone :</strong> Pour recevoir nos notifications, ajoutez ce site à votre écran d'accueil ! (Partager > Sur l'écran d'accueil) 📲";
+  }
+
   const promptHtml = `
     <div id="proactive-notif-prompt" class="notif-prompt">
       <div class="notif-prompt__header">
         <div class="notif-prompt__icon">🔔</div>
         <div class="notif-prompt__text">
           <h4>Suivez votre gourmandise !</h4>
-          <p>Activez les notifications pour savoir exactement quand votre commande est prête, même hors du site. 🍰</p>
+          <p>${promptBody}</p>
         </div>
       </div>
       <div class="notif-prompt__actions">
         <button id="notif-prompt-later" class="notif-prompt__btn notif-prompt__btn--secondary">Plus tard</button>
-        <button id="notif-prompt-yes" class="notif-prompt__btn notif-prompt__btn--primary">Activer</button>
+        <button id="notif-prompt-yes" class="notif-prompt__btn notif-prompt__btn--primary">${isIOS() && !isStandalone() ? 'Compris !' : 'Activer'}</button>
       </div>
     </div>
   `;
@@ -1716,19 +1734,35 @@ td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FF
       </button>` : `
       <div id="notif-suggest-container" style="margin-top: 1rem; padding: 1rem; background: var(--pink-pale); border-radius: 16px; border: 1px dashed var(--pink);">
         <p style="font-size: 0.85rem; color: #6b4557; margin-bottom: 0.8rem; text-align: center;">
-          Recevez une notification dès que votre commande change de statut ! 🚀
+          ${isIOS() && !isStandalone() ?
+        "<strong>Action requise sur iPhone :</strong> Pour recevoir des alertes, utilisez 'Ajouter à l'écran d'accueil' dans le menu Partager ! 📲" :
+        "Recevez une notification dès que votre commande change de statut ! 🚀"}
         </p>
-        <button id="enable-notifs-btn" style="
-          width: 100%; padding: 0.8rem;
-          background: var(--pink); color: white;
-          border: none; border-radius: 12px;
-          font-size: 0.95rem; font-weight: 700; cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-          gap: 0.5rem; transition: all 0.2s ease;
-          box-shadow: 0 4px 12px rgba(232, 23, 138, 0.2);
-        ">
-          🔔 Activer les notifications
-        </button>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="enable-notifs-btn" style="
+            width: 100%; padding: 0.8rem;
+            background: var(--pink); color: white;
+            border: none; border-radius: 12px;
+            font-size: 0.95rem; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            gap: 0.5rem; transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(232, 23, 138, 0.2);
+            ${isIOS() && !isStandalone() ? 'opacity:0.6; pointer-events:none;' : ''}
+          ">
+            🔔 Activer les notifications
+          </button>
+          
+          <button id="test-notifs-btn" style="
+            width: 100%; padding: 0.6rem;
+            background: transparent; color: var(--pink);
+            border: 1px solid var(--pink); border-radius: 12px;
+            font-size: 0.85rem; font-weight: 600; cursor: pointer;
+            display: ${Notification.permission === 'granted' ? 'flex' : 'none'}; 
+            align-items: center; justify-content: center; gap: 0.4rem;
+          ">
+            🧪 Tester mon appareil
+          </button>
+        </div>
       </div>
       `}
     </div>
@@ -1745,7 +1779,7 @@ td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FF
           notifBtn.style.opacity = "0.7";
           notifBtn.style.cursor = "default";
           notifBtn.disabled = true;
-        } else {
+        } else if (!(isIOS() && !isStandalone())) {
           notifBtn.addEventListener('click', async () => {
             const originalText = notifBtn.innerHTML;
             notifBtn.textContent = "Activation...";
@@ -1767,6 +1801,40 @@ td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FF
           });
         }
       }
+
+      const testBtn = document.getElementById('test-notifs-btn');
+      if (testBtn) {
+        testBtn.addEventListener('click', async () => {
+          const token = localStorage.getItem('delice_fcm_token');
+          if (!token) {
+            alert("Aucun jeton trouvé. Veuillez d'abord activer les notifications.");
+            return;
+          }
+          try {
+            testBtn.disabled = true;
+            testBtn.textContent = "Envoi...";
+            const res = await fetch('/api/push-notify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                token: token,
+                title: "Ça marche ! 🎉",
+                body: "Votre appareil est prêt à recevoir vos statuts de commande."
+              })
+            });
+            if (res.ok) {
+              alert("Test envoyé ! Si vous ne recevez rien dans 5 secondes, vérifiez les réglages de votre navigateur.");
+            } else {
+              alert("Échec du test. Erreur serveur.");
+            }
+          } catch (e) {
+            alert("Erreur de connexion au serveur.");
+          } finally {
+            testBtn.disabled = false;
+            testBtn.textContent = "🧪 Tester mon appareil";
+          }
+        });
+      }
     }
   };
 
@@ -1774,7 +1842,7 @@ td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FF
     const lastOrderId = localStorage.getItem('delice_last_order_id');
     if (!lastOrderId) return;
 
-    if (orderSubscription) orderSubscription(); // Unsubscribe previous if any
+    if (orderSubscription) orderSubscription();
 
     orderSubscription = DataService.subscribeToOrder(lastOrderId, (order) => {
       updateUI(order);
