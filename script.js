@@ -1261,8 +1261,8 @@ async function getAndStoreFCMToken() {
 
     let currentToken = null;
     try {
-      // Get service worker registration to link the token correctly
-      const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+      // Get service worker registration when READY to link the token correctly
+      const registration = await navigator.serviceWorker.ready;
 
       currentToken = await messaging.getToken({
         vapidKey: vapidKey,
@@ -1275,6 +1275,27 @@ async function getAndStoreFCMToken() {
     if (currentToken) {
       localStorage.setItem('delice_fcm_token', currentToken);
       console.log("FCM Token stored.");
+
+      // Gérer les messages quand l'application est au premier plan
+      messaging.onMessage((payload) => {
+        console.log('Message reçu au premier plan: ', payload);
+        const title = payload.notification?.title || payload.data?.title || "Délice Cake";
+        const body = payload.notification?.body || payload.data?.body || "";
+
+        // Notification sonore et visuelle locale via Toast (si dispo) ou Alert
+        if (window.showToast) {
+          window.showToast(`${title}: ${body}`, 'success');
+        } else {
+          alert(`${title}\n${body}`);
+        }
+
+        if (window.playSound) window.playSound('notification');
+
+        // Notification système si permise
+        if (Notification.permission === 'granted') {
+          new Notification(title, { body: body, icon: '/favicon.svg' });
+        }
+      });
     } else {
       console.warn("No FCM token received.");
     }
