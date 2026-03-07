@@ -123,6 +123,7 @@ setTimeout(() => {
     color: { value: 'pink', color: '#E8178A', label: 'Rose Délice' },
     size: { value: 'small', tiers: 1, label: 'Standard (1 étage)' },
     shape: { value: 'round', label: 'Rond classique' },
+    customShape: '',
     parts: { value: '8', label: '8 parts (petit)' },
     occasion: { value: 'birthday', label: 'Anniversaire 🎂' },
     message: ''
@@ -140,6 +141,7 @@ setTimeout(() => {
   const ctaHint = document.querySelector('.cta-hint');
   const msgInput = document.getElementById('cake-message-input');
   const charCount = document.getElementById('msg-char-count');
+  const customShapeInput = document.getElementById('custom-shape-input');
 
   if (!tabs.length) return;
 
@@ -194,14 +196,19 @@ setTimeout(() => {
     });
   });
 
-  // --- Message input ---
+  // --- Message inputs ---
   if (msgInput) {
     msgInput.addEventListener('input', () => {
       cakeState.message = msgInput.value;
       if (charCount) charCount.textContent = msgInput.value.length;
-      // Mirror message on SVG
       const svgText = document.querySelector('.cake-message-text');
       if (svgText) svgText.textContent = msgInput.value ? `"${msgInput.value}"` : '';
+    });
+  }
+
+  if (customShapeInput) {
+    customShapeInput.addEventListener('input', () => {
+      cakeState.customShape = customShapeInput.value;
     });
   }
 
@@ -267,13 +274,14 @@ setTimeout(() => {
   // --- CTA → WhatsApp with full spec ---
   if (orderBtn) {
     orderBtn.addEventListener('click', () => {
+      const shapeDisplay = cakeState.customShape ? `${cakeState.shape.label} (Détail: ${cakeState.customShape})` : cakeState.shape.label;
       const msg =
         `Bonjour Délice Cake ! 🍰\n` +
         `Je souhaite commander un gâteau personnalisé :\n\n` +
         `🍫 Saveur        : ${cakeState.flavor.label}\n` +
         `🎨 Glaçage       : ${cakeState.color.label}\n` +
         `🎂 Format        : ${cakeState.size.label}\n` +
-        `⬟  Forme         : ${cakeState.shape.label}\n` +
+        `⬟  Forme         : ${shapeDisplay}\n` +
         `🍽  Parts         : ${cakeState.parts.label}\n` +
         `🎉 Occasion      : ${cakeState.occasion.label}\n` +
         (cakeState.message ? `✍️  Message       : "${cakeState.message}"\n` : '') +

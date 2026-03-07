@@ -2411,6 +2411,42 @@ h3,
   visibility: visible;
 }
 
+.cake-preview-container {
+  width: 100%;
+  aspect-ratio: 4/5;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(232, 23, 138, 0.05);
+  overflow: visible;
+  perspective: 1200px;
+}
+
+.preview-visual-wrap {
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cake-preview-container:hover .preview-visual-wrap {
+  transform: rotateX(12deg) rotateY(-5deg);
+}
+
+.cake-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.12));
+}
+
 .modal-box {
   background: var(--white);
   width: 90%;
