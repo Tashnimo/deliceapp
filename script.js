@@ -2157,5 +2157,106 @@ INFO : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
   setTimeout(showProactiveNotifPrompt, 4000);
 });
 
+// === NOTIFICATIONS LOGIC ===
+async function initNotifications() {
+  if (!messaging) {
+    console.warn("FCM Messaging is not supported or not loaded.");
+    return;
+  }
+
+  try {
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+      console.log('FCM SW Registered:', reg.scope);
+      messaging.useServiceWorker(reg);
+    }
+
+    const savedToken = localStorage.getItem('delice_fcm_token');
+    if (savedToken) return;
+
+    if (Notification.permission === 'granted') {
+      await getAndStoreFCMToken();
+    }
+  } catch (err) {
+    console.error("FCM Init error:", err);
+  }
+}
+
+async function getAndStoreFCMToken() {
+  if (!messaging) return;
+  try {
+    const vapidKey = "BLfKxjvOqHkYF6A9T5L3jS4wM2B8R7-v9f_8v-v9f_8v-v9"; // Remplacer par la vraie clé VAPID plus tard si nécessaire
+    const currentToken = await messaging.getToken({ vapidKey: vapidKey });
+    if (currentToken) {
+      localStorage.setItem('delice_fcm_token', currentToken);
+      console.log("FCM Token stored.");
+    }
+  } catch (err) {
+    console.error("Error getting FCM token:", err);
+  }
+}
+
+async function requestNotificationPermission() {
+  if (!("Notification" in window)) return false;
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      await getAndStoreFCMToken();
+
+      const lastOrderId = localStorage.getItem('delice_last_order_id');
+      const token = localStorage.getItem('delice_fcm_token');
+      if (lastOrderId && token && typeof DataService !== 'undefined') {
+        await DataService.updateOrderPushToken(lastOrderId, token);
+      }
+      return true;
+    }
+  } catch (err) {
+    console.error("Permission request error:", err);
+  }
+  return false;
+}
+
+// PROACTIVE NOTIFICATION PROMPT
+function showProactiveNotifPrompt() {
+  if (Notification.permission !== 'default') return;
+  if (localStorage.getItem('delice_notif_prompt_dismissed')) return;
+
+  const promptHtml = `
+    <div id="proactive-notif-prompt" class="notif-prompt">
+      <div class="notif-prompt__header">
+        <div class="notif-prompt__icon">🔔</div>
+        <div class="notif-prompt__text">
+          <h4>Suivez votre gourmandise !</h4>
+          <p>Activez les notifications pour savoir quand votre commande est prête. 🍰</p>
+        </div>
+      </div>
+      <div class="notif-prompt__actions">
+        <button id="notif-prompt-later" class="notif-prompt__btn notif-prompt__btn--secondary">Plus tard</button>
+        <button id="notif-prompt-yes" class="notif-prompt__btn notif-prompt__btn--primary">Activer</button>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', promptHtml);
+  const prompt = document.getElementById('proactive-notif-prompt');
+
+  setTimeout(() => prompt.classList.add('active'), 100);
+
+  document.getElementById('notif-prompt-later').addEventListener('click', () => {
+    prompt.classList.remove('active');
+    localStorage.setItem('delice_notif_prompt_dismissed', 'true');
+    setTimeout(() => prompt.remove(), 600);
+  });
+
+  document.getElementById('notif-prompt-yes').addEventListener('click', async () => {
+    prompt.classList.remove('active');
+    const granted = await requestNotificationPermission();
+    if (granted) localStorage.setItem('delice_notif_prompt_dismissed', 'true');
+    setTimeout(() => prompt.remove(), 600);
+  });
+}
+
 // Vercel Cache Busting Version: 04/03/2026 - AI Fix Version 12 (Groq API - Llama 3.1)
 // Trigger Vercel Deploy 9
+
