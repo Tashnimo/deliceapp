@@ -1529,7 +1529,7 @@ td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FF
   const STATUS_REELS = {
     'new': { label: 'Reçue', icon: '📝', color: '#E8178A', desc: 'Nous avons bien reçu votre commande.', class: 'status-new' },
     'processing': { label: 'En préparation', icon: '👨‍🍳', color: '#F59E0B', desc: 'Nos pâtissiers préparent vos délices.', class: 'status-processing' },
-    'completed': { label: 'Prête / Livrée', icon: '✅', color: '#10B981', desc: 'Votre commande est prête ou en chemin !', class: 'status-completed' },
+    'completed': { label: 'Prête ! 🎁', icon: '✨', color: '#10B981', desc: 'Bonne nouvelle ! Votre délice est prêt à être dégusté.', class: 'status-completed' },
     'cancelled': { label: 'Annulée', icon: '❌', color: '#EF4444', desc: 'La commande a été annulée.', class: 'status-cancelled' }
   };
 
@@ -1548,13 +1548,15 @@ td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FF
       }
     });
 
-    // Update Modal Content
+    const headerClass = order.status === 'completed' ? 'track-status-header status-ready-box' : 'track-status-header';
+    const iconClass = order.status === 'completed' ? 'wow-icon' : '';
+
     content.innerHTML = `
-      <div class="track-status-header" style="background: ${status.color}10; border-color: ${status.color}30;">
-        <div style="font-size: 3.5rem; margin-bottom: 0.5rem; filter: drop-shadow(0 4px 10px ${status.color}30);">${status.icon}</div>
-        <h4 style="color: ${status.color}; font-size: 1.5rem; margin-bottom: 0.3rem; font-family: var(--font-fancy);">${status.label}</h4>
-        <p style="font-size: 0.95rem; color: #6b4557; opacity: 0.8;">${status.desc}</p>
-      </div>
+        <div class="${headerClass}" style="background: ${status.color}10; border-color: ${status.color}30;">
+          <div class="${iconClass}" style="font-size: 3.5rem; margin-bottom: 0.5rem; filter: drop-shadow(0 4px 10px ${status.color}30);">${status.icon}</div>
+          <h4 style="color: ${status.color}; font-size: 1.5rem; margin-bottom: 0.3rem; font-family: var(--font-fancy);">${status.label}</h4>
+          <p style="font-size: 0.95rem; color: #6b4557; opacity: 0.8;">${status.desc}</p>
+        </div>
 
       <div class="track-stepper">
         <div class="step-item ${currentIndex >= 0 ? (currentIndex > 0 ? 'completed' : 'active') : ''}">
