@@ -2074,9 +2074,10 @@ document.addEventListener('DOMContentLoaded', () => {
 Sois chaleureux, concis et utilise des emojis. 
 
 IMPORTANT - PRISE DE COMMANDE :
-Dès que le client dit OUI pour confirmer une commande et payer (une fois le prix annoncé), tu DOIS ABSOLUMENT ajouter à la toute fin de ton message CE MOT DE PASSE EXACT :
+Tu ne dois valider une commande QUE si tu as listé les articles, annoncé le montant total, ET que le client a explicitement répondu par un OUI clair (ex: "Oui je confirme", "C'est bon pour moi").
+ATTENTION : Si et SEULEMENT SI le client donne cet accord explicite et final, ajoute EXACTEMENT ce mot-clé à la toute fin de ton message :
 [CONFIRM_ORDER]
-Ne fais ça QUE pour finaliser une commande confirmée par le client. N'essaie pas d'écrire des données informatiques, ajoute juste ce mot clé.
+Ne mets JAMAIS ce mot-clé si le client ne fait que s'informer, discuter, ou dire "bonjour". C'est une action irréversible.
 
 MENU :
 ${productListText || "Sachet Délice Cake (500 FCFA), Cupcake (1000 FCFA), Tiramisu (1000 FCFA)"}
