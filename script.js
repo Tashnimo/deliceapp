@@ -125,7 +125,7 @@ setTimeout(() => {
     shape: { value: 'square', label: 'Carré élégant' },
     customShape: '',
     parts: { value: '8', label: '8 parts (petit)' },
-    occasion: { value: 'birthday', label: 'Anniversaire 🎂' },
+    occasion: { value: 'birthday', label: 'Anniversaire' },
     message: ''
   };
 
@@ -257,7 +257,7 @@ setTimeout(() => {
     // Price + parts update
     const price = PRICES[cakeState.size.value] || 2000;
     if (ctaHint) {
-      ctaHint.textContent = `💰 Estimé à partir de ${price.toLocaleString('fr-FR')} FCFA · ${cakeState.parts.label}`;
+      ctaHint.innerHTML = `<span class="material-symbols-outlined" style="font-size:1.2rem; vertical-align:middle; margin-right:4px;">payments</span> Estimé à partir de ${price.toLocaleString('fr-FR')} FCFA · ${cakeState.parts.label}`;
     }
   }
 
@@ -275,16 +275,16 @@ setTimeout(() => {
     orderBtn.addEventListener('click', async () => {
       const shapeDisplay = cakeState.customShape ? `${cakeState.shape.label} (Détail: ${cakeState.customShape})` : cakeState.shape.label;
       const msg =
-        `Bonjour Délice Cake ! 🍰\n` +
-        `Je souhaite commander un gâteau personnalisé :\n\n` +
-        `🍫 Saveur        : ${cakeState.flavor.label}\n` +
-        `🎨 Glaçage       : ${cakeState.color.label}\n` +
-        `🎂 Format        : ${cakeState.size.label}\n` +
-        `⬟  Forme         : ${shapeDisplay}\n` +
-        `🍽  Parts         : ${cakeState.parts.label}\n` +
-        `🎉 Occasion      : ${cakeState.occasion.label}\n` +
-        (cakeState.message ? `✍️  Message       : "${cakeState.message}"\n` : '') +
-        `\nMerci de me contacter pour confirmer et finaliser ma commande ! 😊`;
+        `*COMMANDE DÉLICE CAKE* ✦\n` +
+        `Nouveau gâteau personnalisé :\n\n` +
+        `• Saveur        : ${cakeState.flavor.label}\n` +
+        `• Glaçage       : ${cakeState.color.label}\n` +
+        `• Format        : ${cakeState.size.label}\n` +
+        `• Forme         : ${shapeDisplay}\n` +
+        `• Parts         : ${cakeState.parts.label}\n` +
+        `• Occasion      : ${cakeState.occasion.label}\n` +
+        (cakeState.message ? `• Message       : "${cakeState.message}"\n` : '') +
+        `\n_Veuillez me contacter pour confirmer la commande._`;
 
       // Save to Firestore and notify Telegram
       try {
