@@ -431,50 +431,174 @@
         </div>
     </section>
 
-    <!-- PERSONALIZATION -->
-    <section class="personalization" id="personnalisation">
+    <!-- CAKE STUDIO (PERSONALIZATION) -->
+    <section class="personalization cake-studio" id="personnalisation">
         <div class="personalization__container">
             <div class="personalization__content reveal-clip">
-                <span class="section-label">Sur Mesure</span>
-                <h2 class="section-title">Haute <em>Personnalisation</em></h2>
+                <span class="section-label">Expérience Unique</span>
+                <h2 class="section-title">Délice <em>Cake Studio</em></h2>
                 <p class="section-sub">
-                    Parce que chaque événement est unique, nous créons des gâteaux qui vous ressemblent.
-                    Du thème de votre fête à vos saveurs préférées, nous personnalisons chaque détail pour
-                    offrir une expérience mémorable à vos invités.
+                    Devenez l'architecte de votre plaisir. Personnalisez votre gâteau en temps réel
+                    et visualisez votre création avant même qu'elle ne sorte de nos fours.
                 </p>
-                <ul class="personalization__features reveal-stagger-parent">
-                    <li class="reveal-stagger-item">
-                        <span class="material-symbols-outlined">Palette</span>
-                        <div>
-                            <h5>Thèmes sur mesure</h5>
-                            <p>Anniversaires, mariages ou fêtes à thème, nous adaptons le visuel à vos envies.</p>
+
+                <div class="cake-config">
+                    <!-- Tabs for categories -->
+                    <div class="cake-config__tabs">
+                        <button class="config-tab active" data-category="flavor">Saveur</button>
+                        <button class="config-tab" data-category="color">Couleur</button>
+                        <button class="config-tab" data-category="size">Format</button>
+                    </div>
+
+                    <!-- Config options (Dynamic content area) -->
+                    <div class="cake-config__options">
+                        <!-- Flavor options -->
+                        <div class="config-panel active" data-panel="flavor">
+                            <div class="config-grid">
+                                <button class="config-opt active" data-value="choc" data-color="#4A2C2A">
+                                    <div class="opt-dot" style="background: #4A2C2A;"></div>
+                                    <span>Chocolat Noir</span>
+                                </button>
+                                <button class="config-opt" data-value="vanilla" data-color="#F3E5AB">
+                                    <div class="opt-dot" style="background: #F3E5AB;"></div>
+                                    <span>Vanille Bourbon</span>
+                                </button>
+                                <button class="config-opt" data-value="strawberry" data-color="#FF5A5F">
+                                    <div class="opt-dot" style="background: #FF5A5F;"></div>
+                                    <span>Fraise Fraîche</span>
+                                </button>
+                                <button class="config-opt" data-value="pistachio" data-color="#93C572">
+                                    <div class="opt-dot" style="background: #93C572;"></div>
+                                    <span>Pistache</span>
+                                </button>
+                            </div>
                         </div>
-                    </li>
-                    <li class="reveal-stagger-item">
-                        <span class="material-symbols-outlined">Restaurant_Menu</span>
-                        <div>
-                            <h5>Mariages de saveurs uniques</h5>
-                            <p>Choisissez parmi nos garnitures premium pour un gâteau qui ravit vos papilles.</p>
+
+                        <!-- Color options -->
+                        <div class="config-panel" data-panel="color">
+                            <div class="config-grid">
+                                <button class="config-opt active" data-value="pink" data-color="#E8178A">
+                                    <div class="opt-dot" style="background: #E8178A;"></div>
+                                    <span>Rose Délice</span>
+                                </button>
+                                <button class="config-opt" data-value="gold" data-color="#D4AF37">
+                                    <div class="opt-dot" style="background: #D4AF37;"></div>
+                                    <span>Or Royal</span>
+                                </button>
+                                <button class="config-opt" data-value="blue" data-color="#5DADE2">
+                                    <div class="opt-dot" style="background: #5DADE2;"></div>
+                                    <span>Bleu Céleste</span>
+                                </button>
+                                <button class="config-opt" data-value="white" data-color="#FFFFFF">
+                                    <div class="opt-dot" style="background: #F8F9FA; border: 1px solid #ddd;"></div>
+                                    <span>Blanc Pur</span>
+                                </button>
+                            </div>
                         </div>
-                    </li>
-                    <li class="reveal-stagger-item">
-                        <span class="material-symbols-outlined">Auto_Fix_High</span>
-                        <div>
-                            <h5>Détails soignés</h5>
-                            <p>Finitions artisanales et décorations faites main pour un résultat d'exception.</p>
+
+                        <!-- Size options -->
+                        <div class="config-panel" data-panel="size">
+                            <div class="config-grid">
+                                <button class="config-opt active" data-value="small" data-tiers="1">
+                                    <span class="material-symbols-outlined">Cake</span>
+                                    <span>Standard (1 étage)</span>
+                                </button>
+                                <button class="config-opt" data-value="large" data-tiers="2">
+                                    <span class="material-symbols-outlined">Layers</span>
+                                    <span>Festif (2 étages)</span>
+                                </button>
+                                <button class="config-opt" data-value="grand" data-tiers="3">
+                                    <span class="material-symbols-outlined">Celebration</span>
+                                    <span>Gala (3 étages)</span>
+                                </button>
+                            </div>
                         </div>
-                    </li>
-                </ul>
+                    </div>
+                </div>
+
                 <div class="personalization__cta">
-                    <a href="https://wa.me/22656808872" class="btn btn--primary" target="_blank" data-magnetic>Discuter
-                        de mon projet</a>
+                    <button class="btn btn--primary" id="order-custom-cake" data-magnetic>
+                        Commander cette création
+                    </button>
+                    <p class="cta-hint">Prix estimé en fonction de vos choix</p>
                 </div>
             </div>
-            <div class="personalization__image reveal-clip" style="transition-delay: 0.3s;">
-                <div class="image-wrapper" data-parallax="0.04">
-                    <img src="custom_cake_personalization.png" alt="Gâteau personnalisé Délice Cake" loading="lazy"
-                        decoding="async">
-                    <div class="image-overlay-glow"></div>
+
+            <div class="personalization__visual reveal-clip">
+                <div class="cake-preview-container">
+                    <!-- SVG CAKE VISUALIZER -->
+                    <div id="cake-svg-render">
+                        <svg viewBox="0 0 400 500" class="cake-svg">
+                            <defs>
+                                <filter id="cake-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur in="SourceAlpha" stdDeviation="5" />
+                                    <feOffset dx="0" dy="8" result="offsetblur" />
+                                    <feComponentTransfer>
+                                        <feFuncA type="linear" slope="0.3" />
+                                    </feComponentTransfer>
+                                    <feMerge>
+                                        <feMergeNode />
+                                        <feMergeNode in="SourceGraphic" />
+                                    </feMerge>
+                                </filter>
+                                <linearGradient id="cake-icing-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:rgba(255,255,255,0.4);stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:rgba(255,255,255,0);stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+
+                            <!-- Base / Plate -->
+                            <ellipse cx="200" cy="420" rx="140" ry="30" fill="#f0f0f0" />
+                            <ellipse cx="200" cy="415" rx="130" ry="25" fill="#ffffff" stroke="#ddd" stroke-width="2" />
+
+                            <g class="cake-tiers-group" filter="url(#cake-shadow)">
+                                <!-- Tier 3 (Bottom) -->
+                                <g class="cake-tier tier-bottom" id="tier-3">
+                                    <rect x="100" y="320" width="200" height="100" rx="10" class="cake-body"
+                                        fill="#E8178A" />
+                                    <rect x="100" y="320" width="200" height="20" rx="5" fill="url(#cake-icing-grad)" />
+                                    <!-- Flavor layers inner -->
+                                    <line x1="100" y1="353" x2="300" y2="353" stroke="rgba(0,0,0,0.1)" stroke-width="6"
+                                        class="flavor-line" />
+                                    <line x1="100" y1="386" x2="300" y2="386" stroke="rgba(0,0,0,0.1)" stroke-width="6"
+                                        class="flavor-line" />
+                                </g>
+
+                                <!-- Tier 2 (Middle) -->
+                                <g class="cake-tier tier-middle" id="tier-2" style="opacity: 0;">
+                                    <rect x="125" y="240" width="150" height="80" rx="8" class="cake-body"
+                                        fill="#E8178A" />
+                                    <rect x="125" y="240" width="150" height="15" rx="4" fill="url(#cake-icing-grad)" />
+                                    <line x1="125" y1="266" x2="275" y2="266" stroke="rgba(0,0,0,0.1)" stroke-width="5"
+                                        class="flavor-line" />
+                                    <line x1="125" y1="293" x2="275" y2="293" stroke="rgba(0,0,0,0.1)" stroke-width="5"
+                                        class="flavor-line" />
+                                </g>
+
+                                <!-- Tier 1 (Top) -->
+                                <g class="cake-tier tier-top" id="tier-1" style="opacity: 0;">
+                                    <rect x="150" y="180" width="100" height="60" rx="6" class="cake-body"
+                                        fill="#E8178A" />
+                                    <rect x="150" y="180" width="100" height="12" rx="3" fill="url(#cake-icing-grad)" />
+                                    <line x1="150" y1="200" x2="250" y2="200" stroke="rgba(0,0,0,0.1)" stroke-width="4"
+                                        class="flavor-line" />
+                                    <line x1="150" y1="220" x2="250" y2="220" stroke="rgba(0,0,0,0.1)" stroke-width="4"
+                                        class="flavor-line" />
+                                </g>
+                            </g>
+
+                            <!-- Decorations -->
+                            <g class="cake-decorations">
+                                <circle cx="200" cy="180" r="15" fill="#D4AF37" class="cake-topper"
+                                    style="opacity: 0;" />
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Floating stats -->
+                    <div class="preview-info-bubble info-bubble-1">Moelleux</div>
+                    <div class="preview-info-bubble info-bubble-2">Fait main</div>
+                    <div class="preview-info-bubble info-bubble-3">Gourmand</div>
                 </div>
             </div>
         </div>
