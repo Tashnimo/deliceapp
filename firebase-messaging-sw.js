@@ -15,12 +15,20 @@ const messaging = firebase.messaging();
 // Gérer les notifications en arrière-plan
 messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Notification reçue en arrière-plan ', payload);
-    const notificationTitle = payload.notification.title || "Nouvelle commande !";
+
+    // Si Firebase envoie une vraie notification backend, il l'affiche tout seul !
+    if (payload.notification) {
+        console.log("Notification gérée nativement par FCM.");
+        return;
+    }
+
+    // Le backend n'a envoyé que des datas (fallback safe)
+    const notificationTitle = payload.data?.title || "Délice Cake";
     const notificationOptions = {
-        body: payload.notification.body || "Vérifiez votre tableau de bord.",
+        body: payload.data?.body || "Nouvelle mise à jour sur votre commande !",
         icon: '/favicon.svg',
         badge: '/favicon.svg',
-        data: payload.data
+        data: payload.data || {}
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
