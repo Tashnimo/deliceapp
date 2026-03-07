@@ -258,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initVoiceOver();
   loadSiteSettings();
   init3DModelColor();
+  initNotifications();
 });
 
 // === 3D MODEL COLOR & TEXTURE UPDATE ===
@@ -981,6 +982,78 @@ function initOrderModal() {
   }
 
   initOrderTracking();
+
+  // Suggest notifications if not already granted
+  setTimeout(() => {
+    if (Notification.permission === 'default') {
+      console.log("Suggesting notifications for order tracking...");
+    }
+  }, 3000);
+}
+
+// === NOTIFICATIONS LOGIC ===
+async function initNotifications() {
+  if (!messaging) {
+    console.warn("FCM Messaging is not supported or not loaded.");
+    return;
+  }
+
+  try {
+    // Register Service Worker explicitly
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+      console.log('FCM SW Registered:', reg.scope);
+      messaging.useServiceWorker(reg);
+    }
+
+    // Check if we already have a token
+    const savedToken = localStorage.getItem('delice_fcm_token');
+    if (savedToken) {
+      console.log("FCM Token already exists.");
+      return;
+    }
+
+    // Attempt to get token if permission is already granted
+    if (Notification.permission === 'granted') {
+      await getAndStoreFCMToken();
+    }
+  } catch (err) {
+    console.error("FCM Init error:", err);
+  }
+}
+
+async function getAndStoreFCMToken() {
+  if (!messaging) return;
+  try {
+    // VAPID Key is required for web push. 
+    // The user will need to provide this, but I'll add a placeholder or check if it's in config.
+    const vapidKey = "BD_eOqM2C-YhXh9m8M3BfT_V-v9f_8v-v9f_8v-v9f_8v-v9f_8v-v9"; // PLACEHOLDER
+
+    const currentToken = await messaging.getToken({ vapidKey: vapidKey });
+    if (currentToken) {
+      localStorage.setItem('delice_fcm_token', currentToken);
+      console.log("FCM Token stored.");
+    } else {
+      console.warn("No FCM token received.");
+    }
+  } catch (err) {
+    console.error("Error getting FCM token:", err);
+  }
+}
+
+async function requestNotificationPermission() {
+  if (!("Notification" in window)) return false;
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      await getAndStoreFCMToken();
+      return true;
+    }
+  } catch (err) {
+    console.error("Permission request error:", err);
+  }
+  return false;
 }
 
 // === ORDER TRACKING LOGIC ===
@@ -1001,13 +1074,13 @@ function initOrderTracking() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-      const PINK       = [232, 23, 138];
-      const DARK_PINK  = [180, 10, 100];
+      const PINK = [232, 23, 138];
+      const DARK_PINK = [180, 10, 100];
       const LIGHT_PINK = [255, 230, 245];
-      const GOLD       = [212, 175, 55];
-      const DARK       = [30, 20, 26];
-      const GREY       = [110, 90, 100];
-      const WHITE      = [255, 255, 255];
+      const GOLD = [212, 175, 55];
+      const DARK = [30, 20, 26];
+      const GREY = [110, 90, 100];
+      const WHITE = [255, 255, 255];
       const LIGHT_GREY = [245, 245, 248];
 
       const pageW = doc.internal.pageSize.getWidth();
@@ -1152,13 +1225,13 @@ function initOrderTracking() {
 
       // Download via Blob URL (most compatible)
       const blob = doc.output('blob');
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
       a.href = url; a.download = 'Facture_DeliceCake_' + ref + '.pdf';
       document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 3000);
 
-    } catch(err) {
+    } catch (err) {
       console.error("PDF generation error:", err);
       _printInvoiceFallback(order);
     }
@@ -1166,15 +1239,15 @@ function initOrderTracking() {
 
   // Fallback: opens a styled HTML page for browser printing
   function _printInvoiceFallback(order) {
-    function fmtA(n) { return (Number(n)||0).toLocaleString('fr-FR') + ' FCFA'; }
+    function fmtA(n) { return (Number(n) || 0).toLocaleString('fr-FR') + ' FCFA'; }
     function getD(raw) {
       if (!raw) return new Date().toLocaleDateString('fr-FR');
       if (raw.toDate) return raw.toDate().toLocaleDateString('fr-FR');
-      if (raw.seconds) return new Date(raw.seconds*1000).toLocaleDateString('fr-FR');
-      const d = new Date(raw); return isNaN(d)?new Date().toLocaleDateString('fr-FR'):d.toLocaleDateString('fr-FR');
+      if (raw.seconds) return new Date(raw.seconds * 1000).toLocaleDateString('fr-FR');
+      const d = new Date(raw); return isNaN(d) ? new Date().toLocaleDateString('fr-FR') : d.toLocaleDateString('fr-FR');
     }
-    const ref = (order.id||'N/A').substring(0,12).toUpperCase();
-    const rows = (order.items||[]).map((it,i)=>`<tr><td>${i+1}</td><td>${it.name||''}</td><td>${it.quantity||1}</td><td>${fmtA(it.unitPrice)}</td><td><strong>${fmtA(it.totalPrice)}</strong></td></tr>`).join('');
+    const ref = (order.id || 'N/A').substring(0, 12).toUpperCase();
+    const rows = (order.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${it.name || ''}</td><td>${it.quantity || 1}</td><td>${fmtA(it.unitPrice)}</td><td><strong>${fmtA(it.totalPrice)}</strong></td></tr>`).join('');
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Facture Délice Cake</title>
 <style>body{font-family:Arial,sans-serif;margin:0;padding:20px;color:#1e141a}
 .header{background:#E8178A;color:white;padding:24px;border-radius:8px;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
@@ -1200,7 +1273,7 @@ td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FF
   <div><div class="badge">FACTURE</div><div class="meta">Réf : ${ref}<br>Date : ${getD(order.createdAt)}<br><strong style="color:#D4AF37">LIVRÉ / TERMINÉ</strong></div></div>
 </div>
 <div class="cols">
-  <div class="col"><h4>Informations Client</h4>Type : Commande en ligne<br>Note : ${(order.note||'Client standard').substring(0,40)}<br>Paiement : À la livraison</div>
+  <div class="col"><h4>Informations Client</h4>Type : Commande en ligne<br>Note : ${(order.note || 'Client standard').substring(0, 40)}<br>Paiement : À la livraison</div>
   <div class="col"><h4>Détails Livraison</h4>Mode : Livraison à domicile<br>Date : ${getD(order.createdAt)}<br>Référence : ${ref}</div>
 </div>
 <h3 style="color:#1e141a;border-bottom:2px solid #E8178A;padding-bottom:6px">Détail de la Commande</h3>
@@ -1294,13 +1367,54 @@ td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FF
         transition: all 0.2s ease; font-family: var(--font-body);
       " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
         📥 Télécharger ma Facture
-      </button>` : ''}
+      </button>` : `
+      <div id="notif-suggest-container" style="margin-top: 1rem; padding: 1rem; background: var(--pink-pale); border-radius: 16px; border: 1px dashed var(--pink);">
+        <p style="font-size: 0.85rem; color: #6b4557; margin-bottom: 0.8rem; text-align: center;">
+          Recevez une notification dès que votre commande change de statut ! 🚀
+        </p>
+        <button id="enable-notifs-btn" style="
+          width: 100%; padding: 0.8rem;
+          background: var(--pink); color: white;
+          border: none; border-radius: 12px;
+          font-size: 0.95rem; font-weight: 700; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          gap: 0.5rem; transition: all 0.2s ease;
+          box-shadow: 0 4px 12px rgba(232, 23, 138, 0.2);
+        ">
+          🔔 Activer les notifications
+        </button>
+      </div>
+      `}
     </div>
     `;
 
     if (order.status === 'completed') {
       const dlBtn = document.getElementById('download-invoice-btn');
       if (dlBtn) dlBtn.addEventListener('click', () => generateInvoicePDF(order));
+    } else {
+      const notifBtn = document.getElementById('enable-notifs-btn');
+      if (notifBtn) {
+        if (Notification.permission === 'granted') {
+          notifBtn.innerHTML = "✅ Notifications activées";
+          notifBtn.style.opacity = "0.7";
+          notifBtn.style.cursor = "default";
+          notifBtn.disabled = true;
+        } else {
+          notifBtn.addEventListener('click', async () => {
+            notifBtn.textContent = "Activation...";
+            const granted = await requestNotificationPermission();
+            if (granted) {
+              notifBtn.innerHTML = "✅ Activé !";
+              setTimeout(() => {
+                const container = document.getElementById('notif-suggest-container');
+                if (container) container.style.display = 'none';
+              }, 2000);
+            } else {
+              notifBtn.textContent = "🔔 Réessayer l'activation";
+            }
+          });
+        }
+      }
     }
   };
 
@@ -1719,6 +1833,7 @@ INFO : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
     }
   };
 
+  initNotifications();
 });
 
 // Vercel Cache Busting Version: 04/03/2026 - AI Fix Version 12 (Groq API - Llama 3.1)

@@ -25,3 +25,11 @@ messaging.onBackgroundMessage((payload) => {
 
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
+
+// Gérer le clic sur la notification
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    event.waitUntil(
+        clients.openWindow('https://delice-cake.vercel.app/')
+    );
+});

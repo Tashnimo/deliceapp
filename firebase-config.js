@@ -251,8 +251,10 @@ const DataService = {
     // ==========================================
     saveOrder: async (orderData) => {
         if (isFirebaseConfigured && db) {
+            const pushToken = localStorage.getItem('delice_fcm_token');
             const docRef = await db.collection('orders').add({
                 ...orderData,
+                pushToken: pushToken || null,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             return docRef.id;
@@ -326,7 +328,37 @@ const DataService = {
 
     updateOrderStatus: async (orderId, newStatus) => {
         if (isFirebaseConfigured && db) {
-            await db.collection('orders').doc(orderId).update({ status: newStatus });
+            const orderRef = db.collection('orders').doc(orderId);
+            await orderRef.update({ status: newStatus });
+
+            // Trigger push notification if token exists
+            try {
+                const doc = await orderRef.get();
+                if (doc.exists) {
+                    const order = doc.data();
+                    if (order.pushToken) {
+                        const STATUS_MESSAGES = {
+                            'processing': "Votre commande est en cours de préparation ! 🧁",
+                            'completed': "Votre commande est prête ! 🍰 À très bientôt.",
+                            'cancelled': "Votre commande a été annulée."
+                        };
+
+                        if (STATUS_MESSAGES[newStatus]) {
+                            fetch('/api/push-notify', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    token: order.pushToken,
+                                    title: "Mise à jour Délice Cake 🍰",
+                                    body: STATUS_MESSAGES[newStatus]
+                                })
+                            }).catch(e => console.error("Push notify trigger failed", e));
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error triggering notification:", err);
+            }
         } else {
             let orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
             const index = orders.findIndex(o => o.id === orderId);
