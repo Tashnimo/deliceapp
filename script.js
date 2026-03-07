@@ -1982,7 +1982,11 @@ document.addEventListener('DOMContentLoaded', () => {
           // Helper for fuzzy matching: remove accents, lowercase, remove plurals
           const normalize = (str) => {
             if (!str) return "";
-            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+            return str.normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "")
+              .toLowerCase()
+              .replace(/s\b/g, "") // remove plurals here too for consistency
+              .trim();
           };
 
           // Get search term: e.g. "Tiramisu Maison" -> "tiramisu"
@@ -1990,7 +1994,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return normalize(name)
               .replace(/\(.*\)/g, "") // remove (12 pcs)
               .replace(/\b(maison|signature|artisanale?|assortis?)\b/g, "")
-              .replace(/s\b/g, "") // simple plural removal at word end
               .trim();
           };
 
@@ -2002,11 +2005,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // 2. CONTEXT WINDOW: Last 10 relevant messages for quantity context
           const lastMessagesText = relevantHistory.slice(-10).map(m => m.content).join(" ");
-          const cleanResponseNorm = normalize(cleanResponse);
 
           // 3. COMBINED LOG for quantity search
           const combinedLog = lastMessagesText + " " + cleanResponse;
           const combinedLogNorm = normalize(combinedLog);
+          const cleanResponseNorm = normalize(cleanResponse);
 
           // On s'appuie sur le catalogue global
           const products = typeof DataService !== 'undefined' ? await DataService.getProducts() : [];
@@ -2102,8 +2105,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
           } else {
             console.warn("L'IA a confirmé mais aucun produit reconnu dans le texte.");
-            const debugLog = combinedLog.slice(-200); // Send last 200 chars for context
-            sendTelegramNotification(`⚠️ <b>ERREUR IA</b>\nTag [CONFIRM_ORDER] détecté mais impossible d'extraire les produits.\n\n<b>Contexte :</b> <i>...${debugLog}</i>\n\nConversation : ${chatId}`).catch(e => e);
+            const debugLog = combinedLog.slice(-400); // More context
+            const availableProdNames = products.map(p => p.name).join(", ");
+            sendTelegramNotification(`⚠️ <b>ERREUR IA</b>\nTag [CONFIRM_ORDER] détecté mais extraction impossible.\n\n<b>Contexte :</b> <i>...${debugLog}</i>\n\n<b>Produits en DB :</b> ${availableProdNames}\n\nConversation : ${chatId}`).catch(e => e);
           }
         } catch (parseErr) {
           console.error("Order process failed:", parseErr);
