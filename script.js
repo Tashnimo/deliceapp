@@ -1261,7 +1261,13 @@ async function getAndStoreFCMToken() {
 
     let currentToken = null;
     try {
-      currentToken = await messaging.getToken({ vapidKey: vapidKey });
+      // Get service worker registration to link the token correctly
+      const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+
+      currentToken = await messaging.getToken({
+        vapidKey: vapidKey,
+        serviceWorkerRegistration: registration
+      });
     } catch (e) {
       console.error("Veuillez configurer la vraie VAPID key dans script.js (getAndStoreFCMToken) pour activer Push.");
       return;

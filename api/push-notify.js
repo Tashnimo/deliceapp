@@ -51,15 +51,32 @@ export default async function handler(req, res) {
             });
         }
 
+        const host = req.headers.host || 'delcakebf.vercel.app';
+        const protocol = host.includes('localhost') ? 'http' : 'https';
+        const baseUrl = `${protocol}://${host}`;
+
         const message = {
             notification: { title, body },
             token: token,
             data: data || {},
-            webpush: {
+            android: {
+                priority: 'high',
                 notification: {
-                    icon: 'https://delice-cake.vercel.app/favicon.svg',
-                    badge: 'https://delice-cake.vercel.app/favicon.svg',
-                    click_action: 'https://delice-cake.vercel.app/'
+                    sound: 'default',
+                    click_action: 'TOP_STORY_ACTIVITY'
+                }
+            },
+            webpush: {
+                headers: {
+                    Urgency: 'high'
+                },
+                notification: {
+                    icon: `${baseUrl}/favicon.svg`,
+                    badge: `${baseUrl}/favicon.svg`,
+                    requireInteraction: true
+                },
+                fcm_options: {
+                    link: baseUrl
                 }
             }
         };
