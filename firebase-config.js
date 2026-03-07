@@ -354,272 +354,221 @@ const DataService = {
                                 })
                             }).catch(e => console.error("Push notify trigger failed", e));
                         }
-                    }
-                }
-            } catch (err) {
-                console.error("Error triggering notification:", err);
-            }
-        } else {
-            let orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
-            const index = orders.findIndex(o => o.id === orderId);
-            if (index > -1) {
-                orders[index].status = newStatus;
-                localStorage.setItem('delice_mock_orders', JSON.stringify(orders));
-            }
-        }
-    },
+                        // ==========================================
+                        // GESTION DES DEPENSES
+                        // ==========================================
+                        getExpenses: async () => {
+                            if (isFirebaseConfigured && db) {
+                                const snapshot = await db.collection('expenses').orderBy('date', 'desc').get();
+                                return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                            } else {
+                                return JSON.parse(localStorage.getItem('delice_mock_expenses') || '[]');
+                            }
+                        },
 
-    deleteOrder: async (orderId) => {
-        if (isFirebaseConfigured && db) {
-            await db.collection('orders').doc(orderId).delete();
-        } else {
-            let orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
-            orders = orders.filter(o => o.id !== orderId);
-            localStorage.setItem('delice_mock_orders', JSON.stringify(orders));
-        }
-    },
+                            addExpense: async (expense) => {
+                                if (isFirebaseConfigured && db) {
+                                    await db.collection('expenses').add({
+                                        ...expense,
+                                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                                    });
+                                } else {
+                                    const expenses = JSON.parse(localStorage.getItem('delice_mock_expenses') || '[]');
+                                    expenses.unshift({ ...expense, id: 'exp_' + Date.now() });
+                                    localStorage.setItem('delice_mock_expenses', JSON.stringify(expenses));
+                                }
+                            },
 
-    // ==========================================
-    // BASE DE CONNAISSANCES IA
-    // ==========================================
-    getKnowledgeBase: async () => {
-        if (isFirebaseConfigured && db) {
-            const snapshot = await db.collection('knowledge_base').doc('main').get();
-            if (snapshot.exists) {
-                return snapshot.data().content || "";
-            }
-            return "";
-        } else {
-            return localStorage.getItem('delice_mock_kb') || "";
-        }
-    },
+                                deleteExpense: async (id) => {
+                                    if (isFirebaseConfigured && db) {
+                                        await db.collection('expenses').doc(id).delete();
+                                    } else {
+                                        let expenses = JSON.parse(localStorage.getItem('delice_mock_expenses') || '[]');
+                                        expenses = expenses.filter(e => e.id !== id);
+                                        localStorage.setItem('delice_mock_expenses', JSON.stringify(expenses));
+                                    }
+                                },
 
-    saveKnowledgeBase: async (text) => {
-        if (isFirebaseConfigured && db) {
-            await db.collection('knowledge_base').doc('main').set({
-                content: text,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        } else {
-            localStorage.setItem('delice_mock_kb', text);
-        }
-    },
+                                    // ==========================================
+                                    // SUIVI DES LEADS (INTÉRET CLIENT)
+                                    // ==========================================
+                                    logLead: async (source) => {
+                                        if (isFirebaseConfigured && db) {
+                                            try {
+                                                await db.collection('leads').add({
+                                                    source: source || 'unknown',
+                                                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                                                });
+                                            } catch (e) { console.error("Lead log failed", e); }
+                                        }
+                                    },
 
-    // ==========================================
-    // GESTION DES DEPENSES
-    // ==========================================
-    getExpenses: async () => {
-        if (isFirebaseConfigured && db) {
-            const snapshot = await db.collection('expenses').orderBy('date', 'desc').get();
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        } else {
-            return JSON.parse(localStorage.getItem('delice_mock_expenses') || '[]');
-        }
-    },
+                                        subscribeToLeads: (callback) => {
+                                            if (isFirebaseConfigured && db) {
+                                                return db.collection('leads')
+                                                    .where('timestamp', '>', new Date(Date.now() - 30000)) // Only very recent ones
+                                                    .onSnapshot(snapshot => {
+                                                        if (!snapshot.empty && !snapshot.metadata.hasPendingWrites) {
+                                                            callback(snapshot.docs.map(doc => doc.data()));
+                                                        }
+                                                    });
+                                            }
+                                            return null;
+                                        },
 
-    addExpense: async (expense) => {
-        if (isFirebaseConfigured && db) {
-            await db.collection('expenses').add({
-                ...expense,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        } else {
-            const expenses = JSON.parse(localStorage.getItem('delice_mock_expenses') || '[]');
-            expenses.unshift({ ...expense, id: 'exp_' + Date.now() });
-            localStorage.setItem('delice_mock_expenses', JSON.stringify(expenses));
-        }
-    },
+                                            // ==========================================
+                                            // RÉGLAGES DU SITE (TEXTES ET MÉDIAS)
+                                            // ==========================================
+                                            getSiteSettings: async () => {
+                                                if (isFirebaseConfigured && db) {
+                                                    const doc = await db.collection('site_settings').doc('main').get();
+                                                    if (doc.exists) {
+                                                        return doc.data();
+                                                    }
+                                                    return null; // Let the caller handle default values
+                                                } else {
+                                                    const stored = localStorage.getItem('delice_mock_site_settings');
+                                                    return stored ? JSON.parse(stored) : null;
+                                                }
+                                            },
 
-    deleteExpense: async (id) => {
-        if (isFirebaseConfigured && db) {
-            await db.collection('expenses').doc(id).delete();
-        } else {
-            let expenses = JSON.parse(localStorage.getItem('delice_mock_expenses') || '[]');
-            expenses = expenses.filter(e => e.id !== id);
-            localStorage.setItem('delice_mock_expenses', JSON.stringify(expenses));
-        }
-    },
+                                                getSiteSettingsSync: () => {
+                                                    // Essential for immediate access to IDs/Phone if Firebase fails or is slow
+                                                    return DEFAULT_SITE_SETTINGS;
+                                                },
 
-    // ==========================================
-    // SUIVI DES LEADS (INTÉRET CLIENT)
-    // ==========================================
-    logLead: async (source) => {
-        if (isFirebaseConfigured && db) {
-            try {
-                await db.collection('leads').add({
-                    source: source || 'unknown',
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } catch (e) { console.error("Lead log failed", e); }
-        }
-    },
+                                                    saveSiteSettings: async (settings) => {
+                                                        if (isFirebaseConfigured && db) {
+                                                            // Vérification de taille pour les images en Base64
+                                                            if (settings.heroImage && settings.heroImage.startsWith('data:image')) {
+                                                                const sizeInBytes = Math.round((settings.heroImage.length * 3) / 4);
+                                                                if (sizeInBytes > 800000) {
+                                                                    throw new Error("L'image Hero est trop volumineuse. Vérifiez Cloudinary.");
+                                                                }
+                                                            }
+                                                            await db.collection('site_settings').doc('main').set({
+                                                                ...settings,
+                                                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                                            });
+                                                        } else {
+                                                            localStorage.setItem('delice_mock_site_settings', JSON.stringify(settings));
+                                                        }
+                                                    },
 
-    subscribeToLeads: (callback) => {
-        if (isFirebaseConfigured && db) {
-            return db.collection('leads')
-                .where('timestamp', '>', new Date(Date.now() - 30000)) // Only very recent ones
-                .onSnapshot(snapshot => {
-                    if (!snapshot.empty && !snapshot.metadata.hasPendingWrites) {
-                        callback(snapshot.docs.map(doc => doc.data()));
-                    }
-                });
-        }
-        return null;
-    },
+                                                        subscribeToOrder: (orderId, callback) => {
+                                                            if (isFirebaseConfigured && db) {
+                                                                return db.collection('orders').doc(orderId).onSnapshot(doc => {
+                                                                    if (doc.exists) {
+                                                                        callback({ id: doc.id, ...doc.data() });
+                                                                    }
+                                                                });
+                                                            } else {
+                                                                // Mock local simulation
+                                                                const checkMock = () => {
+                                                                    const orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
+                                                                    const order = orders.find(o => o.id === orderId);
+                                                                    if (order) callback(order);
+                                                                };
+                                                                const interval = setInterval(checkMock, 5000);
+                                                                return () => clearInterval(interval);
+                                                            }
+                                                        },
 
-    // ==========================================
-    // RÉGLAGES DU SITE (TEXTES ET MÉDIAS)
-    // ==========================================
-    getSiteSettings: async () => {
-        if (isFirebaseConfigured && db) {
-            const doc = await db.collection('site_settings').doc('main').get();
-            if (doc.exists) {
-                return doc.data();
-            }
-            return null; // Let the caller handle default values
-        } else {
-            const stored = localStorage.getItem('delice_mock_site_settings');
-            return stored ? JSON.parse(stored) : null;
-        }
-    },
+                                                            /**
+                                                             * @param {File} file 
+                                                             * @param {string} folder 
+                                                             * @returns {Promise<string>}
+                                                             */
+                                                            uploadFile: async (file, folder = 'misc') => {
+                                                                // PRIORITÉ 1 : Cloudinary (Plus fiable et gratuit)
+                                                                if (CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET) {
+                                                                    try {
+                                                                        const formData = new FormData();
+                                                                        formData.append('file', file);
+                                                                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                                                                        formData.append('folder', `delice_cake/${folder}`);
 
-    getSiteSettingsSync: () => {
-        // Essential for immediate access to IDs/Phone if Firebase fails or is slow
-        return DEFAULT_SITE_SETTINGS;
-    },
+                                                                        const response = await fetch(
+                                                                            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                                                                            {
+                                                                                method: 'POST',
+                                                                                body: formData
+                                                                            }
+                                                                        );
 
-    saveSiteSettings: async (settings) => {
-        if (isFirebaseConfigured && db) {
-            // Vérification de taille pour les images en Base64
-            if (settings.heroImage && settings.heroImage.startsWith('data:image')) {
-                const sizeInBytes = Math.round((settings.heroImage.length * 3) / 4);
-                if (sizeInBytes > 800000) {
-                    throw new Error("L'image Hero est trop volumineuse. Vérifiez Cloudinary.");
-                }
-            }
-            await db.collection('site_settings').doc('main').set({
-                ...settings,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        } else {
-            localStorage.setItem('delice_mock_site_settings', JSON.stringify(settings));
-        }
-    },
+                                                                        if (!response.ok) {
+                                                                            const errorData = await response.json();
+                                                                            throw new Error(errorData.error ? errorData.error.message : "Erreur Cloudinary");
+                                                                        }
 
-    subscribeToOrder: (orderId, callback) => {
-        if (isFirebaseConfigured && db) {
-            return db.collection('orders').doc(orderId).onSnapshot(doc => {
-                if (doc.exists) {
-                    callback({ id: doc.id, ...doc.data() });
-                }
-            });
-        } else {
-            // Mock local simulation
-            const checkMock = () => {
-                const orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
-                const order = orders.find(o => o.id === orderId);
-                if (order) callback(order);
-            };
-            const interval = setInterval(checkMock, 5000);
-            return () => clearInterval(interval);
-        }
-    },
+                                                                        const data = await response.json();
+                                                                        console.log("Cloudinary upload success:", data.secure_url);
+                                                                        // Ajout d'un cache-buster pour éviter que l'ancienne image ne s'affiche
+                                                                        return `${data.secure_url}?v=${Date.now()}`;
+                                                                    } catch (error) {
+                                                                        console.error("Cloudinary upload failed:", error);
+                                                                        // Si Cloudinary est configuré mais échoue, c'est probablement une erreur de configuration (ex: Preset non signé).
+                                                                        // On arrête l'upload ici pour avertir l'utilisateur au lieu de bloquer indéfiniment sur Firebase Storage.
+                                                                        throw new Error("Échec Cloudinary (" + error.message + "). Vérifiez que votre Upload Preset '" + CLOUDINARY_UPLOAD_PRESET + "' est bien en mode 'Unsigned' (Non signé) dans vos paramètres Cloudinary.");
+                                                                    }
+                                                                }
 
-    /**
-     * @param {File} file 
-     * @param {string} folder 
-     * @returns {Promise<string>}
-     */
-    uploadFile: async (file, folder = 'misc') => {
-        // PRIORITÉ 1 : Cloudinary (Plus fiable et gratuit)
-        if (CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET) {
-            try {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                formData.append('folder', `delice_cake/${folder}`);
+                                                                // PRIORITÉ 2 : Firebase Storage
+                                                                if (isFirebaseConfigured && storage) {
+                                                                    try {
+                                                                        const fileName = `${Date.now()}_${file.name}`;
+                                                                        const storageRef = storage.ref(`${folder}/${fileName}`);
+                                                                        await storageRef.put(file);
+                                                                        return await storageRef.getDownloadURL();
+                                                                    } catch (error) {
+                                                                        console.error("Firebase Storage upload failed, falling back...", error);
+                                                                    }
+                                                                }
 
-                const response = await fetch(
-                    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-                    {
-                        method: 'POST',
-                        body: formData
-                    }
-                );
+                                                                // PRIORITÉ 3 : Base64 (Dernier recours, limité par la taille Firestore)
+                                                                return new Promise((resolve, reject) => {
+                                                                    const reader = new FileReader();
+                                                                    reader.onloadend = () => resolve(reader.result);
+                                                                    reader.onerror = (e) => reject(new Error("Erreur de lecture du fichier"));
+                                                                    reader.readAsDataURL(file);
+                                                                });
+                                                            },
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error ? errorData.error.message : "Erreur Cloudinary");
-                }
+                                                                /**
+                                                                 * @param {string} sessionId 
+                                                                 * @param {object} message { role, content }
+                                                                 */
+                                                                saveChatMessage: async (sessionId, message) => {
+                                                                    if (isFirebaseConfigured && db) {
+                                                                        try {
+                                                                            // Update session document for listing
+                                                                            await db.collection('ai_conversations').doc(sessionId).set({
+                                                                                lastMessage: message.content,
+                                                                                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+                                                                            }, { merge: true });
 
-                const data = await response.json();
-                console.log("Cloudinary upload success:", data.secure_url);
-                // Ajout d'un cache-buster pour éviter que l'ancienne image ne s'affiche
-                return `${data.secure_url}?v=${Date.now()}`;
-            } catch (error) {
-                console.error("Cloudinary upload failed:", error);
-                // Si Cloudinary est configuré mais échoue, c'est probablement une erreur de configuration (ex: Preset non signé).
-                // On arrête l'upload ici pour avertir l'utilisateur au lieu de bloquer indéfiniment sur Firebase Storage.
-                throw new Error("Échec Cloudinary (" + error.message + "). Vérifiez que votre Upload Preset '" + CLOUDINARY_UPLOAD_PRESET + "' est bien en mode 'Unsigned' (Non signé) dans vos paramètres Cloudinary.");
-            }
-        }
+                                                                            // Add message to subcollection
+                                                                            await db.collection('ai_conversations').doc(sessionId).collection('messages').add({
+                                                                                ...message,
+                                                                                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                                                                            });
+                                                                        } catch (e) { console.error("Chat save failed", e); }
+                                                                    }
+                                                                },
 
-        // PRIORITÉ 2 : Firebase Storage
-        if (isFirebaseConfigured && storage) {
-            try {
-                const fileName = `${Date.now()}_${file.name}`;
-                const storageRef = storage.ref(`${folder}/${fileName}`);
-                await storageRef.put(file);
-                return await storageRef.getDownloadURL();
-            } catch (error) {
-                console.error("Firebase Storage upload failed, falling back...", error);
-            }
-        }
+                                                                    getConversations: async () => {
+                                                                        if (isFirebaseConfigured && db) {
+                                                                            const snapshot = await db.collection('ai_conversations').orderBy('lastUpdate', 'desc').get();
+                                                                            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                                                                        }
+                                                                        return [];
+                                                                    },
 
-        // PRIORITÉ 3 : Base64 (Dernier recours, limité par la taille Firestore)
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = (e) => reject(new Error("Erreur de lecture du fichier"));
-            reader.readAsDataURL(file);
-        });
-    },
-
-    /**
-     * @param {string} sessionId 
-     * @param {object} message { role, content }
-     */
-    saveChatMessage: async (sessionId, message) => {
-        if (isFirebaseConfigured && db) {
-            try {
-                // Update session document for listing
-                await db.collection('ai_conversations').doc(sessionId).set({
-                    lastMessage: message.content,
-                    lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-
-                // Add message to subcollection
-                await db.collection('ai_conversations').doc(sessionId).collection('messages').add({
-                    ...message,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } catch (e) { console.error("Chat save failed", e); }
-        }
-    },
-
-    getConversations: async () => {
-        if (isFirebaseConfigured && db) {
-            const snapshot = await db.collection('ai_conversations').orderBy('lastUpdate', 'desc').get();
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-        return [];
-    },
-
-    getConversationMessages: async (sessionId) => {
-        if (isFirebaseConfigured && db) {
-            const snapshot = await db.collection('ai_conversations').doc(sessionId).collection('messages').orderBy('timestamp', 'asc').get();
-            return snapshot.docs.map(doc => doc.data());
-        }
-        return [];
-    }
-};
+                                                                        getConversationMessages: async (sessionId) => {
+                                                                            if (isFirebaseConfigured && db) {
+                                                                                const snapshot = await db.collection('ai_conversations').doc(sessionId).collection('messages').orderBy('timestamp', 'asc').get();
+                                                                                return snapshot.docs.map(doc => doc.data());
+                                                                            }
+                                                                            return [];
+                                                                        }
+                    };

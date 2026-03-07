@@ -1657,16 +1657,22 @@ td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FF
           notifBtn.disabled = true;
         } else {
           notifBtn.addEventListener('click', async () => {
+            const originalText = notifBtn.innerHTML;
             notifBtn.textContent = "Activation...";
             const granted = await requestNotificationPermission();
             if (granted) {
+              const token = localStorage.getItem('delice_fcm_token');
+              if (token && order.id) {
+                await DataService.updateOrderPushToken(order.id, token);
+              }
               notifBtn.innerHTML = "✅ Activé !";
               setTimeout(() => {
                 const container = document.getElementById('notif-suggest-container');
                 if (container) container.style.display = 'none';
               }, 2000);
             } else {
-              notifBtn.textContent = "🔔 Réessayer l'activation";
+              notifBtn.innerHTML = "🔔 Réessayer";
+              setTimeout(() => { notifBtn.innerHTML = originalText; }, 3000);
             }
           });
         }
