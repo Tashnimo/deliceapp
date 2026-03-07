@@ -1968,9 +1968,11 @@ document.addEventListener('DOMContentLoaded', () => {
       let cleanResponse = botResponse;
       let orderConfirmed = false;
 
-      if (botResponse.includes(confirmTag)) {
+      if (botResponse.toUpperCase().includes(confirmTag.toUpperCase())) {
         orderConfirmed = true;
-        cleanResponse = botResponse.replace(confirmTag, "").trim();
+        // Use regex for case-insensitive replacement
+        const tagRegex = new RegExp("\\[CONFIRM_ORDER\\]", "gi");
+        cleanResponse = botResponse.replace(tagRegex, "").trim();
         // Remove trailing commas, or weird leftover symbols the AI might drop near the tag
         cleanResponse = cleanResponse.replace(/[,\s"]+$/g, "").trim();
       }
@@ -2019,13 +2021,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
           products.forEach(p => {
             const searchTerm = getSearchTerm(p.name);
-            // CRITICAL: Only include if explicitly mentioned in the CURRENT AI confirmation message
-            if (searchTerm && cleanResponseNorm.includes(searchTerm)) {
+            const escapedTerm = escapeRegExp(searchTerm);
 
-              const escapedTerm = escapeRegExp(searchTerm);
-              // Find quantity in the combined log (history + current)
+            // On cherche si le produit est mentionné dans la CONFIRMATION OU dans l'historique récent
+            // Mais on exige qu'il soit au moins dans le cleanResponseNorm pour être "actuel"
+            if (searchTerm && (cleanResponseNorm.includes(searchTerm) || combinedLogNorm.includes(searchTerm))) {
+
+              // Regex de quantité : plus robuste
               const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*(?:x|d(?:es|e))?\\s*${escapedTerm}`, 'i');
-              const match = combinedLogNorm.match(qtyRegex);
+
+              // On cherche d'abord dans le message actuel, sinon dans l'historique
+              let match = cleanResponseNorm.match(qtyRegex) || combinedLogNorm.match(qtyRegex);
 
               let qty = 1;
               if (match && match[1]) {
@@ -2035,13 +2041,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 else qty = parseInt(val, 10) || 1;
               }
 
-              detectedItems.push({
-                name: p.name,
-                quantity: qty,
-                unitPrice: p.price,
-                totalPrice: p.price * qty
-              });
-              estimatedTotal += (p.price * qty);
+              // On ne l'ajoute que s'il est vraiment dans la réponse de l'IA (pour éviter les vieux items)
+              if (cleanResponseNorm.includes(searchTerm)) {
+                detectedItems.push({
+                  name: p.name,
+                  quantity: qty,
+                  unitPrice: p.price,
+                  totalPrice: p.price * qty
+                });
+                estimatedTotal += (p.price * qty);
+              }
             }
           });
 
@@ -2233,26 +2242,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let productListText = activeProducts.map(p => `- ${p.name} : ${p.price} FCFA`).join("\n");
 
-      systemContext = `Tu es Délice AI, l'assistant expert de la pâtisserie Délice Cake au Burkina Faso. 
-Sois chaleureux, très pro et utilise des emojis.
+      systemContext = `Tu es Délice AI, l'assistant expert et RIGOUREUX de la pâtisserie Délice Cake au Burkina Faso. 
 
-MODE OPÉRATOIRE - PRISE DE COMMANDE :
-1. Aide le client à choisir parmi le MENU ci-dessous.
-2. Lorsqu'un client veut commander, tu DOIS calculer le montant total toi-même très précisément.
-   - Formule : (Prix Unitaire x Quantité) de chaque article.
-   - Exemple : "2 Cupcakes (2000) + 1 Tiramisu (1000) = 3000 FCFA".
-3. Ne valide JAMAIS une commande sans avoir :
-   - Listé clairement les articles et quantités.
-   - Annoncé le TOTAL exact.
-   - Obtenu un "OUI" de confirmation final.
+CONSIGNE CRITIQUE : 
+- TU NE DOIS VENDRE QUE LES PRODUITS LISTÉS DANS LE "MENU ACTUEL" CI-DESSOUS.
+- SI LE CLIENT DEMANDE UN PRODUIT QUI N'EST PAS DANS LE MENU (ex: "boules de neiges" ou autre), tu dois poliment dire que ce n'est pas disponible actuellement et proposer un article du menu.
+- NE RÉINVENTE PAS LES PRIX. Utilise uniquement ceux du menu.
 
-MOT-CLÉ DE VALIDATION :
-Ajoute EXACTEMENT [CONFIRM_ORDER] à la toute fin de ton message UNIQUEMENT quand le client a dit OUI au récapitulatif financier que tu as présenté.
+MODE OPÉRATOIRE - COMMANDE :
+1. Aide le client à choisir exclusivement dans le MENU.
+2. Si le client confirme son choix, fais le calcul précis : (Prix x Quantité).
+3. AVANT DE VALIDER : Affiche un récapitulatif clair (Articles, Quantités, Total).
+4. OBTENTION DU "OUI" : Attends que le client dise "Oui", "Je confirme", etc.
 
-MENU ACTUEL :
+VALIDATION TECHNIQUE :
+Ajoute EXACTEMENT [CONFIRM_ORDER] à la toute fin de ton message de confirmation finale (après que le client a dit OUI). 
+IMPORTANT : Ce message final DOIT aussi rappeler le nom exact du produit (ex: "C'est validé pour vos 2 Cupcakes !").
+
+MENU ACTUEL (STRICT) :
 ${productListText || "- Sachet Délice Cake (12 pcs) : 500 FCFA\n- Cupcake Signature : 1000 FCFA\n- Tiramisu Maison : 1000 FCFA"}
 
-INFOS BOUTIQUE : ${kbContent || "Pâtisseries artisanales, livraison rapide."}`;
+INFOS : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
     } catch (e) {
       console.error("AI Context Init Fail:", e);
       systemContext = "Assistant Délice Cake. Aidez le client avec le menu.";
