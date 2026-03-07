@@ -291,7 +291,18 @@ const DataService = {
                                     title: "Mise à jour Délice Cake 🍰",
                                     body: STATUS_MESSAGES[newStatus]
                                 })
-                            }).catch(e => console.error("Push notify trigger failed", e));
+                            }).then(async res => {
+                                const data = await res.json().catch(() => ({}));
+                                if (!res.ok) {
+                                    console.error("Vercel Push Notify Error:", data);
+                                    alert("Erreur Push Notifications.\nCode: " + res.status + "\nDétail: " + JSON.stringify(data));
+                                } else {
+                                    console.log("Push trigger succesful", data);
+                                }
+                            }).catch(e => {
+                                console.error("Push notify trigger fetch failed critically", e);
+                                alert("Fetch Push API intercepté : " + e.message);
+                            });
                         }
                     }
                 }

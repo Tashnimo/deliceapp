@@ -1926,22 +1926,52 @@ document.addEventListener('DOMContentLoaded', () => {
               status: 'new'
             };
 
-            // 2. Save to database
-            if (typeof DataService !== 'undefined' && DataService.saveOrder) {
-              const orderId = await DataService.saveOrder(finalOrder);
-              if (orderId) {
-                localStorage.setItem('delice_last_order_id', orderId);
-                if (window.refreshOrderTracking) window.refreshOrderTracking();
+            // INJECT CONFIRMATION UI instead of saving immediately
+            const confirmId = 'ai-confirm-' + Math.floor(Math.random() * 10000);
+            const confirmHtml = `
+              <div class="chat-confirmation-box" style="margin-top:10px; padding:12px; background:#fff0f6; border-radius:12px; border: 2px solid #E8178A; color: #1a0a14;">
+                <strong style="color:#E8178A; font-family:'Outfit',sans-serif;">🛒 Commande détectée</strong><br/>
+                Total estimé : <strong>${estimatedTotal.toLocaleString('fr-FR')} FCFA</strong><br/>
+                <span style="font-size: 0.9em; opacity: 0.8;">Voulez-vous valider définitivement cette commande ?</span>
+                <div style="margin-top:12px; display:flex; gap:10px; justify-content: center;">
+                  <button id="${confirmId}-yes" class="btn btn--primary" style="padding: 6px 16px; font-size: 0.9em; min-height: 0;">✅ Oui</button>
+                  <button id="${confirmId}-no" class="btn btn--ghost" style="padding: 6px 16px; font-size: 0.9em; min-height: 0; color: #E8178A; border: 1px solid #E8178A;">❌ Non</button>
+                </div>
+              </div>
+            `;
 
-                // 3. Send Telegram Notification
-                const adminLink = window.location.origin + "/admin";
-                const messageTelegram = `🤖 <b>COMMANDE VIA IA !</b>\n\n` +
-                  `💰 Total : ${finalOrder.totalAmount.toLocaleString('fr-FR')} FCFA\n` +
-                  `📝 Chat ID : ${chatId}\n\n` +
-                  `<a href="${adminLink}">Accéder à l'espace Admin</a>`;
-                await sendTelegramNotification(messageTelegram);
+            const promptChatLi = createChatLi('', 'incoming');
+            promptChatLi.innerHTML = `<div class="chat-content">${confirmHtml}</div>`;
+            chatbotMessages.appendChild(promptChatLi);
+            chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
+
+            // Bind Events
+            document.getElementById(`${confirmId}-yes`).addEventListener('click', async (e) => {
+              e.target.parentElement.innerHTML = `<span style="color: green; font-weight: bold;">Commande validée avec succès ! 🎉</span>`;
+              chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
+
+              // Save to DB
+              if (typeof DataService !== 'undefined' && DataService.saveOrder) {
+                const orderId = await DataService.saveOrder(finalOrder);
+                if (orderId) {
+                  localStorage.setItem('delice_last_order_id', orderId);
+                  if (window.refreshOrderTracking) window.refreshOrderTracking();
+
+                  // Send Telegram
+                  const adminLink = window.location.origin + "/admin";
+                  const messageTelegram = `🤖 <b>COMMANDE VIA IA (Confirmée par client) !</b>\n\n` +
+                    `💰 Total : ${finalOrder.totalAmount.toLocaleString('fr-FR')} FCFA\n` +
+                    `📝 Chat ID : ${chatId}\n\n` +
+                    `<a href="${adminLink}">Accéder Admin</a>`;
+                  await sendTelegramNotification(messageTelegram);
+                }
               }
-            }
+            });
+
+            document.getElementById(`${confirmId}-no`).addEventListener('click', (e) => {
+              e.target.parentElement.innerHTML = `<span style="color: gray; font-style: italic;">Commande annulée.</span>`;
+            });
+
           } else {
             console.warn("L'IA a confirmé mais aucun produit reconnu dans le texte.");
             sendTelegramNotification(`⚠️ <b>ERREUR IA</b>\nTag [CONFIRM_ORDER] détecté mais impossible d'extraire les produits.\nConversation : ${chatId}`).catch(e => e);
