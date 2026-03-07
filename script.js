@@ -121,7 +121,11 @@ setTimeout(() => {
   const cakeState = {
     flavor: { value: 'choc', color: '#4A2C2A', label: 'Chocolat Noir' },
     color: { value: 'pink', color: '#E8178A', label: 'Rose Délice' },
-    size: { value: 'small', tiers: 1, label: 'Standard (1 étage)' }
+    size: { value: 'small', tiers: 1, label: 'Standard (1 étage)' },
+    shape: { value: 'round', label: 'Rond classique' },
+    parts: { value: '8', label: '8 parts (petit)' },
+    occasion: { value: 'birthday', label: 'Anniversaire 🎂' },
+    message: ''
   };
 
   const PRICES = { small: 2000, large: 4500, grand: 8000 };
@@ -130,61 +134,76 @@ setTimeout(() => {
   const tabs = document.querySelectorAll('.config-tab');
   const panels = document.querySelectorAll('.config-panel');
   const tier2 = document.getElementById('tier-2');
-  const tier3 = document.getElementById('tier-3');
+  const tier1el = document.getElementById('tier-1');
   const topper = document.querySelector('.cake-topper');
   const orderBtn = document.getElementById('order-custom-cake');
   const ctaHint = document.querySelector('.cta-hint');
+  const msgInput = document.getElementById('cake-message-input');
+  const charCount = document.getElementById('msg-char-count');
 
-  if (!tabs.length) return; // Studio not on page
+  if (!tabs.length) return;
 
-  // --- Tab Switching ---
+  // --- Tab Switching (both rows) ---
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       const cat = tab.dataset.category;
       tabs.forEach(t => t.classList.remove('active'));
       panels.forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
-      document.querySelector(`[data-panel="${cat}"]`).classList.add('active');
+      const target = document.querySelector(`[data-panel="${cat}"]`);
+      if (target) target.classList.add('active');
     });
   });
 
-  // --- Option Selection ---
+  // --- Option Button Selection ---
   document.querySelectorAll('.config-opt').forEach(btn => {
     btn.addEventListener('click', () => {
       const panel = btn.closest('.config-panel');
       panel.querySelectorAll('.config-opt').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
-      // Add micro pop animation
+      // Micro pop
       btn.style.transform = 'scale(0.95)';
-      setTimeout(() => btn.style.transform = '', 200);
+      setTimeout(() => btn.style.transform = '', 180);
 
-      // Determine which category this belongs to
-      const panelType = panel.dataset.panel;
+      const type = panel.dataset.panel;
+      const labelEl = btn.querySelector('span:last-child');
+      const label = labelEl ? labelEl.textContent.trim() : '';
 
-      if (panelType === 'flavor') {
-        cakeState.flavor = {
-          value: btn.dataset.value,
-          color: btn.dataset.color,
-          label: btn.querySelector('span:last-child').textContent
-        };
-      } else if (panelType === 'color') {
-        cakeState.color = {
-          value: btn.dataset.value,
-          color: btn.dataset.color,
-          label: btn.querySelector('span:last-child').textContent
-        };
-      } else if (panelType === 'size') {
-        cakeState.size = {
-          value: btn.dataset.value,
-          tiers: parseInt(btn.dataset.tiers),
-          label: btn.querySelector('span:last-child').textContent
-        };
+      switch (type) {
+        case 'flavor':
+          cakeState.flavor = { value: btn.dataset.value, color: btn.dataset.color || '#E8178A', label };
+          break;
+        case 'color':
+          cakeState.color = { value: btn.dataset.value, color: btn.dataset.color || '#E8178A', label };
+          break;
+        case 'size':
+          cakeState.size = { value: btn.dataset.value, tiers: parseInt(btn.dataset.tiers) || 1, label };
+          break;
+        case 'shape':
+          cakeState.shape = { value: btn.dataset.value, label: btn.dataset.shapeLabel || label };
+          break;
+        case 'parts':
+          cakeState.parts = { value: btn.dataset.value, label: btn.dataset.partsLabel || label };
+          break;
+        case 'occasion':
+          cakeState.occasion = { value: btn.dataset.value, label: btn.dataset.occLabel || label };
+          break;
       }
-
       renderCakePreview();
     });
   });
+
+  // --- Message input ---
+  if (msgInput) {
+    msgInput.addEventListener('input', () => {
+      cakeState.message = msgInput.value;
+      if (charCount) charCount.textContent = msgInput.value.length;
+      // Mirror message on SVG
+      const svgText = document.querySelector('.cake-message-text');
+      if (svgText) svgText.textContent = msgInput.value ? `"${msgInput.value}"` : '';
+    });
+  }
 
   // --- SVG Render ---
   function renderCakePreview() {
@@ -192,64 +211,62 @@ setTimeout(() => {
     const flavorColor = cakeState.flavor.color;
     const tiers = cakeState.size.tiers;
 
-    // Update all cake body fills to the selected icing color
-    document.querySelectorAll('.cake-body').forEach(el => {
-      el.setAttribute('fill', icing);
-    });
+    // Icing color
+    document.querySelectorAll('.cake-body').forEach(el => el.setAttribute('fill', icing));
 
-    // Update flavor inner lines color (slightly transparent version of flavor)
-    document.querySelectorAll('.flavor-line').forEach(el => {
-      el.setAttribute('stroke', hexToRgba(flavorColor, 0.3));
-    });
+    // Flavor layer color
+    document.querySelectorAll('.flavor-line').forEach(el =>
+      el.setAttribute('stroke', hexToRgba(flavorColor, 0.35))
+    );
 
-    // Show/hide tiers with a slide+fade animation
+    // Tier 2 visibility
     if (tier2) {
       const show2 = tiers >= 2;
       tier2.style.opacity = show2 ? '1' : '0';
       tier2.style.transform = show2 ? 'translateY(0)' : 'translateY(20px)';
     }
-    if (tier3) {
+
+    // Tier 1 (top tier) visibility
+    if (tier1el) {
       const show3 = tiers >= 3;
-      // id="tier-3" is the bottom tier — always visible; id="tier-1" (SVG top) requires 3 tiers
-      const tier1el = document.getElementById('tier-1');
-      if (tier1el) {
-        tier1el.style.opacity = show3 ? '1' : '0';
-        tier1el.style.transform = show3 ? 'translateY(0)' : 'translateY(20px)';
-      }
+      tier1el.style.opacity = show3 ? '1' : '0';
+      tier1el.style.transform = show3 ? 'translateY(0)' : 'translateY(20px)';
     }
 
-    // Show topper for grand tier
-    if (topper) {
-      topper.style.opacity = tiers >= 3 ? '1' : '0';
-    }
+    // Topper (crown/star) decoration
+    if (topper) topper.style.opacity = tiers >= 3 ? '1' : '0';
 
-    // Update price hint and CTA
-    const price = PRICES[cakeState.size.value];
+    // Price update
+    const price = PRICES[cakeState.size.value] || 2000;
     if (ctaHint) {
-      ctaHint.textContent = `Prix estimé : à partir de ${price.toLocaleString('fr-FR')} FCFA`;
+      ctaHint.textContent = `💰 Estimé à partir de ${price.toLocaleString('fr-FR')} FCFA · ${cakeState.parts.label}`;
     }
   }
 
-  // --- Hex to RGBA helper ---
+  // --- Hex → RGBA ---
   function hexToRgba(hex, alpha) {
+    if (!hex || hex.length < 7) return `rgba(200,100,100,${alpha})`;
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r},${g},${b},${alpha})`;
   }
 
-  // --- CTA Button → WhatsApp ---
+  // --- CTA → WhatsApp with full spec ---
   if (orderBtn) {
     orderBtn.addEventListener('click', () => {
       const msg =
         `Bonjour Délice Cake ! 🍰\n` +
         `Je souhaite commander un gâteau personnalisé :\n\n` +
-        `🍫 Saveur : ${cakeState.flavor.label}\n` +
-        `🎨 Couleur de glaçage : ${cakeState.color.label}\n` +
-        `🎂 Format : ${cakeState.size.label}\n\n` +
-        `Merci de me contacter pour confirmer ma commande !`;
-      const num = '22656808872';
-      window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
+        `🍫 Saveur        : ${cakeState.flavor.label}\n` +
+        `🎨 Glaçage       : ${cakeState.color.label}\n` +
+        `🎂 Format        : ${cakeState.size.label}\n` +
+        `⬟  Forme         : ${cakeState.shape.label}\n` +
+        `🍽  Parts         : ${cakeState.parts.label}\n` +
+        `🎉 Occasion      : ${cakeState.occasion.label}\n` +
+        (cakeState.message ? `✍️  Message       : "${cakeState.message}"\n` : '') +
+        `\nMerci de me contacter pour confirmer et finaliser ma commande ! 😊`;
+      window.open(`https://wa.me/22656808872?text=${encodeURIComponent(msg)}`, '_blank');
     });
   }
 

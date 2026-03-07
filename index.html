@@ -443,74 +443,170 @@
                 </p>
 
                 <div class="cake-config">
-                    <!-- Tabs for categories -->
+                    <!-- Tabs row 1 -->
                     <div class="cake-config__tabs">
-                        <button class="config-tab active" data-category="flavor">Saveur</button>
-                        <button class="config-tab" data-category="color">Couleur</button>
-                        <button class="config-tab" data-category="size">Format</button>
+                        <button class="config-tab active" data-category="flavor">🍫 Saveur</button>
+                        <button class="config-tab" data-category="color">🎨 Glaçage</button>
+                        <button class="config-tab" data-category="size">🎂 Format</button>
+                    </div>
+                    <!-- Tabs row 2 -->
+                    <div class="cake-config__tabs" style="margin-top: 0.5rem;">
+                        <button class="config-tab" data-category="shape">⬟ Forme</button>
+                        <button class="config-tab" data-category="parts">🍽 Parts</button>
+                        <button class="config-tab" data-category="occasion">🎉 Occasion</button>
+                        <button class="config-tab" data-category="message">💬 Message</button>
                     </div>
 
-                    <!-- Config options (Dynamic content area) -->
+                    <!-- Config options -->
                     <div class="cake-config__options">
-                        <!-- Flavor options -->
+                        <!-- Flavor -->
                         <div class="config-panel active" data-panel="flavor">
                             <div class="config-grid">
                                 <button class="config-opt active" data-value="choc" data-color="#4A2C2A">
-                                    <div class="opt-dot" style="background: #4A2C2A;"></div>
-                                    <span>Chocolat Noir</span>
+                                    <div class="opt-dot" style="background:#4A2C2A"></div><span>Chocolat Noir</span>
                                 </button>
                                 <button class="config-opt" data-value="vanilla" data-color="#F3E5AB">
-                                    <div class="opt-dot" style="background: #F3E5AB;"></div>
-                                    <span>Vanille Bourbon</span>
+                                    <div class="opt-dot" style="background:#F3E5AB"></div><span>Vanille Bourbon</span>
                                 </button>
                                 <button class="config-opt" data-value="strawberry" data-color="#FF5A5F">
-                                    <div class="opt-dot" style="background: #FF5A5F;"></div>
-                                    <span>Fraise Fraîche</span>
+                                    <div class="opt-dot" style="background:#FF5A5F"></div><span>Fraise Fraîche</span>
                                 </button>
                                 <button class="config-opt" data-value="pistachio" data-color="#93C572">
-                                    <div class="opt-dot" style="background: #93C572;"></div>
-                                    <span>Pistache</span>
+                                    <div class="opt-dot" style="background:#93C572"></div><span>Pistache</span>
+                                </button>
+                                <button class="config-opt" data-value="caramel" data-color="#C68642">
+                                    <div class="opt-dot" style="background:#C68642"></div><span>Caramel Beurre
+                                        Salé</span>
+                                </button>
+                                <button class="config-opt" data-value="lemon" data-color="#FFF44F">
+                                    <div class="opt-dot" style="background:#FFF44F; border: 1px solid #ccc;"></div>
+                                    <span>Citron Givré</span>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Color options -->
+                        <!-- Color -->
                         <div class="config-panel" data-panel="color">
                             <div class="config-grid">
                                 <button class="config-opt active" data-value="pink" data-color="#E8178A">
-                                    <div class="opt-dot" style="background: #E8178A;"></div>
-                                    <span>Rose Délice</span>
+                                    <div class="opt-dot" style="background:#E8178A"></div><span>Rose Délice</span>
                                 </button>
                                 <button class="config-opt" data-value="gold" data-color="#D4AF37">
-                                    <div class="opt-dot" style="background: #D4AF37;"></div>
-                                    <span>Or Royal</span>
+                                    <div class="opt-dot" style="background:#D4AF37"></div><span>Or Royal</span>
                                 </button>
                                 <button class="config-opt" data-value="blue" data-color="#5DADE2">
-                                    <div class="opt-dot" style="background: #5DADE2;"></div>
-                                    <span>Bleu Céleste</span>
+                                    <div class="opt-dot" style="background:#5DADE2"></div><span>Bleu Céleste</span>
                                 </button>
-                                <button class="config-opt" data-value="white" data-color="#FFFFFF">
-                                    <div class="opt-dot" style="background: #F8F9FA; border: 1px solid #ddd;"></div>
+                                <button class="config-opt" data-value="white" data-color="#F8F9FA">
+                                    <div class="opt-dot" style="background:#F8F9FA; border:1px solid #ddd;"></div>
                                     <span>Blanc Pur</span>
+                                </button>
+                                <button class="config-opt" data-value="purple" data-color="#9B59B6">
+                                    <div class="opt-dot" style="background:#9B59B6"></div><span>Violet Velours</span>
+                                </button>
+                                <button class="config-opt" data-value="mint" data-color="#1ABC9C">
+                                    <div class="opt-dot" style="background:#1ABC9C"></div><span>Menthe Fraîche</span>
+                                </button>
+                                <button class="config-opt" data-value="coral" data-color="#E74C3C">
+                                    <div class="opt-dot" style="background:#E74C3C"></div><span>Corail Festif</span>
+                                </button>
+                                <button class="config-opt" data-value="black" data-color="#2C3E50">
+                                    <div class="opt-dot" style="background:#2C3E50"></div><span>Nuit Étoilée</span>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Size options -->
+                        <!-- Size -->
                         <div class="config-panel" data-panel="size">
                             <div class="config-grid">
-                                <button class="config-opt active" data-value="small" data-tiers="1">
-                                    <span class="material-symbols-outlined">Cake</span>
-                                    <span>Standard (1 étage)</span>
-                                </button>
-                                <button class="config-opt" data-value="large" data-tiers="2">
-                                    <span class="material-symbols-outlined">Layers</span>
-                                    <span>Festif (2 étages)</span>
-                                </button>
-                                <button class="config-opt" data-value="grand" data-tiers="3">
-                                    <span class="material-symbols-outlined">Celebration</span>
-                                    <span>Gala (3 étages)</span>
-                                </button>
+                                <button class="config-opt active" data-value="small" data-tiers="1"><span
+                                        class="material-symbols-outlined">Cake</span><span>Standard (1
+                                        étage)</span></button>
+                                <button class="config-opt" data-value="large" data-tiers="2"><span
+                                        class="material-symbols-outlined">Layers</span><span>Festif (2
+                                        étages)</span></button>
+                                <button class="config-opt" data-value="grand" data-tiers="3"><span
+                                        class="material-symbols-outlined">Celebration</span><span>Gala (3
+                                        étages)</span></button>
+                            </div>
+                        </div>
+
+                        <!-- Shape -->
+                        <div class="config-panel" data-panel="shape">
+                            <div class="config-grid">
+                                <button class="config-opt active" data-value="round"
+                                    data-shape-label="Rond classique"><span class="shape-icon">⬤</span><span>Rond
+                                        classique</span></button>
+                                <button class="config-opt" data-value="square" data-shape-label="Carré élégant"><span
+                                        class="shape-icon">◼</span><span>Carré élégant</span></button>
+                                <button class="config-opt" data-value="heart" data-shape-label="Cœur romantique"><span
+                                        class="shape-icon">❤</span><span>Cœur romantique</span></button>
+                                <button class="config-opt" data-value="hexagon"
+                                    data-shape-label="Hexagone géométrique"><span
+                                        class="shape-icon">⬡</span><span>Hexagone</span></button>
+                                <button class="config-opt" data-value="number"
+                                    data-shape-label="Chiffre personnalisé"><span
+                                        class="shape-icon">#</span><span>Chiffre (1–99)</span></button>
+                                <button class="config-opt" data-value="letter" data-shape-label="Lettre initiale"><span
+                                        class="shape-icon">A</span><span>Lettre initiale</span></button>
+                            </div>
+                        </div>
+
+                        <!-- Parts -->
+                        <div class="config-panel" data-panel="parts">
+                            <div class="config-grid">
+                                <button class="config-opt active" data-value="8"
+                                    data-parts-label="8 parts (petit)"><span class="parts-icon">🍰</span><span>8
+                                        parts</span></button>
+                                <button class="config-opt" data-value="12" data-parts-label="12 parts (moyen)"><span
+                                        class="parts-icon">🍰 🍰</span><span>12 parts</span></button>
+                                <button class="config-opt" data-value="20" data-parts-label="20 parts (grand)"><span
+                                        class="parts-icon">🎂</span><span>20 parts</span></button>
+                                <button class="config-opt" data-value="30" data-parts-label="30 parts (XXL)"><span
+                                        class="parts-icon">🎂 🎂</span><span>30 parts</span></button>
+                                <button class="config-opt" data-value="50" data-parts-label="50 parts (événement)"><span
+                                        class="parts-icon">🎊</span><span>50 parts</span></button>
+                                <button class="config-opt" data-value="custom"
+                                    data-parts-label="Nombre personnalisé"><span
+                                        class="parts-icon">✏️</span><span>Personnalisé</span></button>
+                            </div>
+                        </div>
+
+                        <!-- Occasion -->
+                        <div class="config-panel" data-panel="occasion">
+                            <div class="config-grid">
+                                <button class="config-opt active" data-value="birthday"
+                                    data-occ-label="Anniversaire 🎂"><span
+                                        class="material-symbols-outlined">Cake</span><span>Anniversaire</span></button>
+                                <button class="config-opt" data-value="wedding" data-occ-label="Mariage 💍"><span
+                                        class="material-symbols-outlined">Favorite</span><span>Mariage</span></button>
+                                <button class="config-opt" data-value="baby"
+                                    data-occ-label="Naissance / Baby Shower 👶"><span
+                                        class="material-symbols-outlined">Child_Care</span><span>Naissance</span></button>
+                                <button class="config-opt" data-value="baptism" data-occ-label="Baptême 🕊️"><span
+                                        class="material-symbols-outlined">Church</span><span>Baptême</span></button>
+                                <button class="config-opt" data-value="graduation"
+                                    data-occ-label="Remise de diplôme 🎓"><span
+                                        class="material-symbols-outlined">School</span><span>Diplôme</span></button>
+                                <button class="config-opt" data-value="valentine"
+                                    data-occ-label="Saint-Valentin 💖"><span
+                                        class="material-symbols-outlined">Volunteer_Activism</span><span>Saint-Valentin</span></button>
+                                <button class="config-opt" data-value="corporate"
+                                    data-occ-label="Événement d'entreprise 💼"><span
+                                        class="material-symbols-outlined">Business_Center</span><span>Entreprise</span></button>
+                                <button class="config-opt" data-value="other" data-occ-label="Autre occasion 🎉"><span
+                                        class="material-symbols-outlined">Stars</span><span>Autre</span></button>
+                            </div>
+                        </div>
+
+                        <!-- Message personnalisé -->
+                        <div class="config-panel" data-panel="message">
+                            <div class="message-input-wrap">
+                                <label for="cake-message-input">✍️ Votre message sur le gâteau</label>
+                                <input id="cake-message-input" type="text" maxlength="40"
+                                    placeholder="Ex: Joyeux Anniversaire Sofia !" class="cake-message-input" />
+                                <span class="char-count"><span id="msg-char-count">0</span>/40</span>
+                                <p class="message-hint">Ce texte sera inscrit en glaçage royal sur votre gâteau.</p>
                             </div>
                         </div>
                     </div>

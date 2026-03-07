@@ -1852,6 +1852,62 @@ h3,
   }
 }
 
+/* Shape / Parts icons */
+.shape-icon,
+.parts-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  width: 30px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Message Input */
+.message-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.message-input-wrap label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--black);
+}
+
+.cake-message-input {
+  width: 100%;
+  padding: 1rem 1.2rem;
+  border: 2px solid rgba(232, 23, 138, 0.2);
+  border-radius: 16px;
+  font-size: 1rem;
+  font-family: 'Outfit', sans-serif;
+  color: var(--black);
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.cake-message-input:focus {
+  border-color: var(--pink);
+  box-shadow: 0 0 0 3px rgba(232, 23, 138, 0.1);
+}
+
+.char-count {
+  font-size: 0.78rem;
+  color: #6b4557;
+  opacity: 0.6;
+  text-align: right;
+}
+
+.message-hint {
+  font-size: 0.82rem;
+  color: #6b4557;
+  font-style: italic;
+  opacity: 0.8;
+}
+
 /* ======= PERSONALIZATION ======= */
 .personalization {
   padding: 8rem 5%;
