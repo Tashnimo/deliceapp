@@ -1997,10 +1997,15 @@ document.addEventListener('DOMContentLoaded', () => {
           // Helper to escape regex special characters
           const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-          // On va chercher dans les derniers messages de l'historique quels produits le client a demandé
-          // Augmentation du contexte à 10 messages pour ne rien rater
-          const lastMessages = chatHistoryMessages.slice(-10).map(m => m.content).join(" ");
-          const combinedLog = lastMessages + " " + cleanResponse;
+          // 1. FILTER HISTORY: Ignore system prompt to avoid matching products in the menu instructions
+          const relevantHistory = chatHistoryMessages.filter(m => m.role !== 'system');
+
+          // 2. CONTEXT WINDOW: Last 10 relevant messages for quantity context
+          const lastMessagesText = relevantHistory.slice(-10).map(m => m.content).join(" ");
+          const cleanResponseNorm = normalize(cleanResponse);
+
+          // 3. COMBINED LOG for quantity search
+          const combinedLog = lastMessagesText + " " + cleanResponse;
           const combinedLogNorm = normalize(combinedLog);
 
           // On s'appuie sur le catalogue global
@@ -2011,9 +2016,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
           products.forEach(p => {
             const searchTerm = getSearchTerm(p.name);
-            if (searchTerm && combinedLogNorm.includes(searchTerm)) {
-              // IMPORTANT: match on combinedLogNorm for accent-insensitivity
+            // CRITICAL: Only include if explicitly mentioned in the CURRENT AI confirmation message
+            if (searchTerm && cleanResponseNorm.includes(searchTerm)) {
+
               const escapedTerm = escapeRegExp(searchTerm);
+              // Find quantity in the combined log (history + current)
               const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*(?:x|d(?:es|e))?\\s*${escapedTerm}`, 'i');
               const match = combinedLogNorm.match(qtyRegex);
 
