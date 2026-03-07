@@ -92,13 +92,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!messaging) return;
 
         try {
+            let swRegistration = null;
             // Register service worker explicitly for Firebase Messaging
             if ('serviceWorker' in navigator) {
-                const registration = await navigator.serviceWorker.register('firebase-messaging-sw.js');
-                console.log('Service Worker registered with scope:', registration.scope);
-
-                // Set the service worker registration for messaging
-                messaging.useServiceWorker(registration);
+                swRegistration = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+                console.log('Service Worker registered with scope:', swRegistration.scope);
             }
 
             // Request permission
@@ -106,10 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (permission === 'granted') {
                 console.log('Notification permission granted.');
 
-                // Get Token (VAPID Key placeholder - replace with actual key from Firebase)
-                // Note: The VAPID key is required for Web Push to work.
                 const token = await messaging.getToken({
-                    vapidKey: 'BPH6yV9GvW-vV6X4_G0V_oV9GvW-vV6X4_G0V_oV9GvW-vV6X4_G0V_o' // Placeholder
+                    vapidKey: 'BMKTZISnCqUCld8Hj0EwFBWFS-O9BCorWJp_ZRbT42DCK7VnDL8feFTNAWYhY_fwQvx0FDzDPO3ax7pnis5fatE',
+                    serviceWorkerRegistration: swRegistration
                 });
 
                 if (token) {
