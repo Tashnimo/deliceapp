@@ -802,8 +802,8 @@ async function loadSiteSettings() {
       });
       // also update footer/contact text if it contains the number
       const contactBtn = document.getElementById('contact-whatsapp-btn');
-      if (contactBtn && contactBtn.innerHTML.includes('56 88 89 72')) {
-        contactBtn.innerHTML = contactBtn.innerHTML.replace('56 88 89 72', settings.whatsappNum);
+      if (contactBtn && contactBtn.innerHTML.includes('56 80 88 72')) {
+        contactBtn.innerHTML = contactBtn.innerHTML.replace('56 80 88 72', settings.whatsappNum);
       }
     }
     if (settings.ctaText) {
