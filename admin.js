@@ -956,6 +956,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="action-btn delete delete-order" data-id="${o.id}" title="Supprimer">
                             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
+                        ${o.pushToken ? `
+                        <button class="action-btn test-notif" data-id="${o.id}" title="Tester la notification" style="color:#F59E0B; border-color:#F59E0B20;">
+                            <span class="material-symbols-outlined" style="font-size:1.1rem;">notification_important</span>
+                        </button>` : ''}
                     </div>
                 </td>
             `;
@@ -970,6 +974,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     e.target.disabled = true;
                     await DataService.updateOrderStatus(orderId, newStatus);
+
+                    // Trigger push notification if status is "completed" (Ready)
+                    if (newStatus === 'completed') {
+                        const order = orders.find(o => o.id === orderId);
+                        if (order && order.pushToken) {
+                            console.log("Triggering push notification for order:", orderId);
+                            fetch('/api/push-notify', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    token: order.pushToken,
+                                    title: "Votre commande est prête ! 🍰",
+                                    body: "Bonne nouvelle ! Votre délice est prêt à être récupéré ou livré. À très vite !",
+                                    data: { orderId: orderId, type: 'status_update' }
+                                })
+                            }).catch(err => console.error("Push notify error:", err));
+                        }
+                    }
+
                     playSound('success');
                     await loadOrders(); // Refresh to update badges and UI
                 } catch (err) {
@@ -979,6 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // Delete Order Event
         document.querySelectorAll('.delete-order').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const orderId = e.currentTarget.getAttribute('data-id');
@@ -989,6 +1013,46 @@ document.addEventListener('DOMContentLoaded', () => {
                     } catch (err) {
                         alert("Erreur lors de la suppression de la commande.");
                     }
+                }
+            });
+        });
+
+        // Test Notification Event
+        document.querySelectorAll('.test-notif').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const orderId = e.currentTarget.getAttribute('data-id');
+                const order = orders.find(o => o.id === orderId);
+                if (!order || !order.pushToken) return;
+
+                const btnEl = e.currentTarget;
+                const originalContent = btnEl.innerHTML;
+                btnEl.disabled = true;
+                btnEl.textContent = "...";
+
+                try {
+                    console.log("Testing push notification for order:", orderId);
+                    const response = await fetch('/api/push-notify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            token: order.pushToken,
+                            title: "Délice Cake - Test 🍰",
+                            body: "Ceci est une notification de test pour vérifier la connexion avec votre appareil.",
+                            data: { orderId: orderId, type: 'test' }
+                        })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showToast("Notification de test envoyée !", "success");
+                    } else {
+                        throw new Error(result.details || "Erreur inconnue");
+                    }
+                } catch (err) {
+                    console.error("Test Notif Error:", err);
+                    showToast("Échec du test : " + err.message, "error");
+                } finally {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = originalContent;
                 }
             });
         });
@@ -1399,22 +1463,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 const div = document.createElement('div');
                 const isBot = msg.role === 'assistant';
 
+                // Content cleanup: Hide ORDER_DATA blocks but maybe show a badge
+                let displayContent = msg.content;
+                let hasOrderData = false;
+                if (displayContent.includes('[ORDER_DATA:')) {
+                    hasOrderData = true;
+                    displayContent = displayContent.replace(/\[ORDER_DATA:.*?\]/is, "<i>[Commande générée]</i>");
+                }
+
+                // Cleanup other bracketed tags
+                displayContent = displayContent.replace(/\[.*?\]/g, "");
+
                 div.style = `
-                    max-width: 80%;
-                    padding: 0.8rem 1rem;
-                    border-radius: 12px;
-                    font-size: 0.85rem;
-                    line-height: 1.4;
+                    max-width: 85%;
+                    padding: 0.9rem 1.1rem;
+                    border-radius: 18px;
+                    font-size: 0.88rem;
+                    line-height: 1.45;
                     position: relative;
-                    margin-bottom: 1rem;
-                    ${isBot ? 'align-self: flex-start; background: #f0f0f0; border-bottom-left-radius: 2px;' : 'align-self: flex-end; background: var(--pink); color: white; border-bottom-right-radius: 2px;'}
+                    margin-bottom: 0.8rem;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                    ${isBot ? 'align-self: flex-start; background: #fdfdfd; color: #333; border: 1px solid #eee; border-bottom-left-radius: 4px;' : 'align-self: flex-end; background: var(--pink); color: white; border-bottom-right-radius: 4px;'}
                 `;
 
                 div.innerHTML = `
-                    <div style="font-size: 0.65rem; margin-bottom: 0.3rem; opacity: 0.7; font-weight: 700;">
-                        ${isBot ? '🤖 DELICE AI' : '👤 CLIENT'}
+                    <div style="font-size: 0.625rem; margin-bottom: 0.4rem; font-weight: 800; display: flex; align-items: center; gap: 5px; color: ${isBot ? '#666' : 'rgba(255,255,255,0.95)'};">
+                        ${isBot ? '<span class="material-symbols-outlined" style="font-size:0.8rem;">smart_toy</span> DÉLICE AI' : '<span class="material-symbols-outlined" style="font-size:0.8rem;">person</span> CLIENT'}
+                        ${hasOrderData ? '<span style="background:#10B981; color:white; padding:2px 6px; border-radius:4px; font-size:0.55rem;">🛒 ORDER</span>' : ''}
                     </div>
-                    <div>${msg.content}</div>
+                    <div style="word-break: break-word;">${displayContent.replace(/\n/g, '<br>')}</div>
                 `;
                 chatViewerBody.appendChild(div);
             });

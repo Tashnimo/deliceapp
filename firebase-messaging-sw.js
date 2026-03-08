@@ -16,22 +16,22 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Notification reçue en arrière-plan ', payload);
 
-    // Si Firebase envoie une vraie notification backend, il l'affiche tout seul !
-    if (payload.notification) {
-        console.log("Notification gérée nativement par FCM.");
-        return;
-    }
+    // Extraction des titres et corps, que ce soit via notification ou data
+    const title = payload.notification?.title || payload.data?.title || "Délice Cake 🍰";
+    const body = payload.notification?.body || payload.data?.body || "Votre commande a été mise à jour.";
 
-    // Le backend n'a envoyé que des datas (fallback safe)
-    const notificationTitle = payload.data?.title || "Délice Cake";
+    // Options de la notification
     const notificationOptions = {
-        body: payload.data?.body || "Nouvelle mise à jour sur votre commande !",
+        body: body,
         icon: '/favicon.svg',
         badge: '/favicon.svg',
+        tag: 'delice-cake-order',
+        renotify: true,
         data: payload.data || {}
     };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    // On force l'affichage pour être sûr que l'utilisateur voit quelque chose
+    return self.registration.showNotification(title, notificationOptions);
 });
 
 // Gérer le clic sur la notification

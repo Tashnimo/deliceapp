@@ -1011,6 +1011,19 @@ async function loadDynamicProducts() {
   }
 }
 
+// Helper to send Telegram notifications
+async function sendTelegramNotification(message) {
+  try {
+    await fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: message })
+    });
+  } catch (err) {
+    console.error("Erreur d'envoi Telegram:", err);
+  }
+}
+
 function initOrderModal() {
   const modal = document.getElementById('order-modal');
   if (!modal) return;
@@ -1018,13 +1031,13 @@ function initOrderModal() {
   const orderForm = document.getElementById('order-form');
   const formError = document.getElementById('form-error');
 
-  // Specific Order buttons on the page
+  // Specific Order buttons on the page that SHOULD open the modal
   const orderButtons = [
+    document.getElementById('nav-cta'),
+    document.querySelector('.mobile-menu__link.cta'),
     document.getElementById('saveurs-order-btn'),
-    document.getElementById('contact-whatsapp-btn'),
     document.getElementById('hero-order-btn'),
-    document.getElementById('product-order-btn'),
-    ...document.querySelectorAll('a[href^="https://wa.me"]')
+    document.getElementById('product-order-btn')
   ].filter(btn => btn !== null);
 
   const checkboxes = document.querySelectorAll('.prod-check');
@@ -1037,11 +1050,17 @@ function initOrderModal() {
         DataService.logLead(btn.id || btn.textContent.trim());
       }
 
-      // Allow CTA buttons to do both: scroll if they are anchor links, or just open modal
-      if (!btn.getAttribute('href') || btn.getAttribute('href').startsWith('https://wa.me')) {
+      // Open modal (prevent default if it's an anchor without external link)
+      const href = btn.getAttribute('href');
+      if (!href || href.startsWith('#')) {
         e.preventDefault();
         modal.classList.add('active');
         document.body.style.overflow = 'hidden'; // Stop background scrolling
+      } else {
+        // If it's a real link (like a fallback to another page), just open modal too but prevent navigation
+        e.preventDefault();
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
       }
     });
   });
@@ -1357,6 +1376,7 @@ function setupForegroundListener() {
 
 async function getAndStoreFCMToken() {
   if (!messaging) return;
+  console.log("FCM - Attempting to get/refresh token...");
   try {
     const vapidKey = "BMKTZISnCqUCld8Hj0EwFBWFS-O9BCorWJp_ZRbT42DCK7VnDL8feFTNAWYhY_fwQvx0FDzDPO3ax7pnis5fatE";
 
@@ -1368,7 +1388,7 @@ async function getAndStoreFCMToken() {
         serviceWorkerRegistration: registration
       });
     } catch (e) {
-      console.error("FCM Token Error: Please ensure VAPID key is correct and site is served over HTTPS.");
+      console.error("FCM Token Error:", e);
       return;
     }
 
@@ -1376,20 +1396,24 @@ async function getAndStoreFCMToken() {
       const oldToken = localStorage.getItem('delice_fcm_token');
       if (oldToken !== currentToken) {
         localStorage.setItem('delice_fcm_token', currentToken);
-        console.log("New FCM Token stored.");
+        console.log("FCM - New token received and stored locally.");
+      } else {
+        console.log("FCM - Token is up to date.");
       }
 
       // Link the token to the LATEST order if it hasn't been linked yet
       const lastOrderId = localStorage.getItem('delice_last_order_id');
       if (lastOrderId && typeof DataService !== 'undefined') {
-        console.log("Linking token to last order:", lastOrderId);
-        await DataService.updateOrderPushToken(lastOrderId, currentToken);
+        console.log("FCM - Linking token to last order:", lastOrderId);
+        const success = await DataService.updateOrderPushToken(lastOrderId, currentToken);
+        if (success) console.log("FCM - Token linked to order in Firestore.");
+        else console.warn("FCM - (Non-critical) Token linking failed or order not found.");
       }
     } else {
-      console.warn("No FCM token received.");
+      console.warn("FCM - No token received. Check notification permissions.");
     }
   } catch (err) {
-    console.error("Error in getAndStoreFCMToken:", err);
+    console.error("FCM - Error in getAndStoreFCMToken:", err);
   }
 }
 
@@ -1992,6 +2016,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 await sendTelegramNotification(telegramMsg);
                 if (window.refreshOrderTracking) window.refreshOrderTracking();
+
+                // Trigger notification prompt after 2 seconds
+                setTimeout(() => {
+                  if (typeof showProactiveNotifPrompt === 'function') showProactiveNotifPrompt();
+                }, 2000);
               }
             } catch (err) {
               console.error("Order Save Error:", err);
