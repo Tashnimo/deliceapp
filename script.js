@@ -55,25 +55,27 @@ async function sendTelegramNotification(message) {
 }
 
 // === PRELOADER ===
-window.addEventListener('load', () => {
+// Hide preloader as soon as DOM is ready (don't wait for images/fonts/etc.)
+document.addEventListener('DOMContentLoaded', () => {
   const preloader = document.getElementById('preloader');
   if (preloader) {
     setTimeout(() => {
       preloader.classList.add('hidden');
-      setTimeout(() => preloader.remove(), 1000);
-    }, 100);
+      setTimeout(() => { if (preloader.parentNode) preloader.remove(); }, 800);
+    }, 300);
   }
 });
 
-// Safety timeout: Hide preloader even if 'load' event fails to fire
+// Absolute fallback: hide preloader after 1.5s no matter what
 setTimeout(() => {
   const preloader = document.getElementById('preloader');
-  if (preloader && !preloader.classList.contains('hidden')) {
-    console.log("Preloader safety timeout triggered.");
-    preloader.classList.add('hidden');
-    setTimeout(() => preloader.remove(), 1000);
+  if (preloader) {
+    preloader.style.transition = 'opacity 0.4s ease';
+    preloader.style.opacity = '0';
+    preloader.style.pointerEvents = 'none';
+    setTimeout(() => { if (preloader.parentNode) preloader.remove(); }, 500);
   }
-}, 4000);
+}, 1500);
 
 // === SCROLL PROGRESS & NAV scroll effect ===
 const nav = document.getElementById('nav');

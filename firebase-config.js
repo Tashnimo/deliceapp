@@ -292,7 +292,10 @@ const DataService = {
     updateOrderStatus: async (orderId, newStatus) => {
         if (isFirebaseConfigured && db) {
             const orderRef = db.collection('orders').doc(orderId);
-            await orderRef.update({ status: newStatus });
+            await orderRef.update({
+                status: newStatus,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
             try {
                 const doc = await orderRef.get();
                 if (doc.exists) {
