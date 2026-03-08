@@ -1312,72 +1312,82 @@ function initOrderModal() {
         messaging.useServiceWorker(reg);
       }
 
+      // Configure onMessage listener RIGHT NOW, regardless of if we have a token stored
+      // This ensures foreground notifications work for returning users.
+      setupForegroundListener();
+
       // Check if we already have a token
       const savedToken = localStorage.getItem('delice_fcm_token');
-      if (savedToken) {
-        console.log("FCM Token already exists.");
-        return;
-      }
 
-      // Attempt to get token if permission is already granted
+      // If permission is already granted, refresh/verify the token
       if (Notification.permission === 'granted') {
         await getAndStoreFCMToken();
+      } else if (!savedToken) {
+        console.log("No FCM Token and permission not granted yet.");
       }
     } catch (err) {
       console.error("FCM Init error:", err);
     }
   }
 
+  function setupForegroundListener() {
+    if (!messaging) return;
+    messaging.onMessage((payload) => {
+      console.log('Message reçu au premier plan: ', payload);
+      const title = payload.notification?.title || payload.data?.title || "Délice Cake";
+      const body = payload.notification?.body || payload.data?.body || "";
+
+      // Notification sonore et visuelle locale via Toast (si dispo) ou Alert
+      if (window.showToast) {
+        window.showToast(`${title}: ${body}`, 'success');
+      } else {
+        alert(`${title}\n${body}`);
+      }
+
+      if (window.playSound) window.playSound('notification');
+
+      // Notification système si permise
+      if (Notification.permission === 'granted') {
+        new Notification(title, { body: body, icon: '/favicon.svg' });
+      }
+    });
+  }
+
   async function getAndStoreFCMToken() {
     if (!messaging) return;
     try {
-      // IMPORTANT: Remplacez cette clé par votre vraie clé VAPID depuis Firebase Console
-      // (Project Settings -> Cloud Messaging -> Web configuration -> Web Push certificates)
-      // Sans cette vraie clé, les notifications en arrière-plan NE FONCTIONNERONT PAS.
       const vapidKey = "BMKTZISnCqUCld8Hj0EwFBWFS-O9BCorWJp_ZRbT42DCK7VnDL8feFTNAWYhY_fwQvx0FDzDPO3ax7pnis5fatE";
 
       let currentToken = null;
       try {
-        // Get service worker registration when READY to link the token correctly
         const registration = await navigator.serviceWorker.ready;
-
         currentToken = await messaging.getToken({
           vapidKey: vapidKey,
           serviceWorkerRegistration: registration
         });
       } catch (e) {
-        console.error("Veuillez configurer la vraie VAPID key dans script.js (getAndStoreFCMToken) pour activer Push.");
+        console.error("FCM Token Error: Please ensure VAPID key is correct and site is served over HTTPS.");
         return;
       }
+
       if (currentToken) {
-        localStorage.setItem('delice_fcm_token', currentToken);
-        console.log("FCM Token stored.");
+        const oldToken = localStorage.getItem('delice_fcm_token');
+        if (oldToken !== currentToken) {
+          localStorage.setItem('delice_fcm_token', currentToken);
+          console.log("New FCM Token stored.");
+        }
 
-        // Gérer les messages quand l'application est au premier plan
-        messaging.onMessage((payload) => {
-          console.log('Message reçu au premier plan: ', payload);
-          const title = payload.notification?.title || payload.data?.title || "Délice Cake";
-          const body = payload.notification?.body || payload.data?.body || "";
-
-          // Notification sonore et visuelle locale via Toast (si dispo) ou Alert
-          if (window.showToast) {
-            window.showToast(`${title}: ${body}`, 'success');
-          } else {
-            alert(`${title}\n${body}`);
-          }
-
-          if (window.playSound) window.playSound('notification');
-
-          // Notification système si permise
-          if (Notification.permission === 'granted') {
-            new Notification(title, { body: body, icon: '/favicon.svg' });
-          }
-        });
+        // Link the token to the LATEST order if it hasn't been linked yet
+        const lastOrderId = localStorage.getItem('delice_last_order_id');
+        if (lastOrderId && typeof DataService !== 'undefined') {
+          console.log("Linking token to last order:", lastOrderId);
+          await DataService.updateOrderPushToken(lastOrderId, currentToken);
+        }
       } else {
         console.warn("No FCM token received.");
       }
     } catch (err) {
-      console.error("Error getting FCM token:", err);
+      console.error("Error in getAndStoreFCMToken:", err);
     }
   }
 
