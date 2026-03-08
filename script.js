@@ -1891,7 +1891,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Final aggressive cleanup: Remove any [DATA] tags and specifically the Mistral-style [CONFIRMATION] tags
-      cleanResponse = cleanResponse.replace(/\[ORDER_DATA:.*?\]/is, "")
+      cleanResponse = botResponse.replace(/\[ORDER_DATA:.*\]/is, "")
         .replace(/\[CONFIRMATION.*?\]/gi, "")
         .replace(/\[.*?\]/g, "")
         .trim();
