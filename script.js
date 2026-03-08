@@ -2156,11 +2156,11 @@ ${productListText || "Gâteau (1500/part), Boules de neige (500/sac)"}
 3. Livraison partout à Ouaga : 1000 FCFA. Retrait gratuit à Sanyiri.
 
 ## 📌 RÈGLES TECHNIQUES (CRITIQUE)
-Dès que tu as TOUTES les informations pour finaliser (Produit, qtés, prix total, mode de livraison), tu DOIS :
+Dès que tu as TOUTES les infos (Produit, qtés, prix total, livraison), tu DOIS :
 1. Envoyer ta réponse de confirmation normale.
-2. Ajouter SILENCIEUSEMENT à la toute fin de ton message le bloc suivant :
-[ORDER_DATA: {"items": [{"name": "Nom", "qty": 1, "price": 0}], "delivery": 1000, "depositPercent": 50}]
-Remplacement : "items" par la liste des produits, "delivery" (1000 ou 0), "depositPercent" (toujours 50).
+2. Ajouter SILENCIEUSEMENT à la fin de ton message :
+[ORDER_DATA: {"items": [{"name": "Gâteau chocolat (12 parts)", "qty": 12, "price": 1500}], "delivery": 1000, "depositPercent": 50}]
+RREGLE D'OR : "price" est TOUJOURS le PRIX UNITAIRE (ex: 1500), "qty" est le nombre de parts ou d'unités. 
 3. TRÈS IMPORTANT : Dis au client : "Veuillez cliquer sur le bouton 'Confirmer' ci-dessous pour enregistrer votre commande."`;
     } catch (e) {
       console.error("AI Context Init Fail:", e);
