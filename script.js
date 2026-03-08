@@ -2029,6 +2029,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const subtotal = estimatedTotal - (deliveryItem?.isDelivery ? 1000 : 0);
             const depositToPay = detectedDeposit || Math.round(subtotal / 2);
+            const remainingPay = subtotal - depositToPay;
 
             const confirmHtml = `
               <div class="chat-confirmation-box" style="margin-top:10px; padding:12px; background:#fff0f6; border-radius:12px; border: 2px solid #E8178A; color: #1a0a14;">
@@ -2036,23 +2037,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="font-size: 0.9em; margin: 8px 0; border-bottom: 1px solid #ffdeed; padding-bottom: 8px;">
                   ${itemsTable || "Détails dans l'historique"}
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.95em;">
+                
+                <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.95em; font-weight:700;">
                   <span>Sous-total:</span>
                   <span>${subtotal.toLocaleString('fr-FR')} FCFA</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.95em; color:${deliveryItem?.isDelivery ? '#E8178A' : '#666'};">
+                
+                <!-- Breakdown Subtotal -->
+                <div style="padding: 0 10px; font-size: 0.85em; color: #666; margin-bottom: 8px; border-left: 2px solid #ffdeed; margin-left: 4px;">
+                  <div style="display:flex; justify-content:space-between;">
+                    <span>• Acompte (50%):</span>
+                    <span>${depositToPay.toLocaleString('fr-FR')} FCFA</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between;">
+                    <span>• Solde restants:</span>
+                    <span>${remainingPay.toLocaleString('fr-FR')} FCFA</span>
+                  </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.95em; color:${deliveryItem?.isDelivery ? '#E8178A' : '#666'};">
                   <span>${deliveryItem?.isDelivery ? 'Livraison:' : 'Mode:'}</span>
                   <span>${deliveryItem?.isDelivery ? '1 000 FCFA' : 'Retrait Gratuit'}</span>
                 </div>
+
                 <div style="display:flex; justify-content:space-between; border-top:1px dashed #E8178A; padding-top:8px; font-weight:800; font-size: 1.05em;">
                   <span>TOTAL TTC:</span>
                   <span>${estimatedTotal.toLocaleString('fr-FR')} FCFA</span>
                 </div>
-                ${depositToPay > 0 ? `
-                <div style="display:flex; justify-content:space-between; margin-top:5px; padding: 4px 8px; background:rgba(232, 23, 138, 0.1); border-radius: 6px; font-size:0.9em; color:#E8178A; font-weight:700;">
-                  <span>Acompte (50%):</span>
-                  <span>${depositToPay.toLocaleString('fr-FR')} FCFA</span>
-                </div>` : ''}
+
                 <div style="margin-top:12px; display:flex; gap:10px; justify-content: center;">
                   <button id="${confirmId}-yes" class="btn btn--primary" style="padding: 6px 16px; font-size: 0.9em; min-height: 0;">✅ Confirmer</button>
                   <button id="${confirmId}-no" class="btn btn--ghost" style="padding: 6px 16px; font-size: 0.9em; min-height: 0; color: #E8178A; border: 1px solid #E8178A;">❌ Modifier</button>
