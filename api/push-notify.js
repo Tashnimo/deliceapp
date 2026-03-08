@@ -1,7 +1,4 @@
-/**
- * API pour envoyer des notifications push via Firebase Cloud Messaging (FCM)
- * Nécessite la variable d'environnement FIREBASE_SERVICE_ACCOUNT (JSON du compte de service)
- */
+import admin from 'firebase-admin';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -25,37 +22,22 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Note: Pour un environnement Vercel sans firebase-admin installé, 
-        // une implémentation pure fetch + signature JWT serait très longue.
-        // Nous recommandons d'installer `firebase-admin` via npm.
-        // Voici une version simplifiée utilisant l'API REST Legacy si disponible, 
-        // ou le template pour firebase-admin.
-
-        // Pour les besoins de ce projet, nous allons utiliser firebase-admin s'il est disponible,
-        // sinon nous renverrons une erreur explicite pour que l'utilisateur l'ajoute.
-
-        let admin;
-        try {
-            admin = require('firebase-admin');
-        } catch (e) {
-            return res.status(500).json({
-                error: "firebase-admin n'est pas installé.",
-                solution: "Exécutez `npm install firebase-admin` et déployez à nouveau."
-            });
-        }
-
         if (!admin.apps.length) {
+            console.log("Initialisation de Firebase Admin...");
             const serviceAccount = JSON.parse(serviceAccountRaw);
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount)
             });
+            console.log("Firebase Admin initialisé.");
         }
+
+        console.log(`Tentative d'envoi de notification au token: ${token.substring(0, 10)}...`);
 
         const host = req.headers.host || 'delcakebf.vercel.app';
         const protocol = host.includes('localhost') ? 'http' : 'https';
         const baseUrl = `${protocol}://${host}`;
 
-        const message = {
+        const response = await admin.messaging().send({
             notification: { title, body },
             token: token,
             data: data || {},
@@ -63,7 +45,18 @@ export default async function handler(req, res) {
                 priority: 'high',
                 notification: {
                     sound: 'default',
-                    click_action: 'TOP_STORY_ACTIVITY'
+                    click_action: 'TOP_STORY_ACTIVITY',
+                    icon: 'stock_ticker_update',
+                    color: '#E8178A'
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: 'default',
+                        badge: 1,
+                        'content-available': 1
+                    }
                 }
             },
             webpush: {
@@ -73,15 +66,15 @@ export default async function handler(req, res) {
                 notification: {
                     icon: `${baseUrl}/favicon.svg`,
                     badge: `${baseUrl}/favicon.svg`,
+                    tag: 'delice-cake-order',
+                    renotify: true,
                     requireInteraction: true
                 },
                 fcm_options: {
                     link: baseUrl
                 }
             }
-        };
-
-        const response = await admin.messaging().send(message);
+        });
         return res.status(200).json({ success: true, messageId: response });
 
     } catch (err) {

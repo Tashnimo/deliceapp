@@ -37,7 +37,23 @@ messaging.onBackgroundMessage((payload) => {
 // Gérer le clic sur la notification
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
+
+    // Si on a un lien de destination dans les data, on l'utilise
+    const targetUrl = event.notification.data?.link || self.location.origin;
+
     event.waitUntil(
-        clients.openWindow('https://delice-cake.vercel.app/')
+        clients.matchAll({ type: 'window' }).then((windowClients) => {
+            // Si un onglet est déjà ouvert sur notre site, on le focus
+            for (let i = 0; i < windowClients.length; i++) {
+                const client = windowClients[i];
+                if (client.url === targetUrl && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            // Sinon on ouvre un nouvel onglet
+            if (clients.openWindow) {
+                return clients.openWindow(targetUrl);
+            }
+        })
     );
 });

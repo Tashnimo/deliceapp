@@ -194,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusInput = document.getElementById('product-status');
     const descInput = document.getElementById('product-desc');
     const featuredInput = document.getElementById('product-featured');
+    const perSliceInput = document.getElementById('product-perslice');
 
     const imageElement = document.getElementById('image-element');
     const imagePlaceholder = document.getElementById('image-placeholder');
@@ -482,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 </td>
-                <td><strong>${p.price}</strong> FCFA</td>
+                <td><strong>${p.price}</strong> FCFA${p.isPerSlice ? ' / part' : ''}</td>
                 <td>${statusBadge}</td>
                 <td>
                     <div class="actions">
@@ -522,12 +523,14 @@ document.addEventListener('DOMContentLoaded', () => {
             statusInput.value = product.status;
             descInput.value = product.desc || '';
             if (featuredInput) featuredInput.checked = !!product.isFeatured;
+            if (perSliceInput) perSliceInput.checked = !!product.isPerSlice;
             updateImagePreview(product.image);
         } else {
             modalTitle.textContent = 'Ajouter un produit';
             productForm.reset();
             idInput.value = '';
             if (featuredInput) featuredInput.checked = false;
+            if (perSliceInput) perSliceInput.checked = false;
             updateImagePreview('');
         }
         productModal.classList.add('active');
@@ -648,6 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
             status: statusInput.value,
             desc: descInput.value,
             isFeatured: featuredInput ? featuredInput.checked : false,
+            isPerSlice: perSliceInput ? perSliceInput.checked : false,
             image: convertToDirectDriveLink(imageInput.value).replace(/[">]/g, '') // Sanitize on save
         };
 

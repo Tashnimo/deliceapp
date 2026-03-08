@@ -892,47 +892,63 @@ async function loadDynamicProducts() {
       if (orderProductsContainer && activeProducts.length > 0) {
         let orderHtml = '';
         activeProducts.forEach((p, index) => {
+          const isPerSlice = !!p.isPerSlice;
           const isCustom = p.isCustom || p.name.toLowerCase().includes('événement') || p.name.toLowerCase().includes('sur mesure');
-          if (isCustom) {
+
+          if (isCustom || isPerSlice) {
             orderHtml += `
-                            <div class="product-item" style="flex-wrap: wrap;">
-                                <label class="product-checkbox" style="width: 100%; margin-bottom: 0.5rem;">
+                            <div class="product-item product-item--complex" style="flex-wrap: wrap; border: 2px solid var(--pink-pale); border-radius: 12px; padding: 12px; margin-bottom: 12px; transition: all 0.3s ease;">
+                                <label class="product-checkbox" style="width: 100%; margin-bottom: 0.5rem; display: flex; align-items: center; cursor: pointer;">
                                     <input type="checkbox" name="product" value="${p.name}" class="prod-check"
-                                        data-id="prod-${index}" data-price="${p.price}">
+                                        data-id="prod-${index}" data-price="${p.price}" data-perslice="${isPerSlice}">
                                     <span class="checkmark"></span>
-                                    <span class="prod-name">${p.name}</span>
-                                    <span class="prod-price">sur mesure</span>
+                                    <span class="prod-name" style="font-weight: 700;">${p.name}</span>
+                                    <span class="prod-price" style="margin-left: auto; color: var(--pink); font-weight: 600;">${isPerSlice ? `${p.price} FCFA / part` : 'sur mesure'}</span>
                                 </label>
+                                
                                 <div class="prod-options" id="options-prod-${index}"
-                                    style="display: none; width: 100%; padding-left: 28px; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                    <select id="select-prod-${index}" class="form-input"
-                                        style="padding: 0.4rem 0.5rem; height: auto; width: auto; flex-grow: 1;">
-                                        <option value="5000">5 000 FCFA</option>
-                                        <option value="10000">10 000 FCFA</option>
-                                        <option value="15000">15 000 FCFA</option>
-                                        <option value="custom">Saisir le budget</option>
-                                    </select>
-                                    <input type="number" id="custom-price-prod-${index}" class="form-input" placeholder="FCFA"
-                                        style="display: none; padding: 0.4rem 0.5rem; height: auto; width: 100px;">
-                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <span style="font-size: 0.9rem;">Qté:</span>
-                                        <input type="number" min="1" value="1" class="prod-qty" id="qty-prod-${index}" disabled
-                                            style="margin:0;">
+                                    style="display: none; width: 100%; padding: 10px; background: rgba(232, 23, 138, 0.05); border-radius: 8px; margin-top: 8px; border-left: 4px solid var(--pink);">
+                                    
+                                    ${!isPerSlice ? `
+                                    <div style="margin-bottom: 10px;">
+                                        <label style="display: block; font-size: 0.85rem; margin-bottom: 4px; font-weight: 600;">Choisissez votre budget :</label>
+                                        <select id="select-prod-${index}" class="form-input" style="width: 100%; margin-bottom: 8px;">
+                                            <option value="5000">5 000 FCFA</option>
+                                            <option value="10000">10 000 FCFA</option>
+                                            <option value="15000">15 000 FCFA</option>
+                                            <option value="custom">Autre budget...</option>
+                                        </select>
+                                        <input type="number" id="custom-price-prod-${index}" class="form-input" placeholder="Entrez le montant en FCFA"
+                                            style="display: none; width: 100%;">
+                                    </div>
+                                    ` : ''}
+                                    
+                                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                        <label style="display: block; font-size: 0.85rem; font-weight: 600;">${isPerSlice ? 'Combien de parts souhaitez-vous ?' : 'Quantité :'}</label>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <input type="number" min="1" value="${isPerSlice ? '10' : '1'}" class="prod-qty" id="qty-prod-${index}" disabled
+                                                style="width: 80px; text-align: center; font-weight: bold; border: 2px solid var(--pink);">
+                                            <span style="font-size: 0.9rem; font-weight: 600;">${isPerSlice ? 'parts' : 'unité(s)'}</span>
+                                        </div>
+                                        ${isPerSlice ? `<p style="margin: 5px 0 0 0; font-size: 0.8rem; color: var(--pink); font-weight: 500;">✨ Total pour cet article : <span id="item-total-prod-${index}" style="font-weight: 700;">${p.price * 10}</span> FCFA</p>` : ''}
                                     </div>
                                 </div>
                             </div>
                         `;
           } else {
             orderHtml += `
-                            <div class="product-item">
+                            <div class="product-item" style="padding: 12px; border: 1px solid #eee; border-radius: 12px; margin-bottom: 8px;">
                                 <label class="product-checkbox">
                                     <input type="checkbox" name="product" value="${p.name}" class="prod-check"
-                                        data-id="prod-${index}" data-price="${p.price}">
+                                        data-id="prod-${index}" data-price="${p.price}" data-perslice="${isPerSlice}">
                                     <span class="checkmark"></span>
                                     <span class="prod-name">${p.name}</span>
-                                    <span class="prod-price">${p.price} FCFA</span>
+                                    <span class="prod-price" style="margin-left: auto; color: var(--pink);">${p.price} FCFA</span>
                                 </label>
-                                <input type="number" min="1" value="1" class="prod-qty" id="qty-prod-${index}" disabled>
+                                <div style="display:flex; align-items:center; gap:0.5rem; margin-top: 5px; padding-left: 28px;">
+                                  <span style="font-size:0.75rem; color:var(--grey-text);">Quantité:</span>
+                                  <input type="number" min="1" value="1" class="prod-qty" id="qty-prod-${index}" disabled style="width: 50px; border-radius: 4px; border: 1px solid #ddd;">
+                                </div>
                             </div>
                         `;
           }
@@ -1054,7 +1070,19 @@ function initOrderModal() {
 
         const qtyInput = document.getElementById(`qty-${prodId}`);
         const qty = qtyInput ? (parseInt(qtyInput.value) || 1) : 1;
-        total += price * qty;
+
+        const isPerSlice = checkbox.getAttribute('data-perslice') === 'true';
+        if (isPerSlice) {
+          const itemTotal = price * qty;
+          total += itemTotal;
+          // Update individual item total display if it exists
+          const itemTotalSpan = document.getElementById(`item-total-${prodId}`);
+          if (itemTotalSpan) {
+            itemTotalSpan.textContent = new Intl.NumberFormat('fr-FR').format(itemTotal);
+          }
+        } else {
+          total += price * qty;
+        }
       }
     });
 
@@ -1110,6 +1138,7 @@ function initOrderModal() {
             let productText = `${qty}x ${checkbox.value}`;
             let finalPrice = parseInt(checkbox.getAttribute('data-price')) || 0;
 
+            const isPerSlice = checkbox.getAttribute('data-perslice') === 'true';
             const selectEl = document.getElementById(`select-${prodIdStr}`);
             if (selectEl) {
               if (selectEl.value === 'custom') {
@@ -1118,7 +1147,10 @@ function initOrderModal() {
               } else {
                 finalPrice = parseInt(selectEl.value) || 0;
               }
-              productText += ` (Budget: ${new Intl.NumberFormat('fr-FR').format(finalPrice)} FCFA)`;
+              productText = `${qty}x ${checkbox.value} (Budget: ${new Intl.NumberFormat('fr-FR').format(finalPrice)} FCFA)`;
+            } else if (isPerSlice) {
+              const lineTotal = finalPrice * qty;
+              productText = `${checkbox.value} (${qty} parts x ${finalPrice} = ${new Intl.NumberFormat('fr-FR').format(lineTotal)} FCFA)`;
             }
 
             selectedProducts.push(`- ` + productText);
@@ -2027,8 +2059,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Mais on exige qu'il soit au moins dans le cleanResponseNorm pour être "actuel"
             if (searchTerm && (cleanResponseNorm.includes(searchTerm) || combinedLogNorm.includes(searchTerm))) {
 
-              // Regex de quantité : plus robuste
-              const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*(?:x|d(?:es|e))?\\s*${escapedTerm}`, 'i');
+              // Regex de quantité : plus robuste, incluant "parts"
+              const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*(?:x|d(?:es|e))?\\s*(?:part(?:s)?)?\\s*${escapedTerm}`, 'i');
 
               // On cherche d'abord dans le message actuel, sinon dans l'historique
               let match = cleanResponseNorm.match(qtyRegex) || combinedLogNorm.match(qtyRegex);
@@ -2047,7 +2079,8 @@ document.addEventListener('DOMContentLoaded', () => {
                   name: p.name,
                   quantity: qty,
                   unitPrice: p.price,
-                  totalPrice: p.price * qty
+                  totalPrice: p.price * qty,
+                  isPerSlice: !!p.isPerSlice
                 });
                 estimatedTotal += (p.price * qty);
               }
@@ -2064,7 +2097,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const confirmId = 'ai-confirm-' + Math.floor(Math.random() * 10000);
-            const itemsTable = detectedItems.map(it => `• ${it.quantity}x ${it.name}`).join('<br/>');
+            const itemsTable = detectedItems.map(it => `• ${it.isPerSlice ? `${it.quantity} parts de ${it.name}` : `${it.quantity}x ${it.name}`}`).join('<br/>');
             const confirmHtml = `
               <div class="chat-confirmation-box" style="margin-top:10px; padding:12px; background:#fff0f6; border-radius:12px; border: 2px solid #E8178A; color: #1a0a14;">
                 <strong style="color:#E8178A; font-family:'Outfit',sans-serif;">🛒 Validation de commande</strong><br/>
@@ -2357,6 +2390,58 @@ INFOS : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
 
 
 
-// Vercel Cache Busting Version: 04/03/2026 - AI Fix Version 12 (Groq API - Llama 3.1)
-// Trigger Vercel Deploy 9
+
+// === NOTIFICATION TESTER ===
+async function testNotifications() {
+  const token = localStorage.getItem('delice_fcm_token');
+  if (!token) {
+    const granted = await requestNotificationPermission();
+    if (!granted) {
+      if (window.showToast) window.showToast("Notifications non autorisées.", "error");
+      else alert("Veuillez d'abord autoriser les notifications dans votre navigateur.");
+      return;
+    }
+  }
+
+  const currentToken = localStorage.getItem('delice_fcm_token');
+  if (!currentToken) return;
+
+  if (window.showToast) window.showToast("Envoi d'un test... Patientez 2-3 secondes.", "success");
+
+  try {
+    const res = await fetch('/api/push-notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: currentToken,
+        title: "Test Réussi ! 🔔",
+        body: "Félicitations, votre appareil est prêt à recevoir vos commandes Délice Cake.",
+        data: { link: window.location.origin }
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      console.log("Test notification sent.");
+    } else {
+      console.error("Test notification failed:", data);
+      if (window.showToast) window.showToast("Erreur serveur: " + (data.error || "Inconnue"), "error");
+    }
+  } catch (err) {
+    console.error("Test notification networking error:", err);
+    if (window.showToast) window.showToast("Erreur réseau lors du test.", "error");
+  }
+}
+
+// Add event listener for the test button
+document.addEventListener('DOMContentLoaded', () => {
+  const testBtn = document.getElementById('chatbot-test-notif');
+  if (testBtn) {
+    testBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      testNotifications();
+    });
+  }
+});
+
+// Vercel Cache Busting Version: 08/03/2026 - High-End UI v2 - Parts logic
 
