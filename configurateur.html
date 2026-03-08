@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurateur 3D - Délice Cake</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,600;1,600&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --pink-main: #FF1F8E;
+            --bg-blush: #FFF0F7;
+            --gold-accent: #C9A84C;
+            --text-dark: #2A1A22;
+            --text-muted: #6B5B63;
+            --panel-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --shadow-soft: 0 8px 32px rgba(255, 31, 142, 0.08);
+            --font-heading: 'Playfair Display', serif;
+            --font-ui: 'DM Sans', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background: linear-gradient(135deg, var(--bg-blush) 0%, #FFD6EC 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                flex-direction: row;
+                height: 100vh;
+                overflow: hidden;
+            }
+        }
+
+        /* Left Panel */
+        .left-panel {
+            flex: 1;
+            max-width: 550px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.9), transparent);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-right: 1px solid var(--glass-border);
+            overflow-y: auto;
+            animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            color: var(--pink-main);
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Tabs Navigation */
+        .tabs-wrapper {
+            margin-bottom: 2rem;
+        }
+
+        .tabs-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 31, 142, 0.2);
+            background: rgba(255, 255, 255, 0.5);
+            color: var(--text-dark);
+            font-family: var(--font-ui);
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-1px);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--pink-main), #FA5A86);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(255, 31, 142, 0.3);
+        }
+
+        /* Tab Content Area */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(201, 168, 76, 0.3);
+        }
+
+        /* Saveurs (Flavors) */
+        .flavors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .flavor-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .flavor-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .flavor-card.active {
+            border-color: var(--pink-main);
+            box-shadow: 0 0 0 1px var(--pink-main), var(--shadow-soft);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .flavor-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+
+        .flavor-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Glaçage & Formats */
+        .options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .option-chip {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: var(--panel-bg);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .option-chip.active {
+            border-color: var(--pink-main);
+            background: rgba(255, 31, 142, 0.05);
+            color: var(--pink-main);
+        }
+
+        /* Sliders Input */
+        .slider-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(201, 168, 76, 0.3);
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--pink-main);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(255, 31, 142, 0.4);
+        }
+
+        /* Textarea */
+        .message-input {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.7);
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            resize: none;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .message-input:focus {
+            border-color: var(--pink-main);
+            background: #fff;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Summary & CTA */
+        .summary-card {
+            margin-top: auto;
+            padding: 1.25rem;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-soft);
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-text {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--text-dark);
+        }
+
+        .summary-highlight {
+            color: var(--pink-main);
+            font-weight: 600;
+        }
+
+        .cta-btn {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 50px;
+            border: none;
+            background: linear-gradient(135deg, var(--pink-main), #FA5A86);
+            color: white;
+            font-family: var(--font-ui);
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 25px rgba(255, 31, 142, 0.4);
+        }
+
+        .cta-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 35px rgba(255, 31, 142, 0.5);
+        }
+
+        .cta-hint {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.75rem;
+        }
+
+        /* Right Panel (3D Viewer) */
+        .right-panel {
+            flex: 2;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 50vh;
+            opacity: 0;
+            animation: fadeInCanvas 1s ease 0.3s forwards;
+        }
+
+        @keyframes fadeInCanvas {
+            to {
+                opacity: 1;
+            }
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: grab;
+        }
+
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        /* Floating Badges */
+        .floating-badges {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            pointer-events: none;
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--pink-main);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            animation: floatBadge 3s ease-in-out infinite alternate;
+        }
+
+        .badge:nth-child(2) {
+            animation-delay: 1s;
+        }
+
+        .badge:nth-child(3) {
+            animation-delay: 2s;
+        }
+
+        @keyframes floatBadge {
+            0% {
+                transform: translateY(0);
+            }
+
+            100% {
+                transform: translateY(-8px);
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 31, 142, 0.2);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 31, 142, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LEFT PANEL -->
+    <aside class="left-panel">
+        <header>
+            <h1>Concevez votre Délice</h1>
+            <p>Personnalisez votre gâteau sur mesure. Visualisez votre création en temps réel.</p>
+        </header>
+
+        <!-- TABS NAVIGATION -->
+        <div class="tabs-wrapper">
+            <div class="tabs-row">
+                <button class="tab-btn active" data-target="tab-saveur">🍴 Saveur</button>
+                <button class="tab-btn" data-target="tab-glacage">🌀 Glaçage</button>
+                <button class="tab-btn" data-target="tab-format">💎 Format</button>
+            </div>
+            <div class="tabs-row">
+                <button class="tab-btn" data-target="tab-forme">🎂 Étages</button>
+                <button class="tab-btn" data-target="tab-parts">🔢 Parts</button>
+                <button class="tab-btn" data-target="tab-occasion">🎉 Occasion</button>
+                <button class="tab-btn" data-target="tab-message">✉️ Message</button>
+            </div>
+        </div>
+
+        <!-- TABS CONTENT -->
+        <div class="tab-contents-container">
+
+            <!-- TAB: SAVEUR -->
+            <div id="tab-saveur" class="tab-content active">
+                <h2 class="section-title">Choix de la Saveur</h2>
+                <div class="flavors-grid" id="flavor-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- TAB: GLAÇAGE -->
+            <div id="tab-glacage" class="tab-content">
+                <h2 class="section-title">Finition Extérieure</h2>
+                <div class="options-grid" id="glacage-container">
+                    <div class="option-chip active" data-val="Lisse">Lisse</div>
+                    <div class="option-chip" data-val="Texturé">Texturé</div>
+                    <div class="option-chip" data-val="Naked">Naked</div>
+                    <div class="option-chip" data-val="Miroir">Miroir</div>
+                    <div class="option-chip" data-val="Chantilly">Chantilly</div>
+                </div>
+            </div>
+
+            <!-- TAB: FORMAT -->
+            <div id="tab-format" class="tab-content">
+                <h2 class="section-title">Géométrie</h2>
+                <div class="options-grid" id="format-container">
+                    <div class="option-chip active" data-val="Rond">Rond</div>
+                    <div class="option-chip" data-val="Carré">Carré</div>
+                    <div class="option-chip" data-val="Cœur">Cœur</div>
+                    <div class="option-chip" data-val="Rectangle">Rectangle</div>
+                </div>
+            </div>
+
+            <!-- TAB: ÉTAGES -->
+            <div id="tab-forme" class="tab-content">
+                <h2 class="section-title">Nombre d'Étages</h2>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Étages:</span>
+                        <span id="etages-val">2</span>
+                    </div>
+                    <input type="range" id="etages-slider" class="slider" min="1" max="4" value="2" step="1">
+                </div>
+            </div>
+
+            <!-- TAB: PARTS -->
+            <div id="tab-parts" class="tab-content">
+                <h2 class="section-title">Volume Souhaité</h2>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Nombre de parts:</span>
+                        <span id="parts-val">12 personnes</span>
+                    </div>
+                    <input type="range" id="parts-slider" class="slider" min="4" max="24" value="12" step="1">
+                </div>
+            </div>
+
+            <!-- TAB: OCCASION -->
+            <div id="tab-occasion" class="tab-content">
+                <h2 class="section-title">Quel est l'événement ?</h2>
+                <div class="options-grid" id="occasion-container">
+                    <div class="option-chip active" data-val="Anniversaire">Anniversaire</div>
+                    <div class="option-chip" data-val="Mariage">Mariage</div>
+                    <div class="option-chip" data-val="Baptême">Baptême</div>
+                    <div class="option-chip" data-val="Saint-Valentin">Saint-Valentin</div>
+                    <div class="option-chip" data-val="Autre">Autre</div>
+                </div>
+            </div>
+
+            <!-- TAB: MESSAGE -->
+            <div id="tab-message" class="tab-content">
+                <h2 class="section-title">Mot Doux</h2>
+                <textarea id="message-input" class="message-input" rows="3" placeholder="Votre message sur le gâteau..."
+                    maxlength="50"></textarea>
+                <div class="char-count"><span id="char-current">0</span>/50</div>
+            </div>
+
+        </div>
+
+        <div style="flex-grow: 1;"></div>
+
+        <!-- SUMMARY & CTA -->
+        <div class="summary-card">
+            <p class="summary-text" id="summary-display">
+                Gâteau <span class="summary-highlight">Rond Chocolat Noir</span>, <span
+                    class="summary-highlight">2</span> étages, <span class="summary-highlight">12</span> parts ·
+                Occasion: <span class="summary-highlight">Anniversaire</span>
+            </p>
+        </div>
+
+        <button class="cta-btn">🛍 Commander cette création</button>
+        <p class="cta-hint">Livraison sous 48h · Paiement sécurisé</p>
+    </aside>
+
+    <!-- RIGHT PANEL (3D Viewer) -->
+    <main class="right-panel">
+        <div id="canvas-container"></div>
+        <div class="floating-badges">
+            <div class="badge">✦ Artisanal</div>
+            <div class="badge">♡ Fait main</div>
+            <div class="badge">◇ Sur mesure</div>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * STATE MANAGEMENT
+         */
+        const state = {
+            saveur: { name: 'Chocolat Noir', color: '#3D1A00' },
+            glacage: 'Lisse',
+            format: 'Rond',
+            etages: 2,
+            parts: 12,
+            occasion: 'Anniversaire',
+            message: ''
+        };
+
+        const flavors = [
+            { name: 'Chocolat Noir', hex: '#3D1A00' },
+            { name: 'Vanille Bourbon', hex: '#F5DEB3' },
+            { name: 'Fraise Fraîche', hex: '#FF6B6B' },
+            { name: 'Pistache', hex: '#7CB97A' },
+            { name: 'Caramel Beurre Salé', hex: '#D4860B' },
+            { name: 'Citron Givré', hex: '#FFFACD' }
+        ];
+
+        /**
+         * UI INITIALIZATION & EVENTS
+         */
+        function initUI() {
+            // 1. Populate Flavors
+            const flavorContainer = document.getElementById('flavor-container');
+            flavors.forEach((f, index) => {
+                const card = document.createElement('div');
+                card.className = `flavor-card ${index === 0 ? 'active' : ''}`;
+                card.innerHTML = `
+          <div class="flavor-dot" style="background-color: ${f.hex}"></div>
+          <div class="flavor-name">${f.name}</div>
+        `;
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.flavor-card').forEach(el => el.classList.remove('active'));
+                    card.classList.add('active');
+                    state.saveur = f;
+                    updateSummary();
+                    triggerCakeColorChange(); // Three.js integration
+                });
+                flavorContainer.appendChild(card);
+            });
+
+            // 2. Tabs logic
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                    document.getElementById(btn.dataset.target).classList.add('active');
+                });
+            });
+
+            // 3. Option Chips Setup helper
+            const setupChips = (containerId, stateKey, callback) => {
+                const container = document.getElementById(containerId);
+                const chips = container.querySelectorAll('.option-chip');
+                chips.forEach(chip => {
+                    chip.addEventListener('click', () => {
+                        chips.forEach(c => c.classList.remove('active'));
+                        chip.classList.add('active');
+                        state[stateKey] = chip.dataset.val;
+                        updateSummary();
+                        if (callback) callback();
+                    });
+                });
+            };
+
+            setupChips('glacage-container', 'glacage', () => updateCakeMaterial());
+            setupChips('format-container', 'format', () => rebuildCakeGeometry());
+            setupChips('occasion-container', 'occasion');
+
+            // 4. Sliders
+            const etagesSlider = document.getElementById('etages-slider');
+            etagesSlider.addEventListener('input', (e) => {
+                state.etages = parseInt(e.target.value);
+                document.getElementById('etages-val').innerText = state.etages;
+                updateSummary();
+                rebuildCakeGeometry();
+            });
+
+            const partsSlider = document.getElementById('parts-slider');
+            partsSlider.addEventListener('input', (e) => {
+                state.parts = parseInt(e.target.value);
+                document.getElementById('parts-val').innerText = state.parts + " personnes";
+                updateSummary();
+            });
+
+            // 5. Textarea
+            const messageInput = document.getElementById('message-input');
+            messageInput.addEventListener('input', (e) => {
+                state.message = e.target.value;
+                document.getElementById('char-current').innerText = state.message.length;
+                updateCakeMessage();
+            });
+        }
+
+        function updateSummary() {
+            const summaryHTML = `Gâteau <span class="summary-highlight">${state.format} ${state.saveur.name}</span>, <span class="summary-highlight">${state.etages}</span> étages, <span class="summary-highlight">${state.parts}</span> parts · Occasion: <span class="summary-highlight">${state.occasion}</span>`;
+            document.getElementById('summary-display').innerHTML = summaryHTML;
+        }
+
+
+        /**
+         * THREE.JS SETUP & LOGIC
+         */
+        let scene, camera, renderer, cakeGroup, plateMesh, messageMesh, messageTexture;
+        let targetColor = new THREE.Color(state.saveur.color);
+        let currentColor = new THREE.Color(state.saveur.color);
+
+        // Mouse rotation state
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        // Auto-rotation variables
+        let autoRotate = true;
+        let idleTimeout = null;
+
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+
+            // 1. Scene setup
+            scene = new THREE.Scene();
+
+            // 2. Camera setup
+            camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 8, 20); // Elevated angle
+            camera.lookAt(0, 2, 0);
+
+            // 3. Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // alpha true for gradient CSS bg
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // 4. Lighting (Warm tone for patisserie)
+            const ambientLight = new THREE.AmbientLight(0xfff5e6, 0.6); // soft warm white
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xfffaee, 0.8);
+            dirLight.position.set(5, 10, 7);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 25;
+            dirLight.shadow.radius = 4; // soft edges
+            scene.add(dirLight);
+
+            const fillLight = new THREE.DirectionalLight(0xffddf0, 0.3);
+            fillLight.position.set(-5, 5, -5);
+            scene.add(fillLight);
+
+            // 5. Base elements
+            cakeGroup = new THREE.Group();
+            scene.add(cakeGroup);
+
+            buildPlate();
+            rebuildCakeGeometry();
+
+            // 6. Interaction events (Arcball approximation)
+            setupInteraction(container);
+
+            // 7. Window resize handler
+            window.addEventListener('resize', onWindowResize);
+
+            // Start animation loop
+            animate();
+        }
+
+        function buildPlate() {
+            if (plateMesh) scene.remove(plateMesh);
+            const plateGeo = new THREE.CylinderGeometry(5.5, 5.2, 0.3, 64);
+            const plateMat = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                shininess: 90,
+                specular: 0x222222
+            });
+            plateMesh = new THREE.Mesh(plateGeo, plateMat);
+            plateMesh.position.y = -0.15; // Set surface at y=0
+            plateMesh.receiveShadow = true;
+            scene.add(plateMesh);
+        }
+
+        /**
+         * HEART GEOMETRY GENERATOR
+         */
+        function createHeartGeometry(radius, depth) {
+            const x = 0, y = 0;
+            const heartShape = new THREE.Shape();
+            // Scale coordinates based on requested radius roughly
+            const s = radius * 0.45;
+
+            heartShape.moveTo(x + .5 * s, y + .5 * s);
+            heartShape.bezierCurveTo(x + .5 * s, y + .5 * s, x + .4 * s, y, x, y);
+            heartShape.bezierCurveTo(x - .6 * s, y, x - .6 * s, y + .7 * s, x - .6 * s, y + .7 * s);
+            heartShape.bezierCurveTo(x - .6 * s, y + 1.1 * s, x - .3 * s, y + 1.54 * s, x + .5 * s, y + 1.9 * s);
+            heartShape.bezierCurveTo(x + 1.2 * s, y + 1.54 * s, x + 1.6 * s, y + 1.1 * s, x + 1.6 * s, y + .7 * s);
+            heartShape.bezierCurveTo(x + 1.6 * s, y + .7 * s, x + 1.6 * s, y, x + 1.0 * s, y);
+            heartShape.bezierCurveTo(x + .7 * s, y, x + .5 * s, y + .5 * s, x + .5 * s, y + .5 * s);
+
+            const extrudeSettings = {
+                depth: depth,
+                bevelEnabled: true,
+                bevelSegments: 2,
+                steps: 2,
+                bevelSize: 0.1,
+                bevelThickness: 0.1
+            };
+            const geo = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+
+            // Center the geometry
+            geo.computeBoundingBox();
+            const offset = new THREE.Vector3();
+            geo.boundingBox.getCenter(offset);
+            geo.translate(-offset.x, -offset.y, -offset.z);
+
+            // Heart is built vertically usually, so we let the group rotate it later
+            geo.rotateX(Math.PI / 2); // Lay flat
+            geo.rotateZ(Math.PI); // Point towards camera
+
+            return geo;
+        }
+
+        function createTierGeometry(format, radius, height) {
+            switch (format) {
+                case 'Carré':
+                    return new THREE.BoxGeometry(radius * 1.8, height, radius * 1.8);
+                case 'Rectangle':
+                    return new THREE.BoxGeometry(radius * 2.2, height, radius * 1.4);
+                case 'Cœur':
+                    return createHeartGeometry(radius, height);
+                case 'Rond':
+                default:
+                    return new THREE.CylinderGeometry(radius, radius, height, 64);
+            }
+        }
+
+        function getFrostingMaterialSettings() {
+            // Dynamic material creation based on 'Glaçage'
+            let matParams = { color: targetColor };
+            let material;
+
+            switch (state.glacage) {
+                case 'Texturé':
+                    material = new THREE.MeshStandardMaterial({
+                        color: targetColor,
+                        roughness: 0.9,
+                        metalness: 0.05,
+                        bumpScale: 0.02
+                    });
+                    // Adding simple noise for texture would need a texture map. Without external map, we simulate with standard rough
+                    break;
+                case 'Miroir':
+                    material = new THREE.MeshPhongMaterial({
+                        color: targetColor,
+                        shininess: 200,
+                        specular: 0xffffff,
+                        reflectivity: 0.5
+                    });
+                    break;
+                case 'Chantilly':
+                    material = new THREE.MeshPhongMaterial({
+                        color: 0xffffff, // Chantilly forces white frosting layer
+                        shininess: 40,
+                        bumpScale: 0.1
+                    });
+                    break;
+                case 'Lisse':
+                default:
+                    material = new THREE.MeshPhongMaterial({
+                        color: targetColor,
+                        shininess: 80,
+                        specular: 0x222222
+                    });
+                    break;
+            }
+            return material;
+        }
+
+        function rebuildCakeGeometry() {
+            // Bounce animation logic via simple scaling
+            cakeGroup.scale.set(0.1, 0.1, 0.1);
+
+            // Clear existing cake tiers
+            while (cakeGroup.children.length > 0) {
+                let child = cakeGroup.children[0];
+                cakeGroup.remove(child);
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                    else child.material.dispose();
+                }
+            }
+
+            const tierHeight = 1.8;
+            let baseRadius = 3.5;
+            let currentYOffset = tierHeight / 2;
+
+            const baseMaterial = new THREE.MeshPhongMaterial({ color: targetColor, shininess: 30 }); // sponge cake underneath
+
+            for (let i = 0; i < state.etages; i++) {
+                const radius = baseRadius - (i * 0.7);
+                const geoBase = createTierGeometry(state.format, radius * 0.98, tierHeight);
+                const tierGroup = new THREE.Group();
+
+                // 1. Internal Cake Base (visible mainly if Naked)
+                const innerMesh = new THREE.Mesh(geoBase, baseMaterial);
+                innerMesh.castShadow = true;
+                innerMesh.receiveShadow = true;
+                tierGroup.add(innerMesh);
+
+                // 2. Frosting Outer Layer
+                if (state.glacage !== 'Naked') {
+                    const outerRadius = state.format === 'Cœur' ? radius + 0.1 : radius;
+                    const geoOuter = createTierGeometry(state.format, outerRadius, tierHeight + 0.05);
+                    const outerMat = getFrostingMaterialSettings();
+                    const outerMesh = new THREE.Mesh(geoOuter, outerMat);
+                    outerMesh.castShadow = true;
+                    outerMesh.receiveShadow = true;
+                    // Store a reference to update color later safely without recreating geometry
+                    outerMesh.userData.isFrosting = true;
+                    tierGroup.add(outerMesh);
+                }
+
+                // 3. Decorations on top tier
+                if (i === state.etages - 1 && state.glacage !== 'Naked') {
+                    addPearls(tierGroup, radius, tierHeight, state.format);
+                }
+
+                tierGroup.position.y = currentYOffset;
+                cakeGroup.add(tierGroup);
+
+                currentYOffset += tierHeight;
+            }
+
+            // Re-apply message if exists
+            updateCakeMessage();
+        }
+
+        function addPearls(tierGroup, tierRadius, tierHeight, format) {
+            if (format === 'Cœur') return; // Math simplified: skip pearls for heart boundary for now
+
+            const pearlCount = Math.floor(tierRadius * 8);
+            const pearlGeo = new THREE.SphereGeometry(0.12, 16, 16);
+            const pearlMat = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                shininess: 150,
+                specular: 0xdddddd
+            });
+
+            const yPos = (tierHeight / 2) + 0.05;
+
+            for (let j = 0; j < pearlCount; j++) {
+                const theta = (j / pearlCount) * Math.PI * 2;
+                let pX, pZ;
+
+                if (format === 'Carré') {
+                    const s = tierRadius * 0.9;
+                    // Place around square perimeter
+                    const t = (j / pearlCount);
+                    if (t < 0.25) { pX = s; pZ = s - (t * 4) * (2 * s); }
+                    else if (t < 0.5) { pX = s - ((t - 0.25) * 4) * (2 * s); pZ = -s; }
+                    else if (t < 0.75) { pX = -s; pZ = -s + ((t - 0.5) * 4) * (2 * s); }
+                    else { pX = -s + ((t - 0.75) * 4) * (2 * s); pZ = s; }
+                } else if (format === 'Rectangle') {
+                    const sx = tierRadius * 1.1;
+                    const sz = tierRadius * 0.7;
+                    const t = (j / pearlCount);
+                    if (t < 0.25) { pX = sx; pZ = sz - (t * 4) * (2 * sz); }
+                    else if (t < 0.5) { pX = sx - ((t - 0.25) * 4) * (2 * sx); pZ = -sz; }
+                    else if (t < 0.75) { pX = -sx; pZ = -sz + ((t - 0.5) * 4) * (2 * sz); }
+                    else { pX = -sx + ((t - 0.75) * 4) * (2 * sx); pZ = sz; }
+                } else {
+                    // Circle
+                    const pearlRad = tierRadius - 0.15;
+                    pX = Math.cos(theta) * pearlRad;
+                    pZ = Math.sin(theta) * pearlRad;
+                }
+
+                const pearl = new THREE.Mesh(pearlGeo, pearlMat);
+                pearl.position.set(pX, yPos, pZ);
+                pearl.castShadow = true;
+                tierGroup.add(pearl);
+            }
+        }
+
+        function updateCakeMaterial() {
+            // Fast response for material changes
+            rebuildCakeGeometry();
+        }
+
+        function triggerCakeColorChange() {
+            targetColor.set(state.saveur.color);
+            // Let animation loop lerp the color gracefully
+        }
+
+        function updateCakeMessage() {
+            if (messageMesh) {
+                cakeGroup.remove(messageMesh);
+                if (messageMesh.geometry) messageMesh.geometry.dispose();
+            }
+            if (messageTexture) messageTexture.dispose();
+
+            if (!state.message || state.message.trim() === '') return;
+
+            // Create abstract curved ribbon with message text using Canvas API
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0)'; // Transparent
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; // subtle dark ribbon background
+            ctx.roundRect(0, 20, 512, 88, 20);
+            ctx.fill();
+
+            // Text styling
+            ctx.fillStyle = '#ffffff';
+            ctx.font = "italic 600 36px 'Playfair Display', serif";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(state.message, canvas.width / 2, canvas.height / 2);
+
+            messageTexture = new THREE.CanvasTexture(canvas);
+
+            const ribbonGeo = new THREE.CylinderGeometry(2.5, 2.5, 0.6, 32, 1, true, -Math.PI / 3, Math.PI * 2 / 3);
+            const ribbonMat = new THREE.MeshBasicMaterial({
+                map: messageTexture,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+
+            messageMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
+
+            // Position on the top tier's side
+            const tierHeight = 1.8;
+            const totalHeight = state.etages * tierHeight;
+            const topScaleRadius = 3.5 - ((state.etages - 1) * 0.7);
+
+            messageMesh.position.y = totalHeight - (tierHeight / 2);
+            // Slight scale out to avoid clipping
+            messageMesh.scale.set(topScaleRadius / 2.4 + 0.1, 1, topScaleRadius / 2.4 + 0.1);
+
+            cakeGroup.add(messageMesh);
+        }
+
+        function setupInteraction(container) {
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                autoRotate = false; // pause auto rotation
+                if (idleTimeout) clearTimeout(idleTimeout);
+            });
+
+            container.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+
+                const deltaMove = {
+                    x: e.offsetX - previousMousePosition.x,
+                    y: e.offsetY - previousMousePosition.y
+                };
+
+                const rotationSpeed = 0.005;
+                // Horizontal rotation around cake group
+                cakeGroup.rotation.y += deltaMove.x * rotationSpeed;
+
+                // Vertical rotation (limit angles to avoid flipping)
+                cakeGroup.rotation.x += deltaMove.y * rotationSpeed;
+                cakeGroup.rotation.x = Math.max(-Math.PI / 6, Math.min(Math.PI / 4, cakeGroup.rotation.x));
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+                // Resume rotation after 3s idle
+                idleTimeout = setTimeout(() => { autoRotate = true; }, 3000);
+            });
+
+            container.addEventListener('mousemove', (e) => {
+                previousMousePosition = { x: e.offsetX, y: e.offsetY };
+            });
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 1. Color Lerping execution (smooth transition between flavors)
+            if (state.glacage !== 'Chantilly' && currentColor.getHex() !== targetColor.getHex()) {
+                currentColor.lerp(targetColor, 0.05); // Smooth color interpolation
+
+                // Traverse and update frosting materials
+                cakeGroup.children.forEach(tier => {
+                    if (tier.type === "Group") {
+                        tier.children.forEach(mesh => {
+                            if (mesh.userData.isFrosting && state.glacage !== 'Chantilly') {
+                                mesh.material.color.copy(currentColor);
+                            }
+                            // Base cake color updates too (sponge)
+                            if (!mesh.userData.isFrosting && !mesh.geometry.type.includes('Sphere')) {
+                                mesh.material.color.copy(currentColor);
+                            }
+                        });
+                    }
+                });
+            }
+
+            // 2. Scale bounce animation execution when geometry is rebuilt
+            if (cakeGroup.scale.x < 1) {
+                cakeGroup.scale.x += (1 - cakeGroup.scale.x) * 0.15;
+                cakeGroup.scale.y += (1 - cakeGroup.scale.y) * 0.15;
+                cakeGroup.scale.z += (1 - cakeGroup.scale.z) * 0.15;
+            }
+
+            // 3. Auto-rotation
+            if (autoRotate && !isDragging) {
+                cakeGroup.rotation.y += 0.002;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        /**
+         * INIT APP
+         */
+        window.onload = () => {
+            initUI();
+            initThreeJS();
+        };
+
+    </script>
+</body>
+
+</html>
