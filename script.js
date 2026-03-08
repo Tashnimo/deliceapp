@@ -1479,177 +1479,176 @@ function initOrderModal() {
       setTimeout(() => { if (prompt.parentNode) prompt.remove(); }, 600);
     });
   }
-}
 
-// === ORDER TRACKING LOGIC ===
-let orderSubscription = null;
+  // === ORDER TRACKING LOGIC ===
+  let orderSubscription = null;
 
-function initOrderTracking() {
-  // ==============================
-  // PDF INVOICE GENERATOR (jsPDF)
-  // ==============================
-  function generateInvoicePDF(order) {
-    if (!window.jspdf || !window.jspdf.jsPDF) {
-      _printInvoiceFallback(order);
-      return;
+  function initOrderTracking() {
+    // ==============================
+    // PDF INVOICE GENERATOR (jsPDF)
+    // ==============================
+    function generateInvoicePDF(order) {
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        _printInvoiceFallback(order);
+        return;
+      }
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+        const PINK = [232, 23, 138];
+        const DARK_PINK = [180, 10, 100];
+        const LIGHT_PINK = [255, 230, 245];
+        const GOLD = [212, 175, 55];
+        const DARK = [30, 20, 26];
+        const GREY = [110, 90, 100];
+        const WHITE = [255, 255, 255];
+        const LIGHT_GREY = [245, 245, 248];
+
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const margin = 14;
+
+        function getDateStr(raw) {
+          let d;
+          if (!raw) return new Date().toLocaleDateString('fr-FR');
+          if (raw.toDate) d = raw.toDate();
+          else if (raw.seconds) d = new Date(raw.seconds * 1000);
+          else d = new Date(raw);
+          return isNaN(d.getTime()) ? new Date().toLocaleDateString('fr-FR') :
+            d.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        function fmtAmount(n) {
+          return (Number(n) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+        }
+
+        const dateStr = getDateStr(order.createdAt);
+        const ref = (order.id || 'N/A').substring(0, 12).toUpperCase();
+        const sectionW = pageW - margin * 2;
+
+        // HEADER
+        doc.setFillColor(...PINK); doc.rect(0, 0, pageW, 60, 'F');
+        doc.setFillColor(...DARK_PINK); doc.circle(pageW + 6, -8, 44, 'F');
+
+        doc.setFontSize(28); doc.setFont('helvetica', 'bold'); doc.setTextColor(...GOLD);
+        doc.text('Delice', margin, 26);
+        doc.setTextColor(...WHITE);
+        doc.text('Cake', margin + doc.getTextWidth('Delice '), 26);
+        doc.setFontSize(9); doc.setFont('helvetica', 'italic'); doc.setTextColor(255, 200, 230);
+        doc.text('Patisserie Artisanale  -  Burkina Faso', margin, 33);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(255, 220, 240);
+        doc.text('www.delicecake.com', margin, 40);
+
+        doc.setFillColor(...GOLD); doc.roundedRect(pageW - 56, 8, 44, 14, 3, 3, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...DARK);
+        doc.text('FACTURE', pageW - 50, 17);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(255, 220, 240);
+        doc.text('Reference :', pageW - 56, 28);
+        doc.setFont('helvetica', 'bold'); doc.text(ref, pageW - 12, 28, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.text('Date :', pageW - 56, 35); doc.text(dateStr, pageW - 12, 35, { align: 'right' });
+        doc.text('Statut :', pageW - 56, 42);
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...GOLD);
+        doc.text('LIVRE / TERMINE', pageW - 12, 42, { align: 'right' });
+
+        doc.setFillColor(...LIGHT_PINK);
+        for (let i = margin; i <= pageW - margin; i += 6) { doc.circle(i, 63, 0.7, 'F'); }
+
+        let y = 72;
+        const halfW = sectionW / 2 - 4;
+        const colL = margin, colR = margin + halfW + 8;
+
+        doc.setFillColor(...LIGHT_PINK); doc.roundedRect(colL, y, halfW, 28, 3, 3, 'F');
+        doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK_PINK);
+        doc.text('INFORMATIONS CLIENT', colL + 4, y + 6);
+        doc.setFillColor(...DARK_PINK); doc.rect(colL + 4, y + 8, halfW - 8, 0.4, 'F');
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(...GREY);
+        doc.text('Type : Commande en ligne', colL + 4, y + 14);
+        doc.text('Note : ' + (order.note || 'Client').substring(0, 30), colL + 4, y + 20);
+        doc.text('Paiement : A la livraison', colL + 4, y + 26);
+
+        doc.setFillColor(250, 235, 245); doc.roundedRect(colR, y, halfW, 28, 3, 3, 'F');
+        doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK_PINK);
+        doc.text('DETAILS LIVRAISON', colR + 4, y + 6);
+        doc.setFillColor(...DARK_PINK); doc.rect(colR + 4, y + 8, halfW - 8, 0.4, 'F');
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(...GREY);
+        doc.text('Mode : Livraison a domicile', colR + 4, y + 14);
+        doc.text('Date : ' + dateStr, colR + 4, y + 20);
+        doc.text('Reference : ' + ref, colR + 4, y + 26);
+
+        y += 36;
+        doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK);
+        doc.text('DETAIL DE LA COMMANDE', colL, y);
+        doc.setFillColor(...PINK); doc.rect(colL, y + 2, sectionW, 0.8, 'F');
+        y += 6;
+
+        const tableBody = (order.items || []).map((item, i) => [
+          String(i + 1), item.name || '', String(item.quantity || 1),
+          fmtAmount(item.unitPrice), fmtAmount(item.totalPrice)
+        ]);
+
+        doc.autoTable({
+          startY: y, margin: { left: margin, right: margin },
+          head: [["N°", "Designation", "Qte", "Prix Unit.", "Total"]],
+          body: tableBody, theme: 'plain',
+          headStyles: { fillColor: PINK, textColor: WHITE, fontStyle: 'bold', fontSize: 9 },
+          bodyStyles: { textColor: DARK, fontSize: 9 },
+          alternateRowStyles: { fillColor: [255, 243, 251] },
+        });
+
+        const afterTable = doc.lastAutoTable.finalY + 6;
+        const boxX = pageW / 2 + 2;
+        doc.setFillColor(...LIGHT_GREY); doc.roundedRect(margin, afterTable, sectionW, 25, 3, 3, 'F');
+        doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(...GREY);
+        doc.text('Sous-total :', boxX, afterTable + 8);
+        doc.text(fmtAmount(order.totalAmount), pageW - margin, afterTable + 8, { align: 'right' });
+        doc.setFillColor(...PINK); doc.roundedRect(boxX - 1, afterTable + 12, pageW - margin - boxX + 1, 9, 1, 1, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+        doc.text('TOTAL A PAYER', boxX + 3, afterTable + 18);
+        doc.text(fmtAmount(order.totalAmount), pageW - margin, afterTable + 18, { align: 'right' });
+
+        doc.setFillColor(...PINK); doc.rect(0, pageH - 10, pageW, 10, 'F');
+        doc.setFontSize(7.5); doc.setTextColor(...WHITE);
+        doc.text('Merci pour votre confiance ! DELICE CAKE - Burkina Faso', pageW / 2, pageH - 4, { align: 'center' });
+
+        const blob = doc.output('blob');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'Facture_DeliceCake_' + ref + '.pdf';
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 3000);
+      } catch (err) { _printInvoiceFallback(order); }
     }
 
-    try {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-      const PINK = [232, 23, 138];
-      const DARK_PINK = [180, 10, 100];
-      const LIGHT_PINK = [255, 230, 245];
-      const GOLD = [212, 175, 55];
-      const DARK = [30, 20, 26];
-      const GREY = [110, 90, 100];
-      const WHITE = [255, 255, 255];
-      const LIGHT_GREY = [245, 245, 248];
-
-      const pageW = doc.internal.pageSize.getWidth();
-      const pageH = doc.internal.pageSize.getHeight();
-      const margin = 14;
-
-      function getDateStr(raw) {
-        let d;
-        if (!raw) return new Date().toLocaleDateString('fr-FR');
-        if (raw.toDate) d = raw.toDate();
-        else if (raw.seconds) d = new Date(raw.seconds * 1000);
-        else d = new Date(raw);
-        return isNaN(d.getTime()) ? new Date().toLocaleDateString('fr-FR') :
-          d.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
-      }
-      function fmtAmount(n) {
-        return (Number(n) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
-      }
-
-      const dateStr = getDateStr(order.createdAt);
+    function _printInvoiceFallback(order) {
       const ref = (order.id || 'N/A').substring(0, 12).toUpperCase();
-      const sectionW = pageW - margin * 2;
+      const rows = (order.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${it.name}</td><td>${it.quantity}</td><td>${it.unitPrice.toLocaleString()} FCFA</td><td>${it.totalPrice.toLocaleString()} FCFA</td></tr>`).join('');
+      const html = `<html><body onload="window.print()"><h1>Facture Délice Cake</h1><p>Réf: ${ref}</p><table border="1" width="100%"><thead><tr><th>#</th><th>Article</th><th>Qté</th><th>Prix Unit.</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><h3>Total: ${order.totalAmount.toLocaleString()} FCFA</h3></body></html>`;
+      const w = window.open('', '_blank');
+      if (w) { w.document.write(html); w.document.close(); }
+    }
 
-      // HEADER
-      doc.setFillColor(...PINK); doc.rect(0, 0, pageW, 60, 'F');
-      doc.setFillColor(...DARK_PINK); doc.circle(pageW + 6, -8, 44, 'F');
+    const navBadge = document.getElementById('nav-track-badge');
+    const mobileBadge = document.getElementById('mobile-track-badge');
+    const modal = document.getElementById('track-modal');
+    const closeBtn = document.getElementById('track-modal-close');
+    const content = document.getElementById('track-content');
+    const trackingBar = document.getElementById('active-orders-tracking');
 
-      doc.setFontSize(28); doc.setFont('helvetica', 'bold'); doc.setTextColor(...GOLD);
-      doc.text('Delice', margin, 26);
-      doc.setTextColor(...WHITE);
-      doc.text('Cake', margin + doc.getTextWidth('Delice '), 26);
-      doc.setFontSize(9); doc.setFont('helvetica', 'italic'); doc.setTextColor(255, 200, 230);
-      doc.text('Patisserie Artisanale  -  Burkina Faso', margin, 33);
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(255, 220, 240);
-      doc.text('www.delicecake.com', margin, 40);
+    const STATUS_REELS = {
+      'new': { label: 'Reçue', icon: '📝', color: '#3b82f6', class: 'status-new', desc: 'Commande bien reçue.' },
+      'processing': { label: 'Préparation', icon: '👨‍🍳', color: '#f59e0b', class: 'status-processing', desc: 'En cours de préparation.' },
+      'completed': { label: 'Prête !', icon: '🍰', color: '#10b981', class: 'status-completed', desc: 'Votre commande est prête !' },
+      'cancelled': { label: 'Annulée', icon: '❌', color: '#ef4444', class: 'status-cancelled', desc: 'Commande annulée.' }
+    };
 
-      doc.setFillColor(...GOLD); doc.roundedRect(pageW - 56, 8, 44, 14, 3, 3, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...DARK);
-      doc.text('FACTURE', pageW - 50, 17);
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(255, 220, 240);
-      doc.text('Reference :', pageW - 56, 28);
-      doc.setFont('helvetica', 'bold'); doc.text(ref, pageW - 12, 28, { align: 'right' });
-      doc.setFont('helvetica', 'normal');
-      doc.text('Date :', pageW - 56, 35); doc.text(dateStr, pageW - 12, 35, { align: 'right' });
-      doc.text('Statut :', pageW - 56, 42);
-      doc.setFont('helvetica', 'bold'); doc.setTextColor(...GOLD);
-      doc.text('LIVRE / TERMINE', pageW - 12, 42, { align: 'right' });
+    const updateUI = (order) => {
+      if (!order || !content) return;
+      const status = STATUS_REELS[order.status || 'new'];
+      const isCompleted = order.status === 'completed';
 
-      doc.setFillColor(...LIGHT_PINK);
-      for (let i = margin; i <= pageW - margin; i += 6) { doc.circle(i, 63, 0.7, 'F'); }
-
-      let y = 72;
-      const halfW = sectionW / 2 - 4;
-      const colL = margin, colR = margin + halfW + 8;
-
-      doc.setFillColor(...LIGHT_PINK); doc.roundedRect(colL, y, halfW, 28, 3, 3, 'F');
-      doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK_PINK);
-      doc.text('INFORMATIONS CLIENT', colL + 4, y + 6);
-      doc.setFillColor(...DARK_PINK); doc.rect(colL + 4, y + 8, halfW - 8, 0.4, 'F');
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...GREY);
-      doc.text('Type : Commande en ligne', colL + 4, y + 14);
-      doc.text('Note : ' + (order.note || 'Client').substring(0, 30), colL + 4, y + 20);
-      doc.text('Paiement : A la livraison', colL + 4, y + 26);
-
-      doc.setFillColor(250, 235, 245); doc.roundedRect(colR, y, halfW, 28, 3, 3, 'F');
-      doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK_PINK);
-      doc.text('DETAILS LIVRAISON', colR + 4, y + 6);
-      doc.setFillColor(...DARK_PINK); doc.rect(colR + 4, y + 8, halfW - 8, 0.4, 'F');
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...GREY);
-      doc.text('Mode : Livraison a domicile', colR + 4, y + 14);
-      doc.text('Date : ' + dateStr, colR + 4, y + 20);
-      doc.text('Reference : ' + ref, colR + 4, y + 26);
-
-      y += 36;
-      doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK);
-      doc.text('DETAIL DE LA COMMANDE', colL, y);
-      doc.setFillColor(...PINK); doc.rect(colL, y + 2, sectionW, 0.8, 'F');
-      y += 6;
-
-      const tableBody = (order.items || []).map((item, i) => [
-        String(i + 1), item.name || '', String(item.quantity || 1),
-        fmtAmount(item.unitPrice), fmtAmount(item.totalPrice)
-      ]);
-
-      doc.autoTable({
-        startY: y, margin: { left: margin, right: margin },
-        head: [["N°", "Designation", "Qte", "Prix Unit.", "Total"]],
-        body: tableBody, theme: 'plain',
-        headStyles: { fillColor: PINK, textColor: WHITE, fontStyle: 'bold', fontSize: 9 },
-        bodyStyles: { textColor: DARK, fontSize: 9 },
-        alternateRowStyles: { fillColor: [255, 243, 251] },
-      });
-
-      const afterTable = doc.lastAutoTable.finalY + 6;
-      const boxX = pageW / 2 + 2;
-      doc.setFillColor(...LIGHT_GREY); doc.roundedRect(margin, afterTable, sectionW, 25, 3, 3, 'F');
-      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(...GREY);
-      doc.text('Sous-total :', boxX, afterTable + 8);
-      doc.text(fmtAmount(order.totalAmount), pageW - margin, afterTable + 8, { align: 'right' });
-      doc.setFillColor(...PINK); doc.roundedRect(boxX - 1, afterTable + 12, pageW - margin - boxX + 1, 9, 1, 1, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
-      doc.text('TOTAL A PAYER', boxX + 3, afterTable + 18);
-      doc.text(fmtAmount(order.totalAmount), pageW - margin, afterTable + 18, { align: 'right' });
-
-      doc.setFillColor(...PINK); doc.rect(0, pageH - 10, pageW, 10, 'F');
-      doc.setFontSize(7.5); doc.setTextColor(...WHITE);
-      doc.text('Merci pour votre confiance ! DELICE CAKE - Burkina Faso', pageW / 2, pageH - 4, { align: 'center' });
-
-      const blob = doc.output('blob');
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'Facture_DeliceCake_' + ref + '.pdf';
-      document.body.appendChild(a); a.click();
-      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 3000);
-    } catch (err) { _printInvoiceFallback(order); }
-  }
-
-  function _printInvoiceFallback(order) {
-    const ref = (order.id || 'N/A').substring(0, 12).toUpperCase();
-    const rows = (order.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${it.name}</td><td>${it.quantity}</td><td>${it.unitPrice.toLocaleString()} FCFA</td><td>${it.totalPrice.toLocaleString()} FCFA</td></tr>`).join('');
-    const html = `<html><body onload="window.print()"><h1>Facture Délice Cake</h1><p>Réf: ${ref}</p><table border="1" width="100%"><thead><tr><th>#</th><th>Article</th><th>Qté</th><th>Prix Unit.</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><h3>Total: ${order.totalAmount.toLocaleString()} FCFA</h3></body></html>`;
-    const w = window.open('', '_blank');
-    if (w) { w.document.write(html); w.document.close(); }
-  }
-
-  const navBadge = document.getElementById('nav-track-badge');
-  const mobileBadge = document.getElementById('mobile-track-badge');
-  const modal = document.getElementById('track-modal');
-  const closeBtn = document.getElementById('track-modal-close');
-  const content = document.getElementById('track-content');
-  const trackingBar = document.getElementById('active-orders-tracking');
-
-  const STATUS_REELS = {
-    'new': { label: 'Reçue', icon: '📝', color: '#3b82f6', class: 'status-new', desc: 'Commande bien reçue.' },
-    'processing': { label: 'Préparation', icon: '👨‍🍳', color: '#f59e0b', class: 'status-processing', desc: 'En cours de préparation.' },
-    'completed': { label: 'Prête !', icon: '🍰', color: '#10b981', class: 'status-completed', desc: 'Votre commande est prête !' },
-    'cancelled': { label: 'Annulée', icon: '❌', color: '#ef4444', class: 'status-cancelled', desc: 'Commande annulée.' }
-  };
-
-  const updateUI = (order) => {
-    if (!order || !content) return;
-    const status = STATUS_REELS[order.status || 'new'];
-    const isCompleted = order.status === 'completed';
-
-    content.innerHTML = `
+      content.innerHTML = `
       <div class="track-status-header" style="text-align:center; padding: 20px; background: ${isCompleted ? '#f0fdf4' : '#fff'}; border-radius: 12px; margin-bottom: 20px;">
         <div style="font-size: 3rem; margin-bottom: 10px;">${status.icon}</div>
         <h4 style="color: ${status.color}; margin:0;">${status.label}</h4>
@@ -1665,25 +1664,25 @@ function initOrderTracking() {
       </div>
       ${isCompleted ? `<button id="dl-inv" class="btn btn--primary" style="width:100%; margin-top:15px;">📥 Télécharger Facture</button>` : ''}
     `;
-    if (isCompleted) document.getElementById('dl-inv').onclick = () => generateInvoicePDF(order);
-  };
+      if (isCompleted) document.getElementById('dl-inv').onclick = () => generateInvoicePDF(order);
+    };
 
-  const renderTrackingUI = (orders, container) => {
-    if (!container) return;
-    container.innerHTML = '';
-    const activeOrders = orders.filter(o => o.status !== 'cancelled');
+    const renderTrackingUI = (orders, container) => {
+      if (!container) return;
+      container.innerHTML = '';
+      const activeOrders = orders.filter(o => o.status !== 'cancelled');
 
-    if (activeOrders.length === 0) {
-      if (navBadge) navBadge.classList.remove('active');
-      if (mobileBadge) mobileBadge.classList.remove('active');
-      return;
-    }
+      if (activeOrders.length === 0) {
+        if (navBadge) navBadge.classList.remove('active');
+        if (mobileBadge) mobileBadge.classList.remove('active');
+        return;
+      }
 
-    activeOrders.forEach(order => {
-      const status = STATUS_REELS[order.status || 'new'];
-      const card = document.createElement('div');
-      card.className = 'order-tracking-card';
-      card.innerHTML = `
+      activeOrders.forEach(order => {
+        const status = STATUS_REELS[order.status || 'new'];
+        const card = document.createElement('div');
+        card.className = 'order-tracking-card';
+        card.innerHTML = `
         <div class="order-status-dot ${status.class}"></div>
         <div class="order-info">
           <div class="order-ref">#${order.id.slice(-4).toUpperCase()}</div>
@@ -1691,237 +1690,237 @@ function initOrderTracking() {
         </div>
         <div class="order-arrow" style="margin-left:auto; color:#ccc;">→</div>
       `;
-      card.onclick = () => {
-        updateUI(order);
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-      };
-      container.appendChild(card);
-    });
+        card.onclick = () => {
+          updateUI(order);
+          modal.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        };
+        container.appendChild(card);
+      });
 
-    // Update badges with latest order status
-    const latest = activeOrders[0];
-    const s = STATUS_REELS[latest.status || 'new'];
-    [navBadge, mobileBadge].forEach(b => {
-      if (b) {
-        b.className = 'track-badge active ' + s.class;
-        b.textContent = s.label;
+      // Update badges with latest order status
+      const latest = activeOrders[0];
+      const s = STATUS_REELS[latest.status || 'new'];
+      [navBadge, mobileBadge].forEach(b => {
+        if (b) {
+          b.className = 'track-badge active ' + s.class;
+          b.textContent = s.label;
+        }
+      });
+    };
+
+    const startTracking = () => {
+      const customerId = localStorage.getItem('delice_customer_id') || (typeof getCustomerId === 'function' ? getCustomerId() : null);
+      if (!customerId) return;
+      if (orderSubscription) orderSubscription();
+      orderSubscription = DataService.subscribeToMyOrders(customerId, (orders) => {
+        renderTrackingUI(orders, trackingBar);
+      });
+    };
+
+    startTracking();
+    window.refreshOrderTracking = startTracking;
+
+    const openTracking = (e) => {
+      if (e) e.preventDefault();
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      const lastId = localStorage.getItem('delice_last_order_id');
+      if (lastId) {
+        DataService.subscribeToOrder(lastId, (o) => updateUI(o));
+      } else {
+        content.innerHTML = '<p style="text-align:center; padding:20px;">Aucune commande active.</p>';
       }
-    });
-  };
+    };
 
-  const startTracking = () => {
-    const customerId = localStorage.getItem('delice_customer_id') || (typeof getCustomerId === 'function' ? getCustomerId() : null);
-    if (!customerId) return;
-    if (orderSubscription) orderSubscription();
-    orderSubscription = DataService.subscribeToMyOrders(customerId, (orders) => {
-      renderTrackingUI(orders, trackingBar);
-    });
-  };
-
-  startTracking();
-  window.refreshOrderTracking = startTracking;
-
-  const openTracking = (e) => {
-    if (e) e.preventDefault();
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-    const lastId = localStorage.getItem('delice_last_order_id');
-    if (lastId) {
-      DataService.subscribeToOrder(lastId, (o) => updateUI(o));
-    } else {
-      content.innerHTML = '<p style="text-align:center; padding:20px;">Aucune commande active.</p>';
-    }
-  };
-
-  if (document.getElementById('track-order-nav')) document.getElementById('track-order-nav').onclick = openTracking;
-  if (document.getElementById('track-order-mobile')) document.getElementById('track-order-mobile').onclick = (e) => {
-    if (window.closeMobile) window.closeMobile();
-    openTracking(e);
-  };
-  if (closeBtn) closeBtn.onclick = () => { modal.classList.remove('active'); document.body.style.overflow = ''; };
-}
-
-// ==========================================
-// DELICE AI CHATBOT LOGIC
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-  const chatbotToggler = document.getElementById('chatbot-toggler');
-  const chatbotCloseBtn = document.getElementById('chatbot-close-btn');
-  const chatbotContainer = document.getElementById('chatbot-container');
-  const chatbotInput = document.getElementById('chatbot-input');
-  const chatbotSendBtn = document.getElementById('chatbot-send-btn');
-  const chatbotMessages = document.getElementById('chatbot-messages');
-
-  // Toggle Chatbot Window
-  if (chatbotToggler) {
-    chatbotToggler.addEventListener('click', () => {
-      chatbotContainer.classList.toggle('active');
-      if (chatbotContainer.classList.contains('active')) {
-        chatbotInput.focus();
-      }
-    });
+    if (document.getElementById('track-order-nav')) document.getElementById('track-order-nav').onclick = openTracking;
+    if (document.getElementById('track-order-mobile')) document.getElementById('track-order-mobile').onclick = (e) => {
+      if (window.closeMobile) window.closeMobile();
+      openTracking(e);
+    };
+    if (closeBtn) closeBtn.onclick = () => { modal.classList.remove('active'); document.body.style.overflow = ''; };
   }
 
-  if (chatbotCloseBtn) {
-    chatbotCloseBtn.addEventListener('click', () => {
-      chatbotContainer.classList.remove('active');
-    });
-  }
+  // ==========================================
+  // DELICE AI CHATBOT LOGIC
+  // ==========================================
+  document.addEventListener('DOMContentLoaded', () => {
+    const chatbotToggler = document.getElementById('chatbot-toggler');
+    const chatbotCloseBtn = document.getElementById('chatbot-close-btn');
+    const chatbotContainer = document.getElementById('chatbot-container');
+    const chatbotInput = document.getElementById('chatbot-input');
+    const chatbotSendBtn = document.getElementById('chatbot-send-btn');
+    const chatbotMessages = document.getElementById('chatbot-messages');
 
-  // Create a chat list item
-  const createChatLi = (message, className) => {
-    const chatLi = document.createElement('li');
-    chatLi.classList.add('chat', className);
-    let chatContent = className === 'outgoing' ? `<p></p>` : `<div class="chat-content"><p></p></div>`;
-    chatLi.innerHTML = chatContent;
-    chatLi.querySelector('p').textContent = message; // Safe text injection
-    return chatLi;
-  }
-
-  // Handle Chat Logic
-  const handleChat = async () => {
-    let userMessage = chatbotInput.value.trim();
-    if (!userMessage) return;
-
-    // Clear input and reset height
-    chatbotInput.value = '';
-    chatbotInput.style.height = '45px';
-
-    // Session ID for persistence
-    let chatId = localStorage.getItem('delice_chat_session');
-    if (!chatId) {
-      chatId = 'chat_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('delice_chat_session', chatId);
+    // Toggle Chatbot Window
+    if (chatbotToggler) {
+      chatbotToggler.addEventListener('click', () => {
+        chatbotContainer.classList.toggle('active');
+        if (chatbotContainer.classList.contains('active')) {
+          chatbotInput.focus();
+        }
+      });
     }
 
-    // Append user message
-    const outgoingChatLi = createChatLi(userMessage, 'outgoing');
-    chatbotMessages.appendChild(outgoingChatLi);
-    chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
+    if (chatbotCloseBtn) {
+      chatbotCloseBtn.addEventListener('click', () => {
+        chatbotContainer.classList.remove('active');
+      });
+    }
 
-    // Persist user message
-    DataService.saveChatMessage(chatId, { role: 'user', content: userMessage });
+    // Create a chat list item
+    const createChatLi = (message, className) => {
+      const chatLi = document.createElement('li');
+      chatLi.classList.add('chat', className);
+      let chatContent = className === 'outgoing' ? `<p></p>` : `<div class="chat-content"><p></p></div>`;
+      chatLi.innerHTML = chatContent;
+      chatLi.querySelector('p').textContent = message; // Safe text injection
+      return chatLi;
+    }
 
-    // Show typing indicator
-    const incomingChatLi = document.createElement('li');
-    incomingChatLi.classList.add('chat', 'incoming');
-    incomingChatLi.innerHTML = `<div class="chat-content"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
-    chatbotMessages.appendChild(incomingChatLi);
-    chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
+    // Handle Chat Logic
+    const handleChat = async () => {
+      let userMessage = chatbotInput.value.trim();
+      if (!userMessage) return;
 
-    // Call AI API
-    try {
-      const botResponse = await generateAIResponse(userMessage);
+      // Clear input and reset height
+      chatbotInput.value = '';
+      chatbotInput.style.height = '45px';
 
-      // --- ORDER DETECTION LOGIC ---
-      // Llama 3 galère trop avec le JSON complexe en plein texte.
-      // Nouvelle stratégie : L'IA écrit juste un tag secret à la fin. 
-      // Si on le détecte, le JavaScript va analyser l'historique récent pour créer le panier.
-
-      const confirmTag = "[CONFIRM_ORDER]";
-      let cleanResponse = botResponse;
-      let orderConfirmed = false;
-
-      if (botResponse.toUpperCase().includes(confirmTag.toUpperCase())) {
-        orderConfirmed = true;
-        // Use regex for case-insensitive replacement
-        const tagRegex = new RegExp("\\[CONFIRM_ORDER\\]", "gi");
-        cleanResponse = botResponse.replace(tagRegex, "").trim();
-        // Remove trailing commas, or weird leftover symbols the AI might drop near the tag
-        cleanResponse = cleanResponse.replace(/[,\s"]+$/g, "").trim();
+      // Session ID for persistence
+      let chatId = localStorage.getItem('delice_chat_session');
+      if (!chatId) {
+        chatId = 'chat_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('delice_chat_session', chatId);
       }
 
-      if (orderConfirmed) {
-        try {
-          console.log("AI confirmed an order! Reconstructing basket from chat context...");
+      // Append user message
+      const outgoingChatLi = createChatLi(userMessage, 'outgoing');
+      chatbotMessages.appendChild(outgoingChatLi);
+      chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
 
-          // Helper for fuzzy matching: remove accents, lowercase, remove plurals
-          const normalize = (str) => {
-            if (!str) return "";
-            return str.normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-              .toLowerCase()
-              .replace(/s\b/g, "") // remove plurals here too for consistency
-              .trim();
-          };
+      // Persist user message
+      DataService.saveChatMessage(chatId, { role: 'user', content: userMessage });
 
-          // Get search term: e.g. "Tiramisu Maison" -> "tiramisu"
-          const getSearchTerm = (name) => {
-            return normalize(name)
-              .replace(/\(.*\)/g, "") // remove (12 pcs)
-              .replace(/\b(maison|signature|artisanale?|assortis?)\b/g, "")
-              .trim();
-          };
+      // Show typing indicator
+      const incomingChatLi = document.createElement('li');
+      incomingChatLi.classList.add('chat', 'incoming');
+      incomingChatLi.innerHTML = `<div class="chat-content"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+      chatbotMessages.appendChild(incomingChatLi);
+      chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
 
-          // Helper to escape regex special characters
-          const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Call AI API
+      try {
+        const botResponse = await generateAIResponse(userMessage);
 
-          // 1. FILTER HISTORY: Ignore system prompt to avoid matching products in the menu instructions
-          const relevantHistory = chatHistoryMessages.filter(m => m.role !== 'system');
+        // --- ORDER DETECTION LOGIC ---
+        // Llama 3 galère trop avec le JSON complexe en plein texte.
+        // Nouvelle stratégie : L'IA écrit juste un tag secret à la fin. 
+        // Si on le détecte, le JavaScript va analyser l'historique récent pour créer le panier.
 
-          // 2. CONTEXT WINDOW: Last 10 relevant messages for quantity context
-          const lastMessagesText = relevantHistory.slice(-10).map(m => m.content).join(" ");
+        const confirmTag = "[CONFIRM_ORDER]";
+        let cleanResponse = botResponse;
+        let orderConfirmed = false;
 
-          // 3. COMBINED LOG for quantity search
-          const combinedLog = lastMessagesText + " " + cleanResponse;
-          const combinedLogNorm = normalize(combinedLog);
-          const cleanResponseNorm = normalize(cleanResponse);
+        if (botResponse.toUpperCase().includes(confirmTag.toUpperCase())) {
+          orderConfirmed = true;
+          // Use regex for case-insensitive replacement
+          const tagRegex = new RegExp("\\[CONFIRM_ORDER\\]", "gi");
+          cleanResponse = botResponse.replace(tagRegex, "").trim();
+          // Remove trailing commas, or weird leftover symbols the AI might drop near the tag
+          cleanResponse = cleanResponse.replace(/[,\s"]+$/g, "").trim();
+        }
 
-          // On s'appuie sur le catalogue global
-          const products = typeof DataService !== 'undefined' ? await DataService.getProducts() : [];
+        if (orderConfirmed) {
+          try {
+            console.log("AI confirmed an order! Reconstructing basket from chat context...");
 
-          let detectedItems = [];
-          let estimatedTotal = 0;
-
-          products.forEach(p => {
-            const searchTerm = getSearchTerm(p.name);
-            const escapedTerm = escapeRegExp(searchTerm);
-
-            // On cherche si le produit est mentionné dans la CONFIRMATION OU dans l'historique récent
-            // Mais on exige qu'il soit au moins dans le cleanResponseNorm pour être "actuel"
-            if (searchTerm && (cleanResponseNorm.includes(searchTerm) || combinedLogNorm.includes(searchTerm))) {
-
-              // Regex de quantité : plus robuste, incluant "parts"
-              const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*(?:x|d(?:es|e))?\\s*(?:part(?:s)?)?\\s*${escapedTerm}`, 'i');
-
-              // On cherche d'abord dans le message actuel, sinon dans l'historique
-              let match = cleanResponseNorm.match(qtyRegex) || combinedLogNorm.match(qtyRegex);
-
-              let qty = 1;
-              if (match && match[1]) {
-                const val = match[1].toLowerCase();
-                if (val === 'un' || val === 'une') qty = 1;
-                else if (val === 'douzaine') qty = 12;
-                else qty = parseInt(val, 10) || 1;
-              }
-
-              // On ne l'ajoute que s'il est vraiment dans la réponse de l'IA (pour éviter les vieux items)
-              if (cleanResponseNorm.includes(searchTerm)) {
-                detectedItems.push({
-                  name: p.name,
-                  quantity: qty,
-                  unitPrice: p.price,
-                  totalPrice: p.price * qty,
-                  isPerSlice: !!p.isPerSlice
-                });
-                estimatedTotal += (p.price * qty);
-              }
-            }
-          });
-
-          if (detectedItems.length > 0) {
-            // ... (rest of existing confirmed items logic) ...
-            const finalOrder = {
-              items: detectedItems,
-              totalAmount: estimatedTotal,
-              note: `Commande via Délice AI Chat (${chatId})`,
-              status: 'new'
+            // Helper for fuzzy matching: remove accents, lowercase, remove plurals
+            const normalize = (str) => {
+              if (!str) return "";
+              return str.normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .replace(/s\b/g, "") // remove plurals here too for consistency
+                .trim();
             };
 
-            const confirmId = 'ai-confirm-' + Math.floor(Math.random() * 10000);
-            const itemsTable = detectedItems.map(it => `• ${it.isPerSlice ? `${it.quantity} parts de ${it.name}` : `${it.quantity}x ${it.name}`}`).join('<br/>');
-            const confirmHtml = `
+            // Get search term: e.g. "Tiramisu Maison" -> "tiramisu"
+            const getSearchTerm = (name) => {
+              return normalize(name)
+                .replace(/\(.*\)/g, "") // remove (12 pcs)
+                .replace(/\b(maison|signature|artisanale?|assortis?)\b/g, "")
+                .trim();
+            };
+
+            // Helper to escape regex special characters
+            const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+            // 1. FILTER HISTORY: Ignore system prompt to avoid matching products in the menu instructions
+            const relevantHistory = chatHistoryMessages.filter(m => m.role !== 'system');
+
+            // 2. CONTEXT WINDOW: Last 10 relevant messages for quantity context
+            const lastMessagesText = relevantHistory.slice(-10).map(m => m.content).join(" ");
+
+            // 3. COMBINED LOG for quantity search
+            const combinedLog = lastMessagesText + " " + cleanResponse;
+            const combinedLogNorm = normalize(combinedLog);
+            const cleanResponseNorm = normalize(cleanResponse);
+
+            // On s'appuie sur le catalogue global
+            const products = typeof DataService !== 'undefined' ? await DataService.getProducts() : [];
+
+            let detectedItems = [];
+            let estimatedTotal = 0;
+
+            products.forEach(p => {
+              const searchTerm = getSearchTerm(p.name);
+              const escapedTerm = escapeRegExp(searchTerm);
+
+              // On cherche si le produit est mentionné dans la CONFIRMATION OU dans l'historique récent
+              // Mais on exige qu'il soit au moins dans le cleanResponseNorm pour être "actuel"
+              if (searchTerm && (cleanResponseNorm.includes(searchTerm) || combinedLogNorm.includes(searchTerm))) {
+
+                // Regex de quantité : plus robuste, incluant "parts"
+                const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*(?:x|d(?:es|e))?\\s*(?:part(?:s)?)?\\s*${escapedTerm}`, 'i');
+
+                // On cherche d'abord dans le message actuel, sinon dans l'historique
+                let match = cleanResponseNorm.match(qtyRegex) || combinedLogNorm.match(qtyRegex);
+
+                let qty = 1;
+                if (match && match[1]) {
+                  const val = match[1].toLowerCase();
+                  if (val === 'un' || val === 'une') qty = 1;
+                  else if (val === 'douzaine') qty = 12;
+                  else qty = parseInt(val, 10) || 1;
+                }
+
+                // On ne l'ajoute que s'il est vraiment dans la réponse de l'IA (pour éviter les vieux items)
+                if (cleanResponseNorm.includes(searchTerm)) {
+                  detectedItems.push({
+                    name: p.name,
+                    quantity: qty,
+                    unitPrice: p.price,
+                    totalPrice: p.price * qty,
+                    isPerSlice: !!p.isPerSlice
+                  });
+                  estimatedTotal += (p.price * qty);
+                }
+              }
+            });
+
+            if (detectedItems.length > 0) {
+              // ... (rest of existing confirmed items logic) ...
+              const finalOrder = {
+                items: detectedItems,
+                totalAmount: estimatedTotal,
+                note: `Commande via Délice AI Chat (${chatId})`,
+                status: 'new'
+              };
+
+              const confirmId = 'ai-confirm-' + Math.floor(Math.random() * 10000);
+              const itemsTable = detectedItems.map(it => `• ${it.isPerSlice ? `${it.quantity} parts de ${it.name}` : `${it.quantity}x ${it.name}`}`).join('<br/>');
+              const confirmHtml = `
               <div class="chat-confirmation-box" style="margin-top:10px; padding:12px; background:#fff0f6; border-radius:12px; border: 2px solid #E8178A; color: #1a0a14;">
                 <strong style="color:#E8178A; font-family:'Outfit',sans-serif;">🛒 Validation de commande</strong><br/>
                 <div style="font-size: 0.9em; margin: 8px 0; border-bottom: 1px solid #ffdeed; padding-bottom: 8px;">
@@ -1936,179 +1935,179 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
             `;
 
-            const promptChatLi = createChatLi('', 'incoming');
-            promptChatLi.innerHTML = `<div class="chat-content">${confirmHtml}</div>`;
-            chatbotMessages.appendChild(promptChatLi);
-            chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
+              const promptChatLi = createChatLi('', 'incoming');
+              promptChatLi.innerHTML = `<div class="chat-content">${confirmHtml}</div>`;
+              chatbotMessages.appendChild(promptChatLi);
+              chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
 
-            document.getElementById(`${confirmId}-yes`).addEventListener('click', async (e) => {
-              e.target.parentElement.innerHTML = `<span style="color: green; font-weight: bold;">Commande validée avec succès ! 🎉</span>`;
-              if (typeof DataService !== 'undefined' && DataService.saveOrder) {
-                const orderId = await DataService.saveOrder(finalOrder);
-                if (orderId) {
-                  localStorage.setItem('delice_last_order_id', orderId);
-                  // Dynamic tracking UI will pick it up via subscribeToMyOrders
-                  const adminLink = window.location.origin + "/admin";
-                  const messageTelegram = `🤖 <b>COMMANDE VIA IA !</b>\n💰 Total : ${finalOrder.totalAmount.toLocaleString('fr-FR')} FCFA\n📝 Chat ID : ${chatId}\n\n<a href="${adminLink}">Accéder Admin</a>`;
-                  await sendTelegramNotification(messageTelegram);
+              document.getElementById(`${confirmId}-yes`).addEventListener('click', async (e) => {
+                e.target.parentElement.innerHTML = `<span style="color: green; font-weight: bold;">Commande validée avec succès ! 🎉</span>`;
+                if (typeof DataService !== 'undefined' && DataService.saveOrder) {
+                  const orderId = await DataService.saveOrder(finalOrder);
+                  if (orderId) {
+                    localStorage.setItem('delice_last_order_id', orderId);
+                    // Dynamic tracking UI will pick it up via subscribeToMyOrders
+                    const adminLink = window.location.origin + "/admin";
+                    const messageTelegram = `🤖 <b>COMMANDE VIA IA !</b>\n💰 Total : ${finalOrder.totalAmount.toLocaleString('fr-FR')} FCFA\n📝 Chat ID : ${chatId}\n\n<a href="${adminLink}">Accéder Admin</a>`;
+                    await sendTelegramNotification(messageTelegram);
+                  }
                 }
+              });
+
+              document.getElementById(`${confirmId}-no`).addEventListener('click', (e) => {
+                e.target.parentElement.innerHTML = `<span style="color: gray; font-style: italic;">Commande annulée.</span>`;
+              });
+
+            } else {
+              // HALLUCINATION DETECTION: AI thinks it sold something not in DB
+              console.warn("L'IA a confirmé mais aucun produit reconnu dans le texte.");
+
+              // Try to find if the AI listed anything at all with numbers
+              const anyProductRegex = /[\*\-]\s*(\d+)\s+([^:\n]+)/g;
+              let hallucinations = [];
+              let m;
+              while ((m = anyProductRegex.exec(cleanResponse)) !== null) {
+                hallucinations.push(`${m[1]}x ${m[2].trim()}`);
               }
-            });
 
-            document.getElementById(`${confirmId}-no`).addEventListener('click', (e) => {
-              e.target.parentElement.innerHTML = `<span style="color: gray; font-style: italic;">Commande annulée.</span>`;
-            });
+              const errorMsg = hallucinations.length > 0
+                ? `Désolé, j'ai essayé de commander : <b>${hallucinations.join(', ')}</b>. Malheureusement, ces articles ne sont pas dans notre menu actuel. Veuillez choisir parmi nos produits disponibles.`
+                : `Désolé, je n'ai pas réussi à lister vos produits. Pouvez-vous répéter votre commande en utilisant les noms du menu ?`;
 
-          } else {
-            // HALLUCINATION DETECTION: AI thinks it sold something not in DB
-            console.warn("L'IA a confirmé mais aucun produit reconnu dans le texte.");
+              const errorChatLi = createChatLi('', 'incoming');
+              errorChatLi.innerHTML = `<div class="chat-content" style="color: #E8178A; background: #fff5f8; border-left: 4px solid #E8178A; padding: 10px; margin-top: 10px; border-radius: 4px;">${errorMsg}</div>`;
+              chatbotMessages.appendChild(errorChatLi);
 
-            // Try to find if the AI listed anything at all with numbers
-            const anyProductRegex = /[\*\-]\s*(\d+)\s+([^:\n]+)/g;
-            let hallucinations = [];
-            let m;
-            while ((m = anyProductRegex.exec(cleanResponse)) !== null) {
-              hallucinations.push(`${m[1]}x ${m[2].trim()}`);
+              // Log to admin for fix
+              const availableProdNames = products.map(p => p.name).join(", ");
+              const debugLog = cleanResponse.slice(0, 300);
+              sendTelegramNotification(`⚠️ <b>HALLUCINATION IA</b>\nLe bot tente de vendre des produits inconnus : <i>${hallucinations.join(', ') || 'Inconnu'}</i>\n\n<b>Réponse bot :</b> ${debugLog}\n\n<b>Menu en DB :</b> ${availableProdNames}`).catch(e => e);
             }
-
-            const errorMsg = hallucinations.length > 0
-              ? `Désolé, j'ai essayé de commander : <b>${hallucinations.join(', ')}</b>. Malheureusement, ces articles ne sont pas dans notre menu actuel. Veuillez choisir parmi nos produits disponibles.`
-              : `Désolé, je n'ai pas réussi à lister vos produits. Pouvez-vous répéter votre commande en utilisant les noms du menu ?`;
-
-            const errorChatLi = createChatLi('', 'incoming');
-            errorChatLi.innerHTML = `<div class="chat-content" style="color: #E8178A; background: #fff5f8; border-left: 4px solid #E8178A; padding: 10px; margin-top: 10px; border-radius: 4px;">${errorMsg}</div>`;
-            chatbotMessages.appendChild(errorChatLi);
-
-            // Log to admin for fix
-            const availableProdNames = products.map(p => p.name).join(", ");
-            const debugLog = cleanResponse.slice(0, 300);
-            sendTelegramNotification(`⚠️ <b>HALLUCINATION IA</b>\nLe bot tente de vendre des produits inconnus : <i>${hallucinations.join(', ') || 'Inconnu'}</i>\n\n<b>Réponse bot :</b> ${debugLog}\n\n<b>Menu en DB :</b> ${availableProdNames}`).catch(e => e);
+          } catch (parseErr) {
+            console.error("Order process failed:", parseErr);
           }
-        } catch (parseErr) {
-          console.error("Order process failed:", parseErr);
         }
+        // --- END ORDER DETECTION ---
+
+        const pElement = document.createElement('p');
+        pElement.innerHTML = formatAIResponse(cleanResponse);
+
+        incomingChatLi.querySelector('.chat-content').innerHTML = '';
+        incomingChatLi.querySelector('.chat-content').appendChild(pElement);
+
+        // Persist bot message (store clean version)
+        DataService.saveChatMessage(chatId, { role: 'assistant', content: cleanResponse });
+
+      } catch (error) {
+        incomingChatLi.querySelector('.chat-content').innerHTML = `<p style="color:#EF4444;">Désolé, je rencontre un petit problème technique. Veuillez réessayer.</p>`;
+      } finally {
+        chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
       }
-      // --- END ORDER DETECTION ---
-
-      const pElement = document.createElement('p');
-      pElement.innerHTML = formatAIResponse(cleanResponse);
-
-      incomingChatLi.querySelector('.chat-content').innerHTML = '';
-      incomingChatLi.querySelector('.chat-content').appendChild(pElement);
-
-      // Persist bot message (store clean version)
-      DataService.saveChatMessage(chatId, { role: 'assistant', content: cleanResponse });
-
-    } catch (error) {
-      incomingChatLi.querySelector('.chat-content').innerHTML = `<p style="color:#EF4444;">Désolé, je rencontre un petit problème technique. Veuillez réessayer.</p>`;
-    } finally {
-      chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
     }
-  }
 
-  // Format AI Response (Bold, Line breaks)
-  const formatAIResponse = (text) => {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br>');
-  }
-
-  // Enter key to send (Shift+Enter for newline)
-  if (chatbotInput) {
-    chatbotInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 800) {
-        e.preventDefault();
-        handleChat();
-      }
-    });
-
-    chatbotInput.addEventListener('input', () => {
-      chatbotInput.style.height = '45px';
-      chatbotInput.style.height = `${chatbotInput.scrollHeight}px`;
-    });
-  }
-
-  if (chatbotSendBtn) {
-    chatbotSendBtn.addEventListener('click', handleChat);
-  }
-
-  async function loadDynamicContent() {
-    try {
-      const settings = await DataService.getSiteSettings();
-      if (!settings) return;
-
-      // Hero section
-      if (settings.heroBadge) {
-        const hb = document.getElementById('site-hero-badge-display');
-        if (hb) hb.textContent = settings.heroBadge;
-      }
-      if (settings.heroTitle) {
-        const ht = document.getElementById('site-hero-title-display');
-        if (ht) ht.innerHTML = settings.heroTitle.replace(/\n/g, '<br/>');
-      }
-      if (settings.heroSubtitle) {
-        const hs = document.getElementById('site-hero-subtitle-display');
-        if (hs) hs.innerHTML = settings.heroSubtitle.replace(/\n/g, '<br/>');
-      }
-      if (settings.heroImage) {
-        const hi = document.getElementById('hero-cake-img');
-        if (hi) hi.src = convertToDirectDriveLink(settings.heroImage);
-      }
-
-      // Saveurs section
-      if (settings.saveursTitle) {
-        const st = document.getElementById('site-saveurs-title-display');
-        if (st) st.innerHTML = settings.saveursTitle;
-      }
-      if (settings.saveursDesc) {
-        const sd = document.getElementById('site-saveurs-desc-display');
-        if (sd) sd.textContent = settings.saveursDesc;
-      }
-
-      // WhatsApp & CTA
-      if (settings.whatsappNum) {
-        const waLinks = document.querySelectorAll('a[href^="https://wa.me/"]');
-        waLinks.forEach(link => {
-          try {
-            const url = new URL(link.href);
-            const message = url.searchParams.get('text') || "";
-            link.href = `https://wa.me/${settings.whatsappNum}${message ? '?text=' + encodeURIComponent(message) : ''}`;
-          } catch (e) {
-            link.href = `https://wa.me/${settings.whatsappNum}`;
-          }
-        });
-      }
-      if (settings.ctaText) {
-        const ctaElements = [
-          document.getElementById('nav-cta'),
-          document.getElementById('hero-order-btn'),
-          document.getElementById('product-order-btn'),
-          document.getElementById('saveurs-order-btn')
-        ];
-        ctaElements.forEach(el => { if (el) el.textContent = settings.ctaText; });
-      }
-
-    } catch (e) {
-      console.error("Dynamic content error", e);
+    // Format AI Response (Bold, Line breaks)
+    const formatAIResponse = (text) => {
+      return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
     }
-  }
-  loadDynamicContent();
 
-  // ==========================================
-  // DELICE AI CHAT LOGIC — Via Proxy Vercel /api/chat
-  // ==========================================
-  // La clé HF_API_KEY est stockée de manière sécurisée dans les variables
-  // d'environnement Vercel. Le frontend appelle uniquement /api/chat.
+    // Enter key to send (Shift+Enter for newline)
+    if (chatbotInput) {
+      chatbotInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 800) {
+          e.preventDefault();
+          handleChat();
+        }
+      });
 
-  async function initSystemContext() {
-    try {
-      const products = await DataService.getProducts();
-      const activeProducts = products.filter(p => p.status === 'active');
-      const kbContent = await DataService.getKnowledgeBase();
+      chatbotInput.addEventListener('input', () => {
+        chatbotInput.style.height = '45px';
+        chatbotInput.style.height = `${chatbotInput.scrollHeight}px`;
+      });
+    }
 
-      let productListText = activeProducts.map(p => `- ${p.name} : ${p.price} FCFA`).join("\n");
+    if (chatbotSendBtn) {
+      chatbotSendBtn.addEventListener('click', handleChat);
+    }
 
-      systemContext = `Tu es Délice AI, l'assistant expert et RIGOUREUX de la pâtisserie Délice Cake au Burkina Faso. 
+    async function loadDynamicContent() {
+      try {
+        const settings = await DataService.getSiteSettings();
+        if (!settings) return;
+
+        // Hero section
+        if (settings.heroBadge) {
+          const hb = document.getElementById('site-hero-badge-display');
+          if (hb) hb.textContent = settings.heroBadge;
+        }
+        if (settings.heroTitle) {
+          const ht = document.getElementById('site-hero-title-display');
+          if (ht) ht.innerHTML = settings.heroTitle.replace(/\n/g, '<br/>');
+        }
+        if (settings.heroSubtitle) {
+          const hs = document.getElementById('site-hero-subtitle-display');
+          if (hs) hs.innerHTML = settings.heroSubtitle.replace(/\n/g, '<br/>');
+        }
+        if (settings.heroImage) {
+          const hi = document.getElementById('hero-cake-img');
+          if (hi) hi.src = convertToDirectDriveLink(settings.heroImage);
+        }
+
+        // Saveurs section
+        if (settings.saveursTitle) {
+          const st = document.getElementById('site-saveurs-title-display');
+          if (st) st.innerHTML = settings.saveursTitle;
+        }
+        if (settings.saveursDesc) {
+          const sd = document.getElementById('site-saveurs-desc-display');
+          if (sd) sd.textContent = settings.saveursDesc;
+        }
+
+        // WhatsApp & CTA
+        if (settings.whatsappNum) {
+          const waLinks = document.querySelectorAll('a[href^="https://wa.me/"]');
+          waLinks.forEach(link => {
+            try {
+              const url = new URL(link.href);
+              const message = url.searchParams.get('text') || "";
+              link.href = `https://wa.me/${settings.whatsappNum}${message ? '?text=' + encodeURIComponent(message) : ''}`;
+            } catch (e) {
+              link.href = `https://wa.me/${settings.whatsappNum}`;
+            }
+          });
+        }
+        if (settings.ctaText) {
+          const ctaElements = [
+            document.getElementById('nav-cta'),
+            document.getElementById('hero-order-btn'),
+            document.getElementById('product-order-btn'),
+            document.getElementById('saveurs-order-btn')
+          ];
+          ctaElements.forEach(el => { if (el) el.textContent = settings.ctaText; });
+        }
+
+      } catch (e) {
+        console.error("Dynamic content error", e);
+      }
+    }
+    loadDynamicContent();
+
+    // ==========================================
+    // DELICE AI CHAT LOGIC — Via Proxy Vercel /api/chat
+    // ==========================================
+    // La clé HF_API_KEY est stockée de manière sécurisée dans les variables
+    // d'environnement Vercel. Le frontend appelle uniquement /api/chat.
+
+    async function initSystemContext() {
+      try {
+        const products = await DataService.getProducts();
+        const activeProducts = products.filter(p => p.status === 'active');
+        const kbContent = await DataService.getKnowledgeBase();
+
+        let productListText = activeProducts.map(p => `- ${p.name} : ${p.price} FCFA`).join("\n");
+
+        systemContext = `Tu es Délice AI, l'assistant expert et RIGOUREUX de la pâtisserie Délice Cake au Burkina Faso. 
 
 CONSIGNE CRITIQUE : 
 - TU NE DOIS VENDRE QUE LES PRODUITS LISTÉS DANS LE "MENU ACTUEL" CI-DESSOUS.
@@ -2129,142 +2128,142 @@ MENU ACTUEL (STRICT) :
 ${productListText || "- Sachet Délice Cake (12 pcs) : 500 FCFA\n- Cupcake Signature : 1000 FCFA\n- Tiramisu Maison : 1000 FCFA"}
 
 INFOS : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
-    } catch (e) {
-      console.error("AI Context Init Fail:", e);
-      systemContext = "Assistant Délice Cake. Aidez le client avec le menu.";
-    }
-  }
-
-  let chatHistoryMessages = [];
-  let systemContext = "";
-
-  window.generateAIResponse = async function (userText) {
-    if (!systemContext || systemContext === "") {
-      await initSystemContext();
+      } catch (e) {
+        console.error("AI Context Init Fail:", e);
+        systemContext = "Assistant Délice Cake. Aidez le client avec le menu.";
+      }
     }
 
-    if (chatHistoryMessages.length === 0) {
-      chatHistoryMessages.push({ role: "system", content: systemContext });
-    }
+    let chatHistoryMessages = [];
+    let systemContext = "";
 
-    chatHistoryMessages.push({ role: "user", content: userText });
+    window.generateAIResponse = async function (userText) {
+      if (!systemContext || systemContext === "") {
+        await initSystemContext();
+      }
 
-    const payload = {
-      model: "mistralai/Mistral-7B-Instruct-v0.2",
-      messages: chatHistoryMessages,
-      max_tokens: 800,
-      temperature: 0.6,
-      top_p: 0.9,
-      stream: false
+      if (chatHistoryMessages.length === 0) {
+        chatHistoryMessages.push({ role: "system", content: systemContext });
+      }
+
+      chatHistoryMessages.push({ role: "user", content: userText });
+
+      const payload = {
+        model: "mistralai/Mistral-7B-Instruct-v0.2",
+        messages: chatHistoryMessages,
+        max_tokens: 800,
+        temperature: 0.6,
+        top_p: 0.9,
+        stream: false
+      };
+
+      try {
+        // Appel via le proxy sécurisé Vercel — la clé HF_API_KEY est sur Vercel
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          let errorMessage = errorData.error ? (typeof errorData.error === 'string' ? errorData.error : JSON.stringify(errorData.error)) : "Unknown error";
+
+          if (response.status === 503 || errorMessage.includes("is currently loading") || errorMessage.includes("se réveille")) {
+            chatHistoryMessages.pop();
+            return "Le cerveau de Délice AI se réveille... 🤖 Patientez 10s et réessayez.";
+          }
+          throw new Error(`Status: ${response.status} - ${errorMessage}`);
+        }
+
+        const result = await response.json();
+        console.log("DEBUG AI - Réponse brute :", result);
+
+        let botText = "";
+        // Détection flexible du format
+        if (result.choices && result.choices[0] && result.choices[0].message) {
+          botText = result.choices[0].message.content;
+        } else if (Array.isArray(result) && result[0] && result[0].generated_text) {
+          botText = result[0].generated_text;
+        } else if (result.generated_text) {
+          botText = result.generated_text;
+        } else if (result.error) {
+          botText = "Erreur API : " + (result.error.message || JSON.stringify(result.error));
+        } else {
+          botText = "Désolé, j'ai reçu un format bizarre. Réponse : " + JSON.stringify(result).slice(0, 100);
+        }
+
+        botText = botText.trim().replace(/^Délice AI\s*:\s*/i, '');
+        chatHistoryMessages.push({ role: "assistant", content: botText });
+        return botText;
+      } catch (error) {
+        console.error("DEBUG AI - Erreur critique :", error);
+        return `Désolé, l'IA est indisponible pour le moment. Veuillez réessayer plus tard. (${error.message})`;
+      }
     };
 
+    initNotifications();
+
+    // Proactive notification prompt after 4 seconds
+    setTimeout(showProactiveNotifPrompt, 4000);
+  });
+
+
+
+
+  // === NOTIFICATION TESTER ===
+  async function testNotifications() {
+    const token = localStorage.getItem('delice_fcm_token');
+    if (!token) {
+      const granted = await requestNotificationPermission();
+      if (!granted) {
+        if (window.showToast) window.showToast("Notifications non autorisées.", "error");
+        else alert("Veuillez d'abord autoriser les notifications dans votre navigateur.");
+        return;
+      }
+    }
+
+    const currentToken = localStorage.getItem('delice_fcm_token');
+    if (!currentToken) return;
+
+    if (window.showToast) window.showToast("Envoi d'un test... Patientez 2-3 secondes.", "success");
+
     try {
-      // Appel via le proxy sécurisé Vercel — la clé HF_API_KEY est sur Vercel
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
+      const res = await fetch('/api/push-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: currentToken,
+          title: "Test Réussi ! 🔔",
+          body: "Félicitations, votre appareil est prêt à recevoir vos commandes Délice Cake.",
+          data: { link: window.location.origin }
+        })
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        let errorMessage = errorData.error ? (typeof errorData.error === 'string' ? errorData.error : JSON.stringify(errorData.error)) : "Unknown error";
-
-        if (response.status === 503 || errorMessage.includes("is currently loading") || errorMessage.includes("se réveille")) {
-          chatHistoryMessages.pop();
-          return "Le cerveau de Délice AI se réveille... 🤖 Patientez 10s et réessayez.";
-        }
-        throw new Error(`Status: ${response.status} - ${errorMessage}`);
-      }
-
-      const result = await response.json();
-      console.log("DEBUG AI - Réponse brute :", result);
-
-      let botText = "";
-      // Détection flexible du format
-      if (result.choices && result.choices[0] && result.choices[0].message) {
-        botText = result.choices[0].message.content;
-      } else if (Array.isArray(result) && result[0] && result[0].generated_text) {
-        botText = result[0].generated_text;
-      } else if (result.generated_text) {
-        botText = result.generated_text;
-      } else if (result.error) {
-        botText = "Erreur API : " + (result.error.message || JSON.stringify(result.error));
+      const data = await res.json();
+      if (res.ok) {
+        console.log("Test notification sent.");
       } else {
-        botText = "Désolé, j'ai reçu un format bizarre. Réponse : " + JSON.stringify(result).slice(0, 100);
+        console.error("Test notification failed:", data);
+        if (window.showToast) window.showToast("Erreur serveur: " + (data.error || "Inconnue"), "error");
       }
-
-      botText = botText.trim().replace(/^Délice AI\s*:\s*/i, '');
-      chatHistoryMessages.push({ role: "assistant", content: botText });
-      return botText;
-    } catch (error) {
-      console.error("DEBUG AI - Erreur critique :", error);
-      return `Désolé, l'IA est indisponible pour le moment. Veuillez réessayer plus tard. (${error.message})`;
-    }
-  };
-
-  initNotifications();
-
-  // Proactive notification prompt after 4 seconds
-  setTimeout(showProactiveNotifPrompt, 4000);
-});
-
-
-
-
-// === NOTIFICATION TESTER ===
-async function testNotifications() {
-  const token = localStorage.getItem('delice_fcm_token');
-  if (!token) {
-    const granted = await requestNotificationPermission();
-    if (!granted) {
-      if (window.showToast) window.showToast("Notifications non autorisées.", "error");
-      else alert("Veuillez d'abord autoriser les notifications dans votre navigateur.");
-      return;
+    } catch (err) {
+      console.error("Test notification networking error:", err);
+      if (window.showToast) window.showToast("Erreur réseau lors du test.", "error");
     }
   }
 
-  const currentToken = localStorage.getItem('delice_fcm_token');
-  if (!currentToken) return;
-
-  if (window.showToast) window.showToast("Envoi d'un test... Patientez 2-3 secondes.", "success");
-
-  try {
-    const res = await fetch('/api/push-notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token: currentToken,
-        title: "Test Réussi ! 🔔",
-        body: "Félicitations, votre appareil est prêt à recevoir vos commandes Délice Cake.",
-        data: { link: window.location.origin }
-      })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      console.log("Test notification sent.");
-    } else {
-      console.error("Test notification failed:", data);
-      if (window.showToast) window.showToast("Erreur serveur: " + (data.error || "Inconnue"), "error");
+  // Add event listener for the test button
+  document.addEventListener('DOMContentLoaded', () => {
+    const testBtn = document.getElementById('chatbot-test-notif');
+    if (testBtn) {
+      testBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        testNotifications();
+      });
     }
-  } catch (err) {
-    console.error("Test notification networking error:", err);
-    if (window.showToast) window.showToast("Erreur réseau lors du test.", "error");
-  }
-}
-
-// Add event listener for the test button
-document.addEventListener('DOMContentLoaded', () => {
-  const testBtn = document.getElementById('chatbot-test-notif');
-  if (testBtn) {
-    testBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      testNotifications();
-    });
-  }
-});
+  });
 
 // Vercel Cache Busting Version: 08/03/2026 - Restoration v1
 
