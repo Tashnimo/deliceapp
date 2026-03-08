@@ -5,4 +5,4 @@ Allow: /
 Disallow: /api/
 Disallow: /*.md
 
-Sitemap: https://deliceapp.vercel.app/sitemap.xml
+Sitemap: https://delcakebf.vercel.app/sitemap.xml

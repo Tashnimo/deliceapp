@@ -2543,4 +2543,6 @@ INFOS : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
     });
   }
 
-// Vercel Cache Busting Version: 08/03/2026 - Diagnostic v1
+  // Vercel Cache Busting Version: 08/03/2026 - Diagnostic v1
+}
+
