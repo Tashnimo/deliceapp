@@ -375,7 +375,7 @@ setTimeout(() => {
         console.error("Order save failed", err);
       }
 
-      window.open(`https://wa.me/22656808872?text=${encodeURIComponent(msg)}`, '_blank');
+      window.open(`https://api.whatsapp.com/send/?phone=22656808872&text=${encodeURIComponent(msg)}`, '_blank');
     });
   }
 
@@ -795,10 +795,11 @@ async function loadSiteSettings() {
     // 4. Contact & WhatsApp
     if (settings.whatsappNum) {
       const cleanWaNum = settings.whatsappNum.replace(/\D/g, ''); // Strip parentheses/spaces for URL
-      const waLinks = document.querySelectorAll('a[href^="https://wa.me"]');
+      const waLinks = document.querySelectorAll('a[href^="https://wa.me"], a[href^="https://api.whatsapp.com"]');
       waLinks.forEach(link => {
-        const currentMsg = link.href.split('text=')[1] || "";
-        link.href = `https://wa.me/${cleanWaNum}${currentMsg ? '?text=' + currentMsg : ''}`;
+        let currentMsg = "";
+        if (link.href.includes('text=')) currentMsg = link.href.split('text=')[1];
+        link.href = `https://api.whatsapp.com/send/?phone=${cleanWaNum}${currentMsg ? '&text=' + currentMsg : ''}`;
       });
       // also update footer/contact text if it contains the number
       const contactBtn = document.getElementById('contact-whatsapp-btn');
@@ -1292,7 +1293,7 @@ function initOrderModal() {
         // Use production number as absolute fallback
         const rawWhatsappNum = (typeof DataService !== 'undefined' && DataService.getSiteSettingsSync && DataService.getSiteSettingsSync().whatsappNum) || "22656808872";
         const cleanWaNum = rawWhatsappNum.replace(/\D/g, ''); // Strip parentheses/spaces for URL
-        const whatsappUrl = `https://wa.me/${cleanWaNum}?text=${encodedMessage}`;
+        const whatsappUrl = `https://api.whatsapp.com/send/?phone=${cleanWaNum}&text=${encodedMessage}`;
 
         // Open WhatsApp
         window.open(whatsappUrl, '_blank');
@@ -2120,14 +2121,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // WhatsApp & CTA
       if (settings.whatsappNum) {
-        const waLinks = document.querySelectorAll('a[href^="https://wa.me/"]');
+        const cleanWaNum = settings.whatsappNum.replace(/\D/g, '');
+        const waLinks = document.querySelectorAll('a[href^="https://wa.me/"], a[href^="https://api.whatsapp.com"]');
         waLinks.forEach(link => {
           try {
             const url = new URL(link.href);
-            const message = url.searchParams.get('text') || "";
-            link.href = `https://wa.me/${settings.whatsappNum}${message ? '?text=' + encodeURIComponent(message) : ''}`;
+            let message = url.searchParams.get('text') || "";
+            if (!message && link.href.includes('text=')) {
+              message = link.href.split('text=')[1];
+            }
+            link.href = `https://api.whatsapp.com/send/?phone=${cleanWaNum}${message ? '&text=' + encodeURIComponent(decodeURIComponent(message)) : ''}`;
           } catch (e) {
-            link.href = `https://wa.me/${settings.whatsappNum}`;
+            link.href = `https://api.whatsapp.com/send/?phone=${cleanWaNum}`;
           }
         });
       }
