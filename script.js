@@ -129,7 +129,7 @@ setTimeout(() => {
     message: ''
   };
 
-  const PRICES = { small: 2000, large: 4500, grand: 8000 };
+  const BASE_PRICE_PER_SLICE = 1500;
 
   // --- DOM Refs ---
   const tabs = document.querySelectorAll('.config-tab');
@@ -254,10 +254,12 @@ setTimeout(() => {
     // Topper
     if (topper) topper.style.opacity = tiers >= 3 ? '1' : '0';
 
-    // Price + parts update
-    const price = PRICES[cakeState.size.value] || 2000;
+    // Price + parts update: Dynamic calculation based on parts (minimum 1500 FCFA/slice)
+    const numParts = parseInt(cakeState.parts.value) || 8;
+    const finalCalculatedPrice = numParts * BASE_PRICE_PER_SLICE;
+
     if (ctaHint) {
-      ctaHint.innerHTML = `<span class="material-symbols-outlined" style="font-size:1.2rem; vertical-align:middle; margin-right:4px;">payments</span> Estimé à partir de ${price.toLocaleString('fr-FR')} FCFA · ${cakeState.parts.label}`;
+      ctaHint.innerHTML = `<span class="material-symbols-outlined" style="font-size:1.2rem; vertical-align:middle; margin-right:4px;">payments</span> Estimé à : <strong>${finalCalculatedPrice.toLocaleString('fr-FR')} FCFA</strong> (${numParts} parts)`;
     }
   }
 
