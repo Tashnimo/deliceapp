@@ -893,7 +893,13 @@ async function loadDynamicProducts() {
         let orderHtml = '';
         activeProducts.forEach((p, index) => {
           const isPerSlice = !!p.isPerSlice;
-          const isCustom = p.isCustom || p.name.toLowerCase().includes('événement') || p.name.toLowerCase().includes('sur mesure');
+          const lowerName = p.name.toLowerCase();
+          // Precise matching for event cakes (with or without accents)
+          const isCustom = p.isCustom ||
+            lowerName.includes('évènement') ||
+            lowerName.includes('événement') ||
+            lowerName.includes('evenement') ||
+            lowerName.includes('sur mesure');
 
           if (isCustom || isPerSlice) {
             orderHtml += `
@@ -924,13 +930,13 @@ async function loadDynamicProducts() {
                                     ` : ''}
                                     
                                     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                        <label style="display: block; font-size: 0.85rem; font-weight: 600;">${isPerSlice ? 'Combien de parts souhaitez-vous ?' : 'Quantité :'}</label>
+                                        <label style="display: block; font-size: 0.85rem; font-weight: 600;">${isPerSlice || lowerName.includes('part') ? 'Combien de parts souhaitez-vous ?' : 'Quantité :'}</label>
                                         <div style="display: flex; align-items: center; gap: 10px;">
-                                            <input type="number" min="1" value="${isPerSlice ? '10' : '1'}" class="prod-qty" id="qty-prod-${index}" disabled
+                                            <input type="number" min="1" value="${isPerSlice || lowerName.includes('part') ? '10' : '1'}" class="prod-qty" id="qty-prod-${index}" disabled
                                                 style="width: 80px; text-align: center; font-weight: bold; border: 2px solid var(--pink);">
-                                            <span style="font-size: 0.9rem; font-weight: 600;">${isPerSlice ? 'parts' : 'unité(s)'}</span>
+                                            <span style="font-size: 0.9rem; font-weight: 600;">${isPerSlice || lowerName.includes('part') ? 'parts' : 'unité(s)'}</span>
                                         </div>
-                                        ${isPerSlice ? `<p style="margin: 5px 0 0 0; font-size: 0.8rem; color: var(--pink); font-weight: 500;">✨ Total pour cet article : <span id="item-total-prod-${index}" style="font-weight: 700;">${p.price * 10}</span> FCFA</p>` : ''}
+                                        ${isPerSlice || lowerName.includes('part') ? `<p style="margin: 5px 0 0 0; font-size: 0.8rem; color: var(--pink); font-weight: 500;">✨ Total pour cet article : <span id="item-total-prod-${index}" style="font-weight: 700;">${p.price * 10}</span> FCFA</p>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -946,7 +952,7 @@ async function loadDynamicProducts() {
                                     <span class="prod-price" style="margin-left: auto; color: var(--pink);">${p.price} FCFA</span>
                                 </label>
                                 <div style="display:flex; align-items:center; gap:0.5rem; margin-top: 5px; padding-left: 28px;">
-                                  <span style="font-size:0.75rem; color:var(--grey-text);">Quantité:</span>
+                                  <span style="font-size:0.75rem; color:var(--grey-text);">${isPerSlice || lowerName.includes('part') ? 'Nombre de parts:' : 'Quantité:'}</span>
                                   <input type="number" min="1" value="1" class="prod-qty" id="qty-prod-${index}" disabled style="width: 50px; border-radius: 4px; border: 1px solid #ddd;">
                                 </div>
                             </div>
