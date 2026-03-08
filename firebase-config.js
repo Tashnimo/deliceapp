@@ -210,9 +210,12 @@ const DataService = {
     saveOrder: async (orderData) => {
         if (isFirebaseConfigured && db) {
             const pushToken = localStorage.getItem('delice_fcm_token');
+            const customerId = localStorage.getItem('delice_customer_id');
+
             const docRef = await db.collection('orders').add({
                 ...orderData,
                 pushToken: pushToken || null,
+                customerId: customerId || null,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             return docRef.id;
@@ -265,6 +268,24 @@ const DataService = {
         } else {
             const orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
             return orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+    },
+
+    getMyOrders: async (customerId) => {
+        if (!customerId) return [];
+        if (isFirebaseConfigured && db) {
+            const snapshot = await db.collection('orders')
+                .where('customerId', '==', customerId)
+                .orderBy('createdAt', 'desc')
+                .get();
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                if (data.createdAt && typeof data.createdAt.toDate === 'function') data.createdAt = data.createdAt.toDate();
+                return { id: doc.id, ...data };
+            });
+        } else {
+            const orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
+            return orders.filter(o => o.customerId === customerId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         }
     },
 
@@ -451,6 +472,30 @@ const DataService = {
                 const orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
                 const order = orders.find(o => o.id === orderId);
                 if (order) callback(order);
+            };
+            const interval = setInterval(checkMock, 5000);
+            return () => clearInterval(interval);
+        }
+    },
+
+    subscribeToMyOrders: (customerId, callback) => {
+        if (!customerId) return () => { };
+        if (isFirebaseConfigured && db) {
+            return db.collection('orders')
+                .where('customerId', '==', customerId)
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(snapshot => {
+                    const orders = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        if (data.createdAt && typeof data.createdAt.toDate === 'function') data.createdAt = data.createdAt.toDate();
+                        return { id: doc.id, ...data };
+                    });
+                    callback(orders);
+                });
+        } else {
+            const checkMock = () => {
+                const orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
+                callback(orders.filter(o => o.customerId === customerId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
             };
             const interval = setInterval(checkMock, 5000);
             return () => clearInterval(interval);
