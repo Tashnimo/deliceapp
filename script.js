@@ -1481,186 +1481,6 @@ function initOrderModal() {
   }
 }
 
-// ==========================================
-// DELICE AI CHATBOT LOGIC
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-  const chatbotToggler = document.getElementById('chatbot-toggler');
-  const chatbotCloseBtn = document.getElementById('chatbot-close-btn');
-  const chatbotContainer = document.getElementById('chatbot-container');
-  const chatbotInput = document.getElementById('chatbot-input');
-  const chatbotSendBtn = document.getElementById('chatbot-send-btn');
-  const chatbotMessages = document.getElementById('chatbot-messages');
-
-  if (chatbotToggler) {
-    chatbotToggler.addEventListener('click', () => {
-      chatbotContainer.classList.toggle('active');
-      if (chatbotContainer.classList.contains('active')) {
-        chatbotInput.focus();
-      }
-    });
-  }
-
-  if (chatbotCloseBtn) {
-    chatbotCloseBtn.addEventListener('click', () => {
-      chatbotContainer.classList.remove('active');
-    });
-  }
-
-  const createChatLi = (message, className) => {
-    const chatLi = document.createElement('li');
-    chatLi.classList.add('chat', className);
-    let chatContent = className === 'outgoing' ? `<p></p>` : `<div class="chat-content"><p></p></div>`;
-    chatLi.innerHTML = chatContent;
-    chatLi.querySelector('p').textContent = message;
-    return chatLi;
-  }
-
-  const handleChat = async () => {
-    let userMessage = chatbotInput.value.trim();
-    if (!userMessage) return;
-
-    chatbotInput.value = '';
-    chatbotInput.style.height = '45px';
-
-    let chatId = localStorage.getItem('delice_chat_session');
-    if (!chatId) {
-      chatId = 'chat_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('delice_chat_session', chatId);
-    }
-
-    const outgoingChatLi = createChatLi(userMessage, 'outgoing');
-    chatbotMessages.appendChild(outgoingChatLi);
-    chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
-
-    if (typeof DataService !== 'undefined' && DataService.saveChatMessage) {
-      DataService.saveChatMessage(chatId, { role: 'user', content: userMessage });
-    }
-
-    const incomingChatLi = document.createElement('li');
-    incomingChatLi.classList.add('chat', 'incoming');
-    incomingChatLi.innerHTML = `<div class="chat-content"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
-    chatbotMessages.appendChild(incomingChatLi);
-    chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
-
-    try {
-      const botResponse = await generateAIResponse(userMessage);
-      const confirmTag = "[CONFIRM_ORDER]";
-      let cleanResponse = botResponse;
-      let orderConfirmed = false;
-
-      if (botResponse.toUpperCase().includes(confirmTag)) {
-        orderConfirmed = true;
-        const tagRegex = new RegExp("\\[CONFIRM_ORDER\\]", "gi");
-        cleanResponse = botResponse.replace(tagRegex, "").trim().replace(/[,\s"]+$/g, "").trim();
-      }
-
-      if (orderConfirmed) {
-        try {
-          const normalize = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/s\b/g, "").trim() : "";
-          const getSearchTerm = (name) => normalize(name).replace(/\(.*\)/g, "").replace(/\b(maison|signature|artisanale?|assortis?)\b/g, "").trim();
-          const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-          const relevantHistory = chatHistoryMessages.filter(m => m.role !== 'system');
-          const lastLogs = relevantHistory.slice(-10).map(m => m.content).join(" ") + " " + cleanResponse;
-          const logNorm = normalize(lastLogs);
-          const respNorm = normalize(cleanResponse);
-
-          const products = typeof DataService !== 'undefined' ? await DataService.getProducts() : [];
-          let detected = [];
-          let total = 0;
-
-          products.forEach(p => {
-            const term = getSearchTerm(p.name);
-            if (term && (respNorm.includes(term) || logNorm.includes(term))) {
-              const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*(?:x|d(?:es|e))?\\s*(?:part(?:s)?)?\\s*${escapeRegExp(term)}`, 'i');
-              const match = respNorm.match(qtyRegex) || logNorm.match(qtyRegex);
-              let qty = 1;
-              if (match && match[1]) {
-                const v = match[1].toLowerCase();
-                if (v === 'un' || v === 'une') qty = 1; else if (v === 'douzaine') qty = 12; else qty = parseInt(v, 10) || 1;
-              }
-              if (respNorm.includes(term)) {
-                detected.push({ name: p.name, quantity: qty, unitPrice: p.price, totalPrice: p.price * qty, isPerSlice: !!p.isPerSlice });
-                total += (p.price * qty);
-              }
-            }
-          });
-
-          if (detected.length > 0) {
-            const finalOrder = { items: detected, totalAmount: total, note: `IA Chat (${chatId})`, status: 'new' };
-            const confirmId = 'ai-c-' + Math.floor(Math.random() * 1000);
-            const table = detected.map(it => `• ${it.isPerSlice ? `${it.quantity} parts de ${it.name}` : `${it.quantity}x ${it.name}`}`).join('<br/>');
-            const html = `<div style="margin-top:10px; padding:10px; background:#fff0f6; border-radius:10px; border:2px solid #E8178A;">
-                <strong style="color:#E8178A;">🍫 Validation</strong><br/>${table}<br/>Total : <strong>${total.toLocaleString()} FCFA</strong><br/>
-                <div style="margin-top:8px; display:flex; gap:8px;">
-                  <button id="${confirmId}-y" class="btn btn--primary" style="padding:4px 10px; font-size:0.8em;">✅ Confirmer</button>
-                  <button id="${confirmId}-n" class="btn btn--ghost" style="padding:4px 10px; font-size:0.8em; color:#E8178A;">❌ Non</button>
-                </div></div>`;
-            const li = createChatLi('', 'incoming');
-            li.innerHTML = `<div class="chat-content">${html}</div>`;
-            chatbotMessages.appendChild(li);
-            chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
-
-            document.getElementById(`${confirmId}-y`).addEventListener('click', async (e) => {
-              e.target.parentElement.innerHTML = `<span style="color:green;font-weight:bold;">Validé ! 🎉</span>`;
-              if (typeof DataService !== 'undefined' && DataService.saveOrder) {
-                const id = await DataService.saveOrder(finalOrder);
-                if (id) {
-                  localStorage.setItem('delice_last_order_id', id);
-                  if (window.sendTelegramNotification) await sendTelegramNotification(`🤖 <b>COMMANDE IA</b>\n💰 ${total.toLocaleString()} FCFA`);
-                }
-              }
-            });
-            document.getElementById(`${confirmId}-n`).addEventListener('click', (e) => { e.target.parentElement.innerHTML = `<i>Annulé.</i>`; });
-          }
-        } catch (e) { console.error("AI order error", e); }
-      }
-
-      const p = document.createElement('p');
-      p.innerHTML = cleanResponse.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-      incomingChatLi.querySelector('.chat-content').innerHTML = '';
-      incomingChatLi.querySelector('.chat-content').appendChild(p);
-      if (typeof DataService !== 'undefined' && DataService.saveChatMessage) {
-        DataService.saveChatMessage(chatId, { role: 'assistant', content: cleanResponse });
-      }
-    } catch (e) {
-      incomingChatLi.querySelector('.chat-content').innerHTML = `<p style="color:red;">Erreur technique AI.</p>`;
-    } finally { chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight); }
-  };
-
-  if (chatbotInput) {
-    chatbotInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 800) { e.preventDefault(); handleChat(); } });
-    chatbotInput.addEventListener('input', () => { chatbotInput.style.height = '45px'; chatbotInput.style.height = `${chatbotInput.scrollHeight}px`; });
-  }
-  if (chatbotSendBtn) chatbotSendBtn.addEventListener('click', handleChat);
-
-  async function initSystemContext() {
-    try {
-      const products = await DataService.getProducts();
-      const kb = await DataService.getKnowledgeBase();
-      let list = products.filter(p => p.status === 'active').map(p => `- ${p.name} : ${p.price} FCFA`).join("\n");
-      systemContext = `Tu es Délice AI. Produits :\n${list}\nInfos :\n${kb}\nAjoute [CONFIRM_ORDER] à la fin si ok.`;
-    } catch (e) { systemContext = "Assistant Délice Cake."; }
-  }
-
-  let chatHistoryMessages = [];
-  let systemContext = "";
-
-  window.generateAIResponse = async function (userText) {
-    if (!systemContext) await initSystemContext();
-    if (chatHistoryMessages.length === 0) chatHistoryMessages.push({ role: "system", content: systemContext });
-    chatHistoryMessages.push({ role: "user", content: userText });
-    try {
-      const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: chatHistoryMessages }) });
-      const res = await r.json();
-      let txt = res.choices?.[0]?.message?.content || res[0]?.generated_text || "Désolé...";
-      chatHistoryMessages.push({ role: "assistant", content: txt });
-      return txt;
-    } catch (e) { return "IA indisponible."; }
-  };
-});
-
 // === ORDER TRACKING LOGIC ===
 let orderSubscription = null;
 
@@ -1669,7 +1489,6 @@ function initOrderTracking() {
   // PDF INVOICE GENERATOR (jsPDF)
   // ==============================
   function generateInvoicePDF(order) {
-    // If jsPDF is not available at all, open a styled print window instead
     if (!window.jspdf || !window.jspdf.jsPDF) {
       _printInvoiceFallback(order);
       return;
@@ -1710,10 +1529,8 @@ function initOrderTracking() {
       const sectionW = pageW - margin * 2;
 
       // HEADER
-      doc.setFillColor(...PINK);
-      doc.rect(0, 0, pageW, 60, 'F');
-      doc.setFillColor(...DARK_PINK);
-      doc.circle(pageW + 6, -8, 44, 'F');
+      doc.setFillColor(...PINK); doc.rect(0, 0, pageW, 60, 'F');
+      doc.setFillColor(...DARK_PINK); doc.circle(pageW + 6, -8, 44, 'F');
 
       doc.setFontSize(28); doc.setFont('helvetica', 'bold'); doc.setTextColor(...GOLD);
       doc.text('Delice', margin, 26);
@@ -1724,8 +1541,7 @@ function initOrderTracking() {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(255, 220, 240);
       doc.text('www.delicecake.com', margin, 40);
 
-      doc.setFillColor(...GOLD);
-      doc.roundedRect(pageW - 56, 8, 44, 14, 3, 3, 'F');
+      doc.setFillColor(...GOLD); doc.roundedRect(pageW - 56, 8, 44, 14, 3, 3, 'F');
       doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...DARK);
       doc.text('FACTURE', pageW - 50, 17);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(255, 220, 240);
@@ -1737,27 +1553,23 @@ function initOrderTracking() {
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...GOLD);
       doc.text('LIVRE / TERMINE', pageW - 12, 42, { align: 'right' });
 
-      // Dots separator
       doc.setFillColor(...LIGHT_PINK);
       for (let i = margin; i <= pageW - margin; i += 6) { doc.circle(i, 63, 0.7, 'F'); }
 
-      // 2-column info boxes
       let y = 72;
       const halfW = sectionW / 2 - 4;
       const colL = margin, colR = margin + halfW + 8;
 
-      doc.setFillColor(...LIGHT_PINK);
-      doc.roundedRect(colL, y, halfW, 28, 3, 3, 'F');
+      doc.setFillColor(...LIGHT_PINK); doc.roundedRect(colL, y, halfW, 28, 3, 3, 'F');
       doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK_PINK);
       doc.text('INFORMATIONS CLIENT', colL + 4, y + 6);
       doc.setFillColor(...DARK_PINK); doc.rect(colL + 4, y + 8, halfW - 8, 0.4, 'F');
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...GREY);
       doc.text('Type : Commande en ligne', colL + 4, y + 14);
-      doc.text('Note : ' + (order.note || 'Client standard').substring(0, 30), colL + 4, y + 20);
+      doc.text('Note : ' + (order.note || 'Client').substring(0, 30), colL + 4, y + 20);
       doc.text('Paiement : A la livraison', colL + 4, y + 26);
 
-      doc.setFillColor(250, 235, 245);
-      doc.roundedRect(colR, y, halfW, 28, 3, 3, 'F');
+      doc.setFillColor(250, 235, 245); doc.roundedRect(colR, y, halfW, 28, 3, 3, 'F');
       doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK_PINK);
       doc.text('DETAILS LIVRAISON', colR + 4, y + 6);
       doc.setFillColor(...DARK_PINK); doc.rect(colR + 4, y + 8, halfW - 8, 0.4, 'F');
@@ -1766,7 +1578,6 @@ function initOrderTracking() {
       doc.text('Date : ' + dateStr, colR + 4, y + 20);
       doc.text('Reference : ' + ref, colR + 4, y + 26);
 
-      // Table
       y += 36;
       doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK);
       doc.text('DETAIL DE LA COMMANDE', colL, y);
@@ -1780,379 +1591,155 @@ function initOrderTracking() {
 
       doc.autoTable({
         startY: y, margin: { left: margin, right: margin },
-        head: [["N°", "Designation de l'article", "Qte", "Prix Unitaire", "Montant Total"]],
+        head: [["N°", "Designation", "Qte", "Prix Unit.", "Total"]],
         body: tableBody, theme: 'plain',
-        headStyles: { fillColor: PINK, textColor: WHITE, fontStyle: 'bold', fontSize: 9, halign: 'center', cellPadding: { top: 4, bottom: 4, left: 4, right: 4 } },
-        bodyStyles: { textColor: DARK, fontSize: 9, cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 }, valign: 'middle' },
-        columnStyles: { 0: { halign: 'center', cellWidth: 10 }, 1: { halign: 'left', cellWidth: 'auto' }, 2: { halign: 'center', cellWidth: 14 }, 3: { halign: 'right', cellWidth: 44 }, 4: { halign: 'right', cellWidth: 44, fontStyle: 'bold', textColor: DARK_PINK } },
+        headStyles: { fillColor: PINK, textColor: WHITE, fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { textColor: DARK, fontSize: 9 },
         alternateRowStyles: { fillColor: [255, 243, 251] },
-        tableLineColor: [230, 200, 220], tableLineWidth: 0.25
       });
 
-      // Financial summary
       const afterTable = doc.lastAutoTable.finalY + 6;
       const boxX = pageW / 2 + 2;
-      doc.setFillColor(...LIGHT_GREY); doc.roundedRect(margin, afterTable, sectionW, 30, 3, 3, 'F');
+      doc.setFillColor(...LIGHT_GREY); doc.roundedRect(margin, afterTable, sectionW, 25, 3, 3, 'F');
       doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(...GREY);
-      doc.text('Sous-total :', boxX, afterTable + 9);
-      doc.text(fmtAmount(order.totalAmount), pageW - margin, afterTable + 9, { align: 'right' });
-      doc.text('Remise :', boxX, afterTable + 16);
-      doc.text('0 FCFA', pageW - margin, afterTable + 16, { align: 'right' });
-      doc.setFillColor(...DARK_PINK); doc.rect(boxX, afterTable + 19, pageW - margin - boxX, 0.4, 'F');
-      doc.setFillColor(...PINK); doc.roundedRect(boxX - 1, afterTable + 20, pageW - margin - boxX + 1, 9, 1, 1, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...GOLD);
-      doc.text('TOTAL A PAYER', boxX + 3, afterTable + 26.5);
-      doc.setTextColor(...WHITE);
-      doc.text(fmtAmount(order.totalAmount), pageW - margin, afterTable + 26.5, { align: 'right' });
-
-      // Thank you section
-      const thankY = afterTable + 44;
-      doc.setFillColor(252, 240, 250); doc.roundedRect(margin, thankY, sectionW, 32, 4, 4, 'F');
-      doc.setFillColor(...PINK); doc.roundedRect(margin, thankY, 3, 32, 2, 2, 'F');
-      doc.setFontSize(13); doc.setFont('helvetica', 'bolditalic'); doc.setTextColor(...DARK_PINK);
-      doc.text('Merci pour votre confiance !', pageW / 2, thankY + 10, { align: 'center' });
-      doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...GREY);
-      doc.text('Nous esperons que vous avez apprecie vos delices Delice Cake.', pageW / 2, thankY + 18, { align: 'center' });
-      doc.text('Pour toute reclamation, contactez-nous via notre site web ou WhatsApp.', pageW / 2, thankY + 24, { align: 'center' });
-      doc.setFont('helvetica', 'bold'); doc.setTextColor(...PINK);
-      doc.text('www.delicecake.com', pageW / 2, thankY + 30, { align: 'center' });
-
-      // Footer
-      doc.setFillColor(...PINK); doc.rect(0, pageH - 14, pageW, 14, 'F');
-      doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...GOLD);
-      doc.text('Delice Cake', margin, pageH - 6);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(255, 210, 235);
-      doc.text('Patisserie Artisanale - Burkina Faso', margin + 30, pageH - 6);
+      doc.text('Sous-total :', boxX, afterTable + 8);
+      doc.text(fmtAmount(order.totalAmount), pageW - margin, afterTable + 8, { align: 'right' });
+      doc.setFillColor(...PINK); doc.roundedRect(boxX - 1, afterTable + 12, pageW - margin - boxX + 1, 9, 1, 1, 'F');
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
-      doc.text('Facture N° ' + ref, pageW / 2, pageH - 6, { align: 'center' });
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(255, 210, 235);
-      doc.text(dateStr, pageW - margin, pageH - 6, { align: 'right' });
+      doc.text('TOTAL A PAYER', boxX + 3, afterTable + 18);
+      doc.text(fmtAmount(order.totalAmount), pageW - margin, afterTable + 18, { align: 'right' });
 
-      // Download via Blob URL (most compatible)
+      doc.setFillColor(...PINK); doc.rect(0, pageH - 10, pageW, 10, 'F');
+      doc.setFontSize(7.5); doc.setTextColor(...WHITE);
+      doc.text('Merci pour votre confiance ! DELICE CAKE - Burkina Faso', pageW / 2, pageH - 4, { align: 'center' });
+
       const blob = doc.output('blob');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = 'Facture_DeliceCake_' + ref + '.pdf';
       document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 3000);
-
-    } catch (err) {
-      console.error("PDF generation error:", err);
-      _printInvoiceFallback(order);
-    }
+    } catch (err) { _printInvoiceFallback(order); }
   }
 
-  // Fallback: opens a styled HTML page for browser printing
   function _printInvoiceFallback(order) {
-    function fmtA(n) { return (Number(n) || 0).toLocaleString('fr-FR') + ' FCFA'; }
-    function getD(raw) {
-      if (!raw) return new Date().toLocaleDateString('fr-FR');
-      if (raw.toDate) return raw.toDate().toLocaleDateString('fr-FR');
-      if (raw.seconds) return new Date(raw.seconds * 1000).toLocaleDateString('fr-FR');
-      const d = new Date(raw); return isNaN(d) ? new Date().toLocaleDateString('fr-FR') : d.toLocaleDateString('fr-FR');
-    }
     const ref = (order.id || 'N/A').substring(0, 12).toUpperCase();
-    const rows = (order.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${it.name || ''}</td><td>${it.quantity || 1}</td><td>${fmtA(it.unitPrice)}</td><td><strong>${fmtA(it.totalPrice)}</strong></td></tr>`).join('');
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Facture Délice Cake</title>
-<style>body{font-family:Arial,sans-serif;margin:0;padding:20px;color:#1e141a}
-.header{background:#E8178A;color:white;padding:24px;border-radius:8px;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
-.logo{font-size:28px;font-weight:bold}.logo span{color:#D4AF37}
-.badge{background:#D4AF37;color:#1e141a;padding:8px 16px;border-radius:6px;font-weight:bold;font-size:14px}
-.meta{text-align:right;font-size:12px;margin-top:8px}
-.cols{display:flex;gap:12px;margin-bottom:16px}
-.col{flex:1;background:#FFE6F5;border-radius:8px;padding:12px;font-size:12px}
-.col h4{color:#B40A64;margin:0 0 8px;font-size:11px;text-transform:uppercase;border-bottom:1px solid #B40A64;padding-bottom:4px}
-table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px}
-th{background:#E8178A;color:white;padding:10px;text-align:left}
-td{padding:8px;border-bottom:1px solid #FFE6F5}tr:nth-child(even){background:#FFF3FB}
-.total-box{background:#f5f5f8;border-radius:8px;padding:12px;text-align:right}
-.total-final{background:#E8178A;color:white;padding:10px 16px;border-radius:6px;display:inline-block;margin-top:8px;font-weight:bold;font-size:16px}
-.total-final span{color:#D4AF37}
-.thanks{background:#FCF0FA;border-left:4px solid #E8178A;padding:16px;border-radius:8px;text-align:center;margin-top:16px}
-.thanks h3{color:#B40A64;margin:0 0 8px}.footer{color:gray;font-size:11px;text-align:center;margin-top:16px;border-top:1px solid #FFE6F5;padding-top:8px}
-@media print{button{display:none}}
-</style></head><body>
-<button onclick="window.print()" style="background:#E8178A;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;margin-bottom:16px;font-size:14px">Imprimer / Enregistrer en PDF</button>
-<div class="header">
-  <div><div class="logo"><span>Délice</span> Cake</div><div style="color:#FFD0EB;font-size:12px;font-style:italic">Pâtisserie Artisanale - Burkina Faso</div><div style="color:#FFD0EB;font-size:11px;margin-top:4px">www.delicecake.com</div></div>
-  <div><div class="badge">FACTURE</div><div class="meta">Réf : ${ref}<br>Date : ${getD(order.createdAt)}<br><strong style="color:#D4AF37">LIVRÉ / TERMINÉ</strong></div></div>
-</div>
-<div class="cols">
-  <div class="col"><h4>Informations Client</h4>Type : Commande en ligne<br>Note : ${(order.note || 'Client standard').substring(0, 40)}<br>Paiement : À la livraison</div>
-  <div class="col"><h4>Détails Livraison</h4>Mode : Livraison à domicile<br>Date : ${getD(order.createdAt)}<br>Référence : ${ref}</div>
-</div>
-<h3 style="color:#1e141a;border-bottom:2px solid #E8178A;padding-bottom:6px">Détail de la Commande</h3>
-<table><thead><tr><th>#</th><th>Article</th><th>Qté</th><th>Prix Unitaire</th><th>Montant</th></tr></thead><tbody>${rows}</tbody></table>
-<div class="total-box"><div style="margin-bottom:4px;color:gray;font-size:13px">Sous-total : ${fmtA(order.totalAmount)}</div><div style="margin-bottom:4px;color:gray;font-size:13px">Remise : 0 FCFA</div><div class="total-final"><span>TOTAL À PAYER</span> ${fmtA(order.totalAmount)}</div></div>
-<div class="thanks"><h3>Merci pour votre confiance !</h3><p style="color:gray;font-size:13px">Nous espérons que vous avez apprécié vos délices Délice Cake.</p><a href="https://www.delicecake.com" style="color:#E8178A;font-weight:bold">www.delicecake.com</a></div>
-<div class="footer">Délice Cake · Référence N° ${ref}</div>
-</body></html>`;
+    const rows = (order.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${it.name}</td><td>${it.quantity}</td><td>${it.unitPrice.toLocaleString()} FCFA</td><td>${it.totalPrice.toLocaleString()} FCFA</td></tr>`).join('');
+    const html = `<html><body onload="window.print()"><h1>Facture Délice Cake</h1><p>Réf: ${ref}</p><table border="1" width="100%"><thead><tr><th>#</th><th>Article</th><th>Qté</th><th>Prix Unit.</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><h3>Total: ${order.totalAmount.toLocaleString()} FCFA</h3></body></html>`;
     const w = window.open('', '_blank');
     if (w) { w.document.write(html); w.document.close(); }
-    else alert("Veuillez autoriser les popups pour telecharger la facture.");
   }
 
-  const trackBtnNav = document.getElementById('track-order-nav');
-  const trackBtnMobile = document.getElementById('track-order-mobile');
   const navBadge = document.getElementById('nav-track-badge');
   const mobileBadge = document.getElementById('mobile-track-badge');
   const modal = document.getElementById('track-modal');
   const closeBtn = document.getElementById('track-modal-close');
   const content = document.getElementById('track-content');
-
-  if (!modal || !content) return;
+  const trackingBar = document.getElementById('active-orders-tracking');
 
   const STATUS_REELS = {
-    'new': { label: 'Reçue', icon: '📝', color: '#E8178A', desc: 'Nous avons bien reçu votre commande.', class: 'status-new' },
-    'processing': { label: 'En préparation', icon: '👨‍🍳', color: '#F59E0B', desc: 'Nos pâtissiers préparent vos délices.', class: 'status-processing' },
-    'completed': { label: 'Prête ! ✦', icon: 'auto', color: '#10B981', desc: 'Bonne nouvelle ! Votre création est prête à être dégustée.', class: 'status-completed' },
-    'cancelled': { label: 'Annulée', icon: '❌', color: '#EF4444', desc: 'La commande a été annulée.', class: 'status-cancelled' }
+    'new': { label: 'Reçue', icon: '📝', color: '#3b82f6', class: 'status-new', desc: 'Commande bien reçue.' },
+    'processing': { label: 'Préparation', icon: '👨‍🍳', color: '#f59e0b', class: 'status-processing', desc: 'En cours de préparation.' },
+    'completed': { label: 'Prête !', icon: '🍰', color: '#10b981', class: 'status-completed', desc: 'Votre commande est prête !' },
+    'cancelled': { label: 'Annulée', icon: '❌', color: '#ef4444', class: 'status-cancelled', desc: 'Commande annulée.' }
   };
 
   const updateUI = (order) => {
-    if (!order) return;
-
+    if (!order || !content) return;
     const status = STATUS_REELS[order.status || 'new'];
-    const statusOrder = ['new', 'processing', 'completed'];
-    const currentIndex = statusOrder.indexOf(order.status || 'new');
-
-    // Update Badges
-    [navBadge, mobileBadge].forEach(badge => {
-      if (badge) {
-        badge.className = 'track-badge active status-' + (order.status || 'new');
-        badge.textContent = status.label;
-      }
-    });
-
     const isCompleted = order.status === 'completed';
-    const headerClass = isCompleted ? 'track-status-header status-ready-box' : 'track-status-header';
-
-    // Premium SVG Illustration for "Ready"
-    const readySvg = `
-        <svg class="wow-icon" viewBox="0 0 100 100" width="120" height="120">
-          <defs>
-            <linearGradient id="readyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
-              <stop offset="100%" style="stop-color:#34D399;stop-opacity:1" />
-            </linearGradient>
-          </defs>
-          <path d="M50 15 L60 40 L85 45 L65 65 L70 90 L50 75 L30 90 L35 65 L15 45 L40 40 Z" fill="url(#readyGrad)" />
-          <circle cx="50" cy="50" r="45" fill="none" stroke="url(#readyGrad)" stroke-width="2" stroke-dasharray="5,5">
-            <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="10s" repeatCount="indefinite" />
-          </circle>
-          <path d="M35 50 L45 60 L65 40" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      `;
-
-    const confettiHtml = isCompleted ? `
-        <div class="confetti-container">
-          ${Array(12).fill(0).map((_, i) => `<div class="confetti" style="left:${Math.random() * 100}%; background:${['#E8178A', '#10B981', '#FFD0EB'][i % 3]}; animation-delay:${Math.random() * 3}s; animation-duration:${3 + Math.random() * 2}s;"></div>`).join('')}
-        </div>` : '';
 
     content.innerHTML = `
-        <div class="${headerClass}">
-          ${confettiHtml}
-          <div class="wow-icon-container">
-            <div style="margin-bottom: 1rem;">${isCompleted ? readySvg : `<span style="font-size: 3.5rem;">${status.icon}</span>`}</div>
-            <h4 class="${isCompleted ? 'ready-title-premium' : ''}" style="color: ${isCompleted ? 'inherit' : status.color}; font-size: 1.5rem; margin-bottom: 0.3rem;">${status.label}</h4>
-            <p class="${isCompleted ? 'ready-desc-premium' : ''}">${status.desc}</p>
-          </div>
-        </div>
-
-      <div class="track-stepper">
-        <div class="step-item ${currentIndex >= 0 ? (currentIndex > 0 ? 'completed' : 'active') : ''}">
-          <div class="step-dot">${currentIndex > 0 ? '✓' : '1'}</div>
-          <div class="step-label">Reçue</div>
-        </div>
-        <div class="step-item ${currentIndex >= 1 ? (currentIndex > 1 ? 'completed' : 'active') : ''}">
-          <div class="step-dot">${currentIndex > 1 ? '✓' : '2'}</div>
-          <div class="step-label">En cours</div>
-        </div>
-        <div class="step-item ${currentIndex >= 2 ? (currentIndex > 2 ? 'completed' : 'active') : ''}">
-          <div class="step-dot">${currentIndex > 2 ? '✓' : '3'}</div>
-          <div class="step-label">Prête</div>
-        </div>
+      <div class="track-status-header" style="text-align:center; padding: 20px; background: ${isCompleted ? '#f0fdf4' : '#fff'}; border-radius: 12px; margin-bottom: 20px;">
+        <div style="font-size: 3rem; margin-bottom: 10px;">${status.icon}</div>
+        <h4 style="color: ${status.color}; margin:0;">${status.label}</h4>
+        <p style="font-size: 0.9rem; margin-top: 5px;">${status.desc}</p>
       </div>
-
-      <div class="track-details" style="background: #fff; padding: 1.5rem; border-radius: 20px; border: 1px solid #eee;">
-        <h5 style="margin-bottom: 1rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: #999;">Détails de la commande</h5>
-        <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem;">
-          ${order.items.map(item => `
-            <li style="display:flex; justify-content:space-between; padding: 0.6rem 0; border-bottom: 1px dotted #eee; font-size: 0.95rem;">
-              <span><strong>${item.quantity}x</strong> ${item.name}</span>
-              <span style="font-weight: 700; color: var(--black);">${item.totalPrice.toLocaleString('fr-FR')} FCFA</span>
-            </li>
-          `).join('')}
+      <div style="background: #f8f9fa; padding: 15px; border-radius: 10px;">
+        <ul style="list-style:none; padding:0;">
+          ${order.items.map(it => `<li style="display:flex; justify-content:space-between; margin-bottom: 8px;"><span>${it.quantity}x ${it.name}</span><strong>${it.totalPrice.toLocaleString()} FCFA</strong></li>`).join('')}
         </ul>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 2px solid var(--pink-pale);">
-          <span style="font-weight: 700; font-size: 1.1rem;">Total</span>
-          <span style="color: var(--pink); font-size: 1.4rem; font-weight: 800;">${order.totalAmount.toLocaleString('fr-FR')} FCFA</span>
-        </div>
-      ${order.status === 'completed' ? `
-      <button id="download-invoice-btn" style="
-        width: 100%; margin-top: 1rem; padding: 1rem;
-        background: linear-gradient(135deg, #E8178A, #ff6bbd);
-        color: white; border: none; border-radius: 16px;
-        font-size: 1rem; font-weight: 700; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        gap: 0.5rem; box-shadow: 0 4px 20px rgba(232,23,138,0.4);
-        transition: all 0.2s ease; font-family: var(--font-body);
-      " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-        📥 Télécharger ma Facture
-      </button>` : `
-      <div id="notif-suggest-container" style="margin-top: 1rem; padding: 1rem; background: var(--pink-pale); border-radius: 16px; border: 1px dashed var(--pink);">
-        <p style="font-size: 0.85rem; color: #6b4557; margin-bottom: 0.8rem; text-align: center;">
-          ${isIOS() && !isStandalone() ?
-        "<strong>Action requise sur iPhone :</strong> Pour recevoir des alertes, utilisez 'Ajouter à l'écran d'accueil' dans le menu Partager ! 📲" :
-        "Recevez une notification dès que votre commande change de statut ! 🚀"}
-        </p>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <button id="enable-notifs-btn" style="
-            width: 100%; padding: 0.8rem;
-            background: var(--pink); color: white;
-            border: none; border-radius: 12px;
-            font-size: 0.95rem; font-weight: 700; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            gap: 0.5rem; transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(232, 23, 138, 0.2);
-            ${isIOS() && !isStandalone() ? 'opacity:0.6; pointer-events:none;' : ''}
-          ">
-            🔔 Activer les notifications
-          </button>
-          
-          <button id="test-notifs-btn" style="
-            width: 100%; padding: 0.6rem;
-            background: transparent; color: var(--pink);
-            border: 1px solid var(--pink); border-radius: 12px;
-            font-size: 0.85rem; font-weight: 600; cursor: pointer;
-            display: ${Notification.permission === 'granted' ? 'flex' : 'none'}; 
-            align-items: center; justify-content: center; gap: 0.4rem;
-          ">
-            🧪 Tester mon appareil
-          </button>
+        <div style="border-top: 2px solid #ddd; margin-top: 10px; padding-top: 10px; display:flex; justify-content:space-between; font-weight:bold;">
+          <span>Total</span><span style="color: #E8178A;">${order.totalAmount.toLocaleString()} FCFA</span>
         </div>
       </div>
-      `}
-    </div>
+      ${isCompleted ? `<button id="dl-inv" class="btn btn--primary" style="width:100%; margin-top:15px;">📥 Télécharger Facture</button>` : ''}
     `;
+    if (isCompleted) document.getElementById('dl-inv').onclick = () => generateInvoicePDF(order);
+  };
 
-    if (order.status === 'completed') {
-      const dlBtn = document.getElementById('download-invoice-btn');
-      if (dlBtn) dlBtn.addEventListener('click', () => generateInvoicePDF(order));
-    } else {
-      const notifBtn = document.getElementById('enable-notifs-btn');
-      if (notifBtn) {
-        if (Notification.permission === 'granted') {
-          notifBtn.innerHTML = "✅ Notifications activées";
-          notifBtn.style.opacity = "0.7";
-          notifBtn.style.cursor = "default";
-          notifBtn.disabled = true;
-        } else if (!(isIOS() && !isStandalone())) {
-          notifBtn.addEventListener('click', async () => {
-            const originalText = notifBtn.innerHTML;
-            notifBtn.textContent = "Activation...";
-            const granted = await requestNotificationPermission();
-            if (granted) {
-              const token = localStorage.getItem('delice_fcm_token');
-              if (token && order.id) {
-                await DataService.updateOrderPushToken(order.id, token);
-              }
-              notifBtn.innerHTML = "✅ Activé !";
-              setTimeout(() => {
-                const container = document.getElementById('notif-suggest-container');
-                if (container) container.style.display = 'none';
-              }, 2000);
-            } else {
-              notifBtn.innerHTML = "🔔 Réessayer";
-              setTimeout(() => { notifBtn.innerHTML = originalText; }, 3000);
-            }
-          });
-        }
-      }
+  const renderTrackingUI = (orders, container) => {
+    if (!container) return;
+    container.innerHTML = '';
+    const activeOrders = orders.filter(o => o.status !== 'cancelled');
 
-      const testBtn = document.getElementById('test-notifs-btn');
-      if (testBtn) {
-        testBtn.addEventListener('click', async () => {
-          const token = localStorage.getItem('delice_fcm_token');
-          if (!token) {
-            alert("Aucun jeton trouvé. Veuillez d'abord activer les notifications.");
-            return;
-          }
-          try {
-            testBtn.disabled = true;
-            testBtn.textContent = "Envoi...";
-            const res = await fetch('/api/push-notify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                token: token,
-                title: "Ça marche ! 🎉",
-                body: "Votre appareil est prêt à recevoir vos statuts de commande."
-              })
-            });
-            if (res.ok) {
-              alert("Test envoyé ! Si vous ne recevez rien dans 5 secondes, vérifiez les réglages de votre navigateur.");
-            } else {
-              alert("Échec du test. Erreur serveur.");
-            }
-          } catch (e) {
-            alert("Erreur de connexion au serveur.");
-          } finally {
-            testBtn.disabled = false;
-            testBtn.textContent = "🧪 Tester mon appareil";
-          }
-        });
-      }
+    if (activeOrders.length === 0) {
+      if (navBadge) navBadge.classList.remove('active');
+      if (mobileBadge) mobileBadge.classList.remove('active');
+      return;
     }
+
+    activeOrders.forEach(order => {
+      const status = STATUS_REELS[order.status || 'new'];
+      const card = document.createElement('div');
+      card.className = 'order-tracking-card';
+      card.innerHTML = `
+        <div class="order-status-dot ${status.class}"></div>
+        <div class="order-info">
+          <div class="order-ref">#${order.id.slice(-4).toUpperCase()}</div>
+          <div class="order-status-text" style="color:${status.color}; font-size: 0.8em; font-weight:bold;">${status.label}</div>
+        </div>
+        <div class="order-arrow" style="margin-left:auto; color:#ccc;">→</div>
+      `;
+      card.onclick = () => {
+        updateUI(order);
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      };
+      container.appendChild(card);
+    });
+
+    // Update badges with latest order status
+    const latest = activeOrders[0];
+    const s = STATUS_REELS[latest.status || 'new'];
+    [navBadge, mobileBadge].forEach(b => {
+      if (b) {
+        b.className = 'track-badge active ' + s.class;
+        b.textContent = s.label;
+      }
+    });
   };
 
   const startTracking = () => {
-    const lastOrderId = localStorage.getItem('delice_last_order_id');
-    if (!lastOrderId) return;
-
+    const customerId = localStorage.getItem('delice_customer_id') || (typeof getCustomerId === 'function' ? getCustomerId() : null);
+    if (!customerId) return;
     if (orderSubscription) orderSubscription();
-
-    orderSubscription = DataService.subscribeToOrder(lastOrderId, (order) => {
-      updateUI(order);
+    orderSubscription = DataService.subscribeToMyOrders(customerId, (orders) => {
+      renderTrackingUI(orders, trackingBar);
     });
   };
 
-  // Check on load
   startTracking();
-
-  // Expose to global scope so we can call it after placing an order
   window.refreshOrderTracking = startTracking;
 
   const openTracking = (e) => {
     if (e) e.preventDefault();
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-
-    const lastOrderId = localStorage.getItem('delice_last_order_id');
-    if (!lastOrderId) {
-      content.innerHTML = `
-        <div style="text-align: center; padding: 2rem;">
-          <p style="color: var(--grey-text);">Aucune commande trouvée sur cet appareil.</p>
-        </div>
-      `;
+    const lastId = localStorage.getItem('delice_last_order_id');
+    if (lastId) {
+      DataService.subscribeToOrder(lastId, (o) => updateUI(o));
+    } else {
+      content.innerHTML = '<p style="text-align:center; padding:20px;">Aucune commande active.</p>';
     }
   };
 
-  if (trackBtnNav) trackBtnNav.addEventListener('click', openTracking);
-  if (trackBtnMobile) trackBtnMobile.addEventListener('click', (e) => {
-    if (typeof closeMobile === 'function') closeMobile();
+  if (document.getElementById('track-order-nav')) document.getElementById('track-order-nav').onclick = openTracking;
+  if (document.getElementById('track-order-mobile')) document.getElementById('track-order-mobile').onclick = (e) => {
+    if (window.closeMobile) window.closeMobile();
     openTracking(e);
-  });
-
-  const closeModal = () => {
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
   };
-
-  closeBtn.addEventListener('click', closeModal);
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal();
-  });
+  if (closeBtn) closeBtn.onclick = () => { modal.classList.remove('active'); document.body.style.overflow = ''; };
 }
 
 // ==========================================
