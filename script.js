@@ -1861,20 +1861,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const botResponse = await generateAIResponse(userMessage);
 
       // --- ORDER DETECTION LOGIC ---
-      // Llama 3 galère trop avec le JSON complexe en plein texte.
-      // Nouvelle stratégie : L'IA écrit juste un tag secret à la fin. 
-      // Si on le détecte, le JavaScript va analyser l'historique récent pour créer le panier.
-
-      // Robust tag detection: [CONFIRM_ORDER] or CONFIRM_ORDER, case-insensitive, ignores markdown stars
       const confirmTagRegex = /(\[|\*)?CONFIRM_ORDER(\]|\*)?/i;
       let cleanResponse = botResponse;
       let orderConfirmed = false;
 
       if (confirmTagRegex.test(botResponse)) {
         orderConfirmed = true;
-        // Remove the tag from the visible response
         cleanResponse = botResponse.replace(confirmTagRegex, "").trim();
-        // Remove trailing punctuation/symbols
         cleanResponse = cleanResponse.replace(/[,\s"\]\[\*]+$/g, "").trim();
       }
 
@@ -1891,17 +1884,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const products = typeof DataService !== 'undefined' ? await DataService.getProducts() : [];
           const cleanResponseNorm = normalize(cleanResponse);
-          const historyText = chatHistoryMessages.filter(m => m.role !== 'system').slice(-5).map(m => m.content).join(" ");
+
+          // Access chatHistoryMessages (ensure it exists in scope)
+          const historyText = (typeof chatHistoryMessages !== 'undefined') ?
+            chatHistoryMessages.filter(m => m.role !== 'system').slice(-6).map(m => m.content).join(" ") : "";
           const combinedLogNorm = normalize(historyText + " " + cleanResponse);
 
           let detectedItems = [];
           let estimatedTotal = 0;
 
+          // 0. DEPOSIT DETECTION (New)
+          const depositMatch = botResponse.match(/acompte\s*(?:de|:)?\s*(\d+)/i) || historyText.match(/acompte\s*(?:de|:)?\s*(\d+)/i);
+          let detectedDeposit = depositMatch ? parseInt(depositMatch[1], 10) : 0;
+
           // 1. PRIMARY: Match against official menu
           products.forEach(p => {
             const searchTerm = normalize(p.name).replace(/\(.*\)/g, "").replace(/\b(maison|signature|artisanale?|assortis?)\b/g, "").trim();
-            if (searchTerm && cleanResponseNorm.includes(searchTerm)) {
-              // Détection de quantité ultra-robuste (ex: "10 sachets de boules", "un sachet de", "2 boules")
+            // Check if product is mentioned in either current response OR recent history
+            if (searchTerm && (cleanResponseNorm.includes(searchTerm) || combinedLogNorm.includes(searchTerm))) {
               const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*[^\\n\\d]{0,30}?\\s*${escapeRegExp(searchTerm)}`, 'i');
               let match = cleanResponseNorm.match(qtyRegex) || combinedLogNorm.match(qtyRegex);
 
@@ -1924,8 +1924,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           });
 
-          // 2. DELIVERY: Detect if "livraison" is requested (PRIORITY over fallback)
-          // Robust check for affirmative delivery vs pickup
+          // 2. DELIVERY: Detect if "livraison" is requested
           const wantsLivraison = (cleanResponseNorm.includes("livraison") || combinedLogNorm.includes("livraison") || cleanResponseNorm.includes("livrer") || combinedLogNorm.includes("livrer")) &&
             !cleanResponseNorm.includes("pas de livraison") &&
             !combinedLogNorm.includes("pas de livraison") &&
@@ -1958,40 +1957,52 @@ document.addEventListener('DOMContentLoaded', () => {
             detectedItems.push(deliveryItem);
           }
 
-          // 3. FALLBACK: Catch items the AI mentions but are not in the database (Regex list items)
-          // Look for patterns like "15 boules de neiges", "2 produits X", etc.
-          const currentItemNames = detectedItems.map(it => normalize(it.name));
-          if (true) { // Always run fallback to catch items besides menu/delivery
-            console.log("Checking for additional fallback items...");
-            const fallbackRegex = /(?:^|\n|[\.!\?])\s*(?:[\-\*•]|\d+\.)?\s*(\d+|un|une|douzaine)\s*(?:x|d(?:es|e))?\\s*([^,;\.\n\(]+)/gi;
-            let match;
-            while ((match = fallbackRegex.exec(cleanResponse)) !== null) {
-              const qtyStr = match[1].toLowerCase();
-              const itemName = match[2].trim();
+          // 3. SPECIAL HANDLING: If Total is 0 but we have a deposit, infer the total
+          if (estimatedTotal === 0 && detectedDeposit > 0) {
+            // Usually 50% deposit, and if it's a "gateau" mention, we can assume 1500/slice or at least show the inferred total
+            estimatedTotal = detectedDeposit * 2;
 
-              // Skip if it looks like a confirm tag, too short, OR already detected (delivery/menu)
-              if (itemName.toUpperCase().includes("CONFIRM_ORDER") || itemName.length < 3) continue;
-              if (itemName.toLowerCase().includes("livraison")) continue;
-              if (currentItemNames.some(existing => itemName.toLowerCase().includes(existing) || existing.includes(itemName.toLowerCase()))) continue;
+            // Try to find if user mentioned "gateau" or any word to name the placeholder
+            let productName = "Commande personnalisée";
+            if (combinedLogNorm.includes("gateau")) productName = "Gâteau personnalisé";
+            else if (combinedLogNorm.includes("sachet") || combinedLogNorm.includes("boule")) productName = "Boules de neige";
 
-              let qty = parseInt(qtyStr, 10);
-              if (isNaN(qty)) {
-                if (qtyStr === 'un' || qtyStr === 'une') qty = 1;
-                else if (qtyStr === 'douzaine') qty = 12;
-                else qty = 1;
-              }
-
-              detectedItems.push({
-                name: itemName,
-                quantity: qty,
-                unitPrice: 0, // Unknown price
-                totalPrice: 0,
-                isUnknown: true
-              });
-            }
+            detectedItems.unshift({
+              name: productName,
+              quantity: 1,
+              unitPrice: estimatedTotal,
+              totalPrice: estimatedTotal,
+              isInferred: true
+            });
           }
 
-          // 4. FINAL FALLBACK: If still nothing but tag is there, add a placeholder
+          // 4. FALLBACK: Catch extra items mentioned but not in menu
+          const currentItemNames = detectedItems.map(it => normalize(it.name));
+          const fallbackRegex = /(?:^|\n|[\.!\?])\s*(?:[\-\*•]|\d+\.)?\s*(\d+|un|une|douzaine)\s*(?:x|d(?:es|e))?\s*([^,;\.\n\(]+)/gi;
+          let match;
+          while ((match = fallbackRegex.exec(cleanResponse)) !== null) {
+            const qtyStr = match[1].toLowerCase();
+            const itemName = match[2].trim();
+            if (itemName.toUpperCase().includes("CONFIRM_ORDER") || itemName.length < 3) continue;
+            if (itemName.toLowerCase().includes("livraison") || itemName.toLowerCase().includes("acompte")) continue;
+            if (currentItemNames.some(existing => itemName.toLowerCase().includes(existing) || existing.includes(itemName.toLowerCase()))) continue;
+
+            let qty = parseInt(qtyStr, 10);
+            if (isNaN(qty)) {
+              if (qtyStr === 'un' || qtyStr === 'une') qty = 1;
+              else if (qtyStr === 'douzaine') qty = 12;
+              else qty = 1;
+            }
+
+            detectedItems.push({
+              name: itemName,
+              quantity: qty,
+              unitPrice: 0,
+              totalPrice: 0,
+              isUnknown: true
+            });
+          }
+
           if (detectedItems.length === 0) {
             detectedItems.push({
               name: "Commande (voir historique chat)",
@@ -2006,31 +2017,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const finalOrder = {
               items: detectedItems,
               totalAmount: estimatedTotal,
+              depositAmount: detectedDeposit || (estimatedTotal / 2),
               note: `Commande via Délice AI Chat (${chatId})`,
               status: 'new'
             };
 
             const confirmId = 'ai-confirm-' + Math.floor(Math.random() * 10000);
-            const itemsTable = detectedItems.map(it => `• ${it.quantity}x ${it.name}${it.isUnknown ? ' (Prix à confirmer)' : ''}`).join('<br/>');
+            const itemsTable = detectedItems
+              .filter(it => !it.isDelivery && !it.isPickup)
+              .map(it => `• ${it.quantity}x ${it.name}${it.isUnknown ? ' (Prix à confirmer)' : ''}`).join('<br/>');
+
+            const subtotal = estimatedTotal - (deliveryItem?.isDelivery ? 1000 : 0);
+            const depositToPay = detectedDeposit || Math.round(subtotal / 2);
 
             const confirmHtml = `
               <div class="chat-confirmation-box" style="margin-top:10px; padding:12px; background:#fff0f6; border-radius:12px; border: 2px solid #E8178A; color: #1a0a14;">
                 <strong style="color:#E8178A; font-family:'Outfit',sans-serif;">🛒 Validation de commande</strong><br/>
                 <div style="font-size: 0.9em; margin: 8px 0; border-bottom: 1px solid #ffdeed; padding-bottom: 8px;">
-                  ${itemsTable}
+                  ${itemsTable || "Détails dans l'historique"}
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.95em;">
                   <span>Sous-total:</span>
-                  <span>${(estimatedTotal - (deliveryItem?.isDelivery ? 1000 : 0)).toLocaleString('fr-FR')} FCFA</span>
+                  <span>${subtotal.toLocaleString('fr-FR')} FCFA</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.95em; color:${deliveryItem?.isDelivery ? '#E8178A' : '#666'};">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.95em; color:${deliveryItem?.isDelivery ? '#E8178A' : '#666'};">
                   <span>${deliveryItem?.isDelivery ? 'Livraison:' : 'Mode:'}</span>
                   <span>${deliveryItem?.isDelivery ? '1 000 FCFA' : 'Retrait Gratuit'}</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-top:1px dashed #E8178A; padding-top:8px; font-weight:800;">
+                <div style="display:flex; justify-content:space-between; border-top:1px dashed #E8178A; padding-top:8px; font-weight:800; font-size: 1.05em;">
                   <span>TOTAL TTC:</span>
                   <span>${estimatedTotal.toLocaleString('fr-FR')} FCFA</span>
                 </div>
+                ${depositToPay > 0 ? `
+                <div style="display:flex; justify-content:space-between; margin-top:5px; padding: 4px 8px; background:rgba(232, 23, 138, 0.1); border-radius: 6px; font-size:0.9em; color:#E8178A; font-weight:700;">
+                  <span>Acompte (50%):</span>
+                  <span>${depositToPay.toLocaleString('fr-FR')} FCFA</span>
+                </div>` : ''}
                 <div style="margin-top:12px; display:flex; gap:10px; justify-content: center;">
                   <button id="${confirmId}-yes" class="btn btn--primary" style="padding: 6px 16px; font-size: 0.9em; min-height: 0;">✅ Confirmer</button>
                   <button id="${confirmId}-no" class="btn btn--ghost" style="padding: 6px 16px; font-size: 0.9em; min-height: 0; color: #E8178A; border: 1px solid #E8178A;">❌ Modifier</button>
@@ -2044,14 +2066,17 @@ document.addEventListener('DOMContentLoaded', () => {
             chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
 
             document.getElementById(`${confirmId}-yes`).addEventListener('click', async (e) => {
-              e.target.parentElement.innerHTML = `<span style="color: green; font-weight: bold;">Commande transmise ! 🎉</span>`;
+              const btnContainer = e.target.parentElement;
+              btnContainer.innerHTML = `<div class="typing-dots" style="margin:0 auto;"><span></span><span></span><span></span></div>`;
+
               if (typeof DataService !== 'undefined' && DataService.saveOrder) {
                 const orderId = await DataService.saveOrder(finalOrder);
                 if (orderId) {
                   localStorage.setItem('delice_last_order_id', orderId);
+                  btnContainer.innerHTML = `<span style="color: green; font-weight: bold;">Commande transmise ! 🎉</span>`;
                   const adminLink = window.location.origin + "/admin";
                   const summary = detectedItems.map(it => `${it.quantity}x ${it.name}`).join(', ');
-                  const messageTelegram = `🤖 <b>COMMANDE VIA IA !</b>\n📝 Items : ${summary}\n💰 Total : ${estimatedTotal > 0 ? estimatedTotal.toLocaleString('fr-FR') + ' FCFA' : 'À définir'}\n\n<a href="${adminLink}">Voir sur l'Admin</a>`;
+                  const messageTelegram = `🤖 <b>COMMANDE VIA IA !</b>\n📝 Items : ${summary}\n💰 Total : ${estimatedTotal > 0 ? estimatedTotal.toLocaleString('fr-FR') + ' FCFA' : 'À définir'}\n💳 Acompte : ${depositToPay.toLocaleString('fr-FR')} FCFA\n\n<a href="${adminLink}">Voir sur l'Admin</a>`;
                   await sendTelegramNotification(messageTelegram);
                 }
               }
