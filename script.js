@@ -1860,21 +1860,41 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const botResponse = await generateAIResponse(userMessage);
 
-      // --- NEW STRUCTURED ORDER DETECTION ---
-      const jsonRegex = /\[ORDER_DATA:\s*({.*?})\s*\]/is;
+      // --- NEW STRUCTURED ORDER DETECTION (Fixed for nested JSON) ---
       let cleanResponse = botResponse;
       let structuredData = null;
 
-      const match = botResponse.match(jsonRegex);
-      if (match && match[1]) {
+      // Extract using a greedy match to handle nested JSON correctly
+      const tagMatch = botResponse.match(/\[ORDER_DATA:\s*(\{.*})\s*\]/is);
+
+      if (tagMatch) {
         try {
-          structuredData = JSON.parse(match[1]);
-          cleanResponse = botResponse.replace(jsonRegex, "").trim();
-          console.log("Délice AI - Données structurées détectées :", structuredData);
+          let rawJson = tagMatch[1];
+          // Balanced brace balancing: find the actual end of the JSON root object
+          const lastBrace = rawJson.lastIndexOf('}');
+          if (lastBrace !== -1) {
+            rawJson = rawJson.substring(0, lastBrace + 1);
+          }
+
+          structuredData = JSON.parse(rawJson);
+          console.log("Délice AI - Données structurées extraites :", structuredData);
+
+          // Remove the tag precisely from the response
+          cleanResponse = botResponse.split(/\[ORDER_DATA:/i)[0] + botResponse.split(/\]/g).pop();
+          // Fallback if split is weird
+          if (cleanResponse.includes("[ORDER_DATA:")) {
+            cleanResponse = botResponse.replace(/\[ORDER_DATA:.*?\]/is, "");
+          }
         } catch (e) {
           console.error("Délice AI - Erreur de parsing JSON :", e);
         }
       }
+
+      // Final aggressive cleanup: Remove any [DATA] tags and specifically the Mistral-style [CONFIRMATION] tags
+      cleanResponse = cleanResponse.replace(/\[ORDER_DATA:.*?\]/is, "")
+        .replace(/\[CONFIRMATION.*?\]/gi, "")
+        .replace(/\[.*?\]/g, "")
+        .trim();
 
       if (structuredData) {
         try {
@@ -2141,7 +2161,7 @@ Dès que tu as TOUTES les informations pour finaliser (Produit, qtés, prix tota
 2. Ajouter SILENCIEUSEMENT à la toute fin de ton message le bloc suivant :
 [ORDER_DATA: {"items": [{"name": "Nom", "qty": 1, "price": 0}], "delivery": 1000, "depositPercent": 50}]
 Remplacement : "items" par la liste des produits, "delivery" (1000 ou 0), "depositPercent" (toujours 50).
-C'est ce bloc qui permet de générer la facture correcte.`;
+3. TRÈS IMPORTANT : Dis au client : "Veuillez cliquer sur le bouton 'Confirmer' ci-dessous pour enregistrer votre commande."`;
     } catch (e) {
       console.error("AI Context Init Fail:", e);
       systemContext = "Assistant Délice Cake.";
