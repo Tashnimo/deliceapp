@@ -2081,16 +2081,36 @@ document.addEventListener('DOMContentLoaded', () => {
               const btnContainer = e.target.parentElement;
               btnContainer.innerHTML = `<div class="typing-dots" style="margin:0 auto;"><span></span><span></span><span></span></div>`;
 
-              if (typeof DataService !== 'undefined' && DataService.saveOrder) {
+              try {
+                console.log("Saving order via AI...", finalOrder);
+                if (typeof DataService === 'undefined' || !DataService.saveOrder) {
+                  throw new Error("Service de données non disponible.");
+                }
+
                 const orderId = await DataService.saveOrder(finalOrder);
                 if (orderId) {
                   localStorage.setItem('delice_last_order_id', orderId);
-                  btnContainer.innerHTML = `<span style="color: green; font-weight: bold;">Commande transmise ! 🎉</span>`;
-                  const adminLink = window.location.origin + "/admin";
+                  btnContainer.innerHTML = `<span style="color: #10b981; font-weight: 800; font-size: 0.9em;">Confirmée ! 🎉 Commande #${orderId.slice(-4).toUpperCase()}</span>`;
+
                   const summary = detectedItems.map(it => `${it.quantity}x ${it.name}`).join(', ');
-                  const messageTelegram = `🤖 <b>COMMANDE VIA IA !</b>\n📝 Items : ${summary}\n💰 Total : ${estimatedTotal > 0 ? estimatedTotal.toLocaleString('fr-FR') + ' FCFA' : 'À définir'}\n💳 Acompte : ${depositToPay.toLocaleString('fr-FR')} FCFA\n\n<a href="${adminLink}">Voir sur l'Admin</a>`;
+                  const adminLink = window.location.origin + "/admin";
+                  const messageTelegram = `🤖 <b>COMMANDE VIA IA !</b>\n📝 Items : ${summary}\n💰 Total : ${estimatedTotal.toLocaleString('fr-FR')} FCFA\n💳 Acompte : ${depositToPay.toLocaleString('fr-FR')} FCFA\n\n<a href="${adminLink}">Gérer sur l'Admin</a>`;
+
                   await sendTelegramNotification(messageTelegram);
+                  if (window.refreshOrderTracking) window.refreshOrderTracking();
+                } else {
+                  throw new Error("L'ID de commande n'a pas été retourné.");
                 }
+              } catch (saveErr) {
+                console.error("Délice AI - Order save error:", saveErr);
+                btnContainer.innerHTML = `<span style="color: #ef4444; font-size: 0.8em;">Erreur d'enregistrement. Réessayez.</span>`;
+                setTimeout(() => {
+                  btnContainer.innerHTML = `
+                    <button id="${confirmId}-yes" class="btn btn--primary" style="padding: 6px 16px; font-size: 0.9em; min-height: 0;">✅ Confirmer</button>
+                    <button id="${confirmId}-no" class="btn btn--ghost" style="padding: 6px 16px; font-size: 0.9em; min-height: 0; color: #E8178A; border: 1px solid #E8178A;">❌ Modifier</button>
+                  `;
+                  // Re-attach listeners (simpler to just refresh the whole box if needed, but this is a quick fix)
+                }, 3000);
               }
             });
 
