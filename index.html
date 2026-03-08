@@ -625,21 +625,25 @@
                             </div>
                             <!-- PHOTO -->
                             <div id="tab-photo" class="tab-content">
-                                <div class="upload-box">
-                                    <label for="cake-photo-upload" class="upload-label">
-                                        <svg class="icon" style="width:30px; height:30px; margin-bottom:10px;">
+                                <div class="upload-box" id="upload-box-trigger">
+                                    <label for="photo-cake-input" class="upload-label" style="cursor:pointer;">
+                                        <svg class="icon"
+                                            style="width:36px; height:36px; margin-bottom:10px; stroke: var(--pink);">
                                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
                                         </svg>
-                                        <span>Ajouter une photo sur le gâteau</span>
+                                        <span style="font-weight:600; color: var(--pink);">Choisir une photo</span>
+                                        <span style="font-size:0.8rem; color:#aaa; margin-top:4px;">Elle sera appliquée
+                                            sur le gâteau 3D</span>
                                         <input type="file" id="photo-cake-input" accept="image/*" style="display:none;">
                                     </label>
-                                    <div id="photo-preview-container"
-                                        style="display:none; margin-top:1rem; text-align:center;">
-                                        <img id="photo-preview" src=""
-                                            style="max-width:100px; border-radius:8px; border:2px solid var(--pink);">
-                                        <button id="remove-photo"
-                                            style="display:block; margin:0.5rem auto; color:red; background:none; border:none; cursor:pointer; font-size:0.8rem;">Supprimer</button>
-                                    </div>
+                                </div>
+                                <div id="photo-preview-container"
+                                    style="display:none; margin-top:1rem; text-align:center;">
+                                    <img id="photo-preview" src=""
+                                        style="max-width:140px; border-radius:12px; border:2px solid var(--pink); box-shadow: 0 4px 16px rgba(255,31,142,0.15);">
+                                    <button id="remove-photo"
+                                        onclick="document.getElementById('photo-preview-container').style.display='none'; document.getElementById('photo-cake-input').value=''; "
+                                        style="display:block; margin:0.6rem auto 0; color:var(--pink); background:none; border:1px solid var(--pink); border-radius:20px; padding: 4px 14px; cursor:pointer; font-size:0.8rem;">Supprimer</button>
                                 </div>
                             </div>
                         </div>
