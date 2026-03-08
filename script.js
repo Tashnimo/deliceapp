@@ -127,14 +127,9 @@ setTimeout(() => {
 }, 2500);
 
 // ===================================================
-// === CAKE STUDIO — Interactive Configurator Logic ===
+// === 3D STUDIO CONFIGURATOR — Three.js Engine ===
 // ===================================================
-/**
- * ===================================================
- * === 3D STUDIO CONFIGURATOR — Three.js Engine ===
- * ===================================================
- */
-(function init3DStudio() {
+document.addEventListener('DOMContentLoaded', function init3DStudio() {
   const flavors = [
     { id: 'choc', name: 'Chocolat Noir', color: '#4A2C2A', frosting: '#6F4E37' },
     { id: 'vanille', name: 'Vanille Bourbon', color: '#FFF8E7', frosting: '#FFF5E1' },
@@ -392,8 +387,11 @@ setTimeout(() => {
    * THREE.JS CORE
    */
   function initThree() {
+    if (typeof THREE === 'undefined') { console.warn('Three.js not loaded'); return; }
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(40, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+    const w = canvasContainer.clientWidth || 400;
+    const h = canvasContainer.clientHeight || 500;
+    camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 1000);
     camera.position.set(0, 5, controls.zoom);
     camera.lookAt(0, 2, 0);
 
@@ -537,8 +535,15 @@ setTimeout(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 400; canvas.height = 100;
     const ctx = canvas.getContext('2d');
-    // Plaque design
-    ctx.fillStyle = '#4B2C20'; ctx.beginPath(); ctx.roundRect(0, 0, 400, 100, 20); ctx.fill();
+    // Plaque design — use roundRect with polyfill fallback
+    ctx.fillStyle = '#4B2C20';
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(0, 0, 400, 100, 20);
+    } else {
+      ctx.rect(0, 0, 400, 100);
+    }
+    ctx.fill();
     ctx.strokeStyle = '#C9A84C'; ctx.lineWidth = 5; ctx.stroke();
     ctx.fillStyle = '#FFFFFF'; ctx.font = "italic 32px 'Playfair Display'";
     ctx.textAlign = 'center'; ctx.fillText(state.message, 200, 60);
@@ -629,7 +634,7 @@ setTimeout(() => {
   initUI();
   initThree();
 
-})();
+});
 
 
 
