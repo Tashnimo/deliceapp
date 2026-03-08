@@ -142,6 +142,8 @@ setTimeout(() => {
   const msgInput = document.getElementById('cake-message-input');
   const charCount = document.getElementById('msg-char-count');
   const customShapeInput = document.getElementById('custom-shape-input');
+  const customPartsInput = document.getElementById('custom-parts-input');
+  const customPartsContainer = document.getElementById('custom-parts-container');
 
   if (!tabs.length) return;
 
@@ -187,6 +189,10 @@ setTimeout(() => {
           break;
         case 'parts':
           cakeState.parts = { value: btn.dataset.value, label: btn.dataset.partsLabel || label };
+          // Toggle custom input visibility
+          if (customPartsContainer) {
+            customPartsContainer.style.display = btn.dataset.value === 'custom' ? 'block' : 'none';
+          }
           break;
         case 'occasion':
           cakeState.occasion = { value: btn.dataset.value, label: btn.dataset.occLabel || label };
@@ -209,6 +215,17 @@ setTimeout(() => {
   if (customShapeInput) {
     customShapeInput.addEventListener('input', () => {
       cakeState.customShape = customShapeInput.value;
+    });
+  }
+
+  if (customPartsInput) {
+    customPartsInput.addEventListener('input', () => {
+      const val = customPartsInput.value;
+      if (val) {
+        cakeState.parts.value = val;
+        cakeState.parts.label = `${val} parts (personnalisé)`;
+        renderCakePreview();
+      }
     });
   }
 
@@ -255,7 +272,10 @@ setTimeout(() => {
     if (topper) topper.style.opacity = tiers >= 3 ? '1' : '0';
 
     // Price + parts update: Dynamic calculation based on parts (minimum 1500 FCFA/slice)
-    const numParts = parseInt(cakeState.parts.value) || 8;
+    let numParts = parseInt(cakeState.parts.value);
+    // If "custom" was clicked but value not yet set by input, default to 8 for preview
+    if (isNaN(numParts)) numParts = 8;
+
     const finalCalculatedPrice = numParts * BASE_PRICE_PER_SLICE;
 
     if (ctaHint) {
@@ -276,8 +296,11 @@ setTimeout(() => {
   if (orderBtn) {
     orderBtn.addEventListener('click', async () => {
       const shapeDisplay = cakeState.customShape ? `${cakeState.shape.label} (Détail: ${cakeState.customShape})` : cakeState.shape.label;
+      const numParts = parseInt(cakeState.parts.value) || 8;
+      const finalPrice = numParts * BASE_PRICE_PER_SLICE;
+
       const msg =
-        `*COMMANDE DÉLICE CAKE* ✦\n` +
+        `*COMMANDE DÉSIR CAKE STUDIO* ✦\n` +
         `Nouveau gâteau personnalisé :\n\n` +
         `• Saveur        : ${cakeState.flavor.label}\n` +
         `• Glaçage       : ${cakeState.color.label}\n` +
@@ -286,14 +309,15 @@ setTimeout(() => {
         `• Parts         : ${cakeState.parts.label}\n` +
         `• Occasion      : ${cakeState.occasion.label}\n` +
         (cakeState.message ? `• Message       : "${cakeState.message}"\n` : '') +
-        `\n_Veuillez me contacter pour confirmer la commande._`;
+        `• PRIX ESTIMÉ   : *${finalPrice.toLocaleString('fr-FR')} FCFA*\n\n` +
+        `_Veuillez me contacter pour confirmer la commande._`;
 
       // Save to Firestore and notify Telegram
       try {
         const orderData = {
           type: 'cake_studio',
           items: [{
-            name: `Gâteau Personnalisé (${cakeState.size.label})`,
+            name: `Gâteau Personnalisé (${cakeState.parts.label})`,
             details: {
               flavor: cakeState.flavor.label,
               color: cakeState.color.label,
@@ -303,10 +327,10 @@ setTimeout(() => {
               message: cakeState.message || ''
             },
             quantity: 1,
-            unitPrice: PRICES[cakeState.size.value] || 0,
-            totalPrice: PRICES[cakeState.size.value] || 0
+            unitPrice: finalPrice,
+            totalPrice: finalPrice
           }],
-          totalAmount: PRICES[cakeState.size.value] || 0,
+          totalAmount: finalPrice,
           status: 'new',
           customerNote: cakeState.message || ''
         };
@@ -319,11 +343,10 @@ setTimeout(() => {
             `🍫 Saveur: ${cakeState.flavor.label}\n` +
             `🎨 Glaçage: ${cakeState.color.label}\n` +
             `⬟ Forme: ${shapeDisplay}\n` +
-            `🎂 Format: ${cakeState.size.label}\n` +
             `🍽 Parts: ${cakeState.parts.label}\n` +
             `🎉 Occasion: ${cakeState.occasion.label}\n` +
             (cakeState.message ? `✍️ Message: "${cakeState.message}"\n` : '') +
-            `💰 Total: ${orderData.totalAmount} FCFA`;
+            `💰 <b>TOTAL: ${finalPrice.toLocaleString('fr-FR')} FCFA</b>`;
 
           fetch('/api/notify', {
             method: 'POST',
