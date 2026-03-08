@@ -129,259 +129,508 @@ setTimeout(() => {
 // ===================================================
 // === CAKE STUDIO — Interactive Configurator Logic ===
 // ===================================================
-(function initCakeStudio() {
-  // --- State ---
-  const cakeState = {
-    flavor: { value: 'choc', color: '#4A2C2A', label: 'Chocolat Noir' },
-    color: { value: 'pink', color: '#E8178A', label: 'Rose Délice' },
-    size: { value: 'small', tiers: 1, label: 'Standard (1 étage)' },
-    shape: { value: 'square', label: 'Carré élégant' },
-    customShape: '',
-    parts: { value: '8', label: '8 parts (petit)' },
-    occasion: { value: 'birthday', label: 'Anniversaire' },
-    message: ''
+/**
+ * ===================================================
+ * === 3D STUDIO CONFIGURATOR — Three.js Engine ===
+ * ===================================================
+ */
+(function init3DStudio() {
+  const flavors = [
+    { id: 'choc', name: 'Chocolat Noir', color: '#4A2C2A', frosting: '#6F4E37' },
+    { id: 'vanille', name: 'Vanille Bourbon', color: '#FFF8E7', frosting: '#FFF5E1' },
+    { id: 'fraise', name: 'Fraise Fraîche', color: '#FF4D6D', frosting: '#FF85A1' },
+    { id: 'pistache', name: 'Pistache Royale', color: '#93C572', frosting: '#B2D2A4' },
+    { id: 'caramel', name: 'Caramel Beurre Salé', color: '#AF6E4D', frosting: '#D4A373' },
+    { id: 'citron', name: 'Citron Givré', color: '#FFF44F', frosting: '#FFFACD' }
+  ];
+
+  let state = {
+    flavor: flavors[0],
+    glacage: 'Lisse',
+    format: 'Rond',
+    etages: 3,
+    parts: 12,
+    occasion: 'Anniversaire',
+    message: '',
+    userPhoto: null
   };
 
-  const BASE_PRICE_PER_SLICE = 1500;
+  let scene, camera, renderer, cakeGroup, plate, controls = { rotY: 0, rotX: 0, zoom: 8 };
+  let isDragging = false, prevMouse = { x: 0, y: 0 };
+  let textureCache = new Map();
+  let rebuildTimeout;
 
-  // --- DOM Refs ---
-  const tabs = document.querySelectorAll('.config-tab');
-  const panels = document.querySelectorAll('.config-panel');
-  const tier2 = document.getElementById('tier-2');
-  const tier1el = document.getElementById('tier-1');
-  const topper = document.querySelector('.cake-topper');
-  const orderBtn = document.getElementById('order-custom-cake');
-  const ctaHint = document.querySelector('.cta-hint');
-  const msgInput = document.getElementById('cake-message-input');
-  const charCount = document.getElementById('msg-char-count');
-  const customShapeInput = document.getElementById('custom-shape-input');
-  const customPartsInput = document.getElementById('custom-parts-input');
-  const customPartsContainer = document.getElementById('custom-parts-container');
+  const canvasContainer = document.getElementById('cake-viewer');
+  if (!canvasContainer) return;
 
-  if (!tabs.length) return;
+  /**
+   * TEXTURE GENERATOR
+   */
+  function generateTexture(flavorId, type) {
+    const key = `${flavorId}-${type}-${state.glacage}`;
+    if (textureCache.has(key)) return textureCache.get(key);
 
-  // --- Tab Switching (both rows) ---
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      const cat = tab.dataset.category;
-      tabs.forEach(t => t.classList.remove('active'));
-      panels.forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      const target = document.querySelector(`[data-panel="${cat}"]`);
-      if (target) target.classList.add('active');
-    });
-  });
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    const flavor = flavors.find(f => f.id === flavorId);
 
-  // --- Option Button Selection ---
-  document.querySelectorAll('.config-opt').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const panel = btn.closest('.config-panel');
-      panel.querySelectorAll('.config-opt').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      // Micro pop
-      btn.style.transform = 'scale(0.95)';
-      setTimeout(() => btn.style.transform = '', 180);
-
-      const type = panel.dataset.panel;
-      const labelEl = btn.querySelector('span:last-child');
-      const label = labelEl ? labelEl.textContent.trim() : '';
-
-      switch (type) {
-        case 'flavor':
-          cakeState.flavor = { value: btn.dataset.value, color: btn.dataset.color || '#E8178A', label };
-          break;
-        case 'color':
-          cakeState.color = { value: btn.dataset.value, color: btn.dataset.color || '#E8178A', label };
-          break;
-        case 'size':
-          cakeState.size = { value: btn.dataset.value, tiers: parseInt(btn.dataset.tiers) || 1, label };
-          break;
-        case 'shape':
-          cakeState.shape = { value: btn.dataset.value, label: btn.dataset.shapeLabel || label };
-          break;
-        case 'parts':
-          cakeState.parts = { value: btn.dataset.value, label: btn.dataset.partsLabel || label };
-          // Toggle custom input visibility
-          if (customPartsContainer) {
-            customPartsContainer.style.display = btn.dataset.value === 'custom' ? 'block' : 'none';
-          }
-          break;
-        case 'occasion':
-          cakeState.occasion = { value: btn.dataset.value, label: btn.dataset.occLabel || label };
-          break;
-      }
-      renderCakePreview();
-    });
-  });
-
-  // --- Message inputs ---
-  if (msgInput) {
-    msgInput.addEventListener('input', () => {
-      cakeState.message = msgInput.value;
-      if (charCount) charCount.textContent = msgInput.value.length;
-      const svgText = document.querySelector('.cake-message-text');
-      if (svgText) svgText.textContent = msgInput.value ? `"${msgInput.value}"` : '';
-    });
-  }
-
-  if (customShapeInput) {
-    customShapeInput.addEventListener('input', () => {
-      cakeState.customShape = customShapeInput.value;
-    });
-  }
-
-  if (customPartsInput) {
-    customPartsInput.addEventListener('input', () => {
-      const val = customPartsInput.value;
-      if (val) {
-        cakeState.parts.value = val;
-        cakeState.parts.label = `${val} parts (personnalisé)`;
-        renderCakePreview();
-      }
-    });
-  }
-
-  function renderCakePreview() {
-    const icing = cakeState.color.color;
-    const flavorColor = cakeState.flavor.color;
-    const tiers = cakeState.size.tiers;
-    const shape = cakeState.shape.value;
-
-    // Icing color — update all .cake-body elements
-    document.querySelectorAll('.cake-body').forEach(el => el.setAttribute('fill', icing));
-
-    // Flavor layer color
-    document.querySelectorAll('.flavor-line').forEach(el =>
-      el.setAttribute('stroke', hexToRgba(flavorColor, 0.35))
-    );
-
-    // ------ Shape morphing via SVG clipPath ------
-    const s = 'square';
-
-    const t3 = document.getElementById('tier-3');
-    const t2g = document.getElementById('tier-2');
-    const t1g = document.getElementById('tier-1');
-
-    if (t3) t3.setAttribute('clip-path', `url(#clip-${s}-b)`);
-    if (t2g) t2g.setAttribute('clip-path', `url(#clip-${s}-m)`);
-    if (t1g) t1g.setAttribute('clip-path', `url(#clip-${s}-t)`);
-
-    // Tier 2 visibility
-    if (tier2) {
-      const show2 = tiers >= 2;
-      tier2.style.opacity = show2 ? '1' : '0';
-      tier2.style.transform = show2 ? 'translateY(0)' : 'translateY(20px)';
+    // Base color
+    let baseColor;
+    if (type === 'sponge') {
+      baseColor = flavor.color;
+    } else {
+      if (state.glacage === 'Chantilly') baseColor = '#FFFFFF';
+      else if (state.glacage === 'Miroir') baseColor = flavor.frosting;
+      else baseColor = flavor.frosting;
     }
 
-    // Tier 1 (top) visibility
-    if (tier1el) {
-      const show3 = tiers >= 3;
-      tier1el.style.opacity = show3 ? '1' : '0';
-      tier1el.style.transform = show3 ? 'translateY(0)' : 'translateY(20px)';
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Add imperfections / texture
+    ctx.globalAlpha = 0.4;
+    for (let i = 0; i < 400; i++) {
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.05)';
+      ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
     }
 
-    // Topper
-    if (topper) topper.style.opacity = tiers >= 3 ? '1' : '0';
-
-    // Price + parts update: Dynamic calculation based on parts (minimum 1500 FCFA/slice)
-    let numParts = parseInt(cakeState.parts.value);
-    // If "custom" was clicked but value not yet set by input, default to 8 for preview
-    if (isNaN(numParts)) numParts = 8;
-
-    const finalCalculatedPrice = numParts * BASE_PRICE_PER_SLICE;
-
-    if (ctaHint) {
-      ctaHint.innerHTML = `<span class="material-symbols-outlined" style="font-size:1.2rem; vertical-align:middle; margin-right:4px;">payments</span> Estimé à : <strong>${finalCalculatedPrice.toLocaleString('fr-FR')} FCFA</strong> (${numParts} parts)`;
+    // Specific details for vanilla
+    if (flavorId === 'vanille') {
+      ctx.fillStyle = '#442200'; ctx.globalAlpha = 0.2;
+      for (let i = 0; i < 800; i++) ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 1);
     }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.anisotropy = 8;
+    textureCache.set(key, tex);
+    return tex;
   }
 
-  // --- Hex → RGBA ---
-  function hexToRgba(hex, alpha) {
-    if (!hex || hex.length < 7) return `rgba(200,100,100,${alpha})`;
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
-  }
-
-  // --- CTA → WhatsApp with full spec ---
-  if (orderBtn) {
-    orderBtn.addEventListener('click', async () => {
-      const shapeDisplay = cakeState.customShape ? `${cakeState.shape.label} (Détail: ${cakeState.customShape})` : cakeState.shape.label;
-      const numParts = parseInt(cakeState.parts.value) || 8;
-      const finalPrice = numParts * BASE_PRICE_PER_SLICE;
-
-      const msg =
-        `*COMMANDE DÉSIR CAKE STUDIO* ✦\n` +
-        `Nouveau gâteau personnalisé :\n\n` +
-        `• Saveur        : ${cakeState.flavor.label}\n` +
-        `• Glaçage       : ${cakeState.color.label}\n` +
-        `• Format        : ${cakeState.size.label}\n` +
-        `• Forme         : ${shapeDisplay}\n` +
-        `• Parts         : ${cakeState.parts.label}\n` +
-        `• Occasion      : ${cakeState.occasion.label}\n` +
-        (cakeState.message ? `• Message       : "${cakeState.message}"\n` : '') +
-        `• PRIX ESTIMÉ   : *${finalPrice.toLocaleString('fr-FR')} FCFA*\n\n` +
-        `_Veuillez me contacter pour confirmer la commande._`;
-
-      // Save to Firestore and notify Telegram
-      try {
-        const orderData = {
-          type: 'cake_studio',
-          items: [{
-            name: `Gâteau Personnalisé (${cakeState.parts.label})`,
-            details: {
-              flavor: cakeState.flavor.label,
-              color: cakeState.color.label,
-              shape: shapeDisplay,
-              parts: cakeState.parts.label,
-              occasion: cakeState.occasion.label,
-              message: cakeState.message || ''
-            },
-            quantity: 1,
-            unitPrice: finalPrice,
-            totalPrice: finalPrice
-          }],
-          totalAmount: finalPrice,
-          status: 'new',
-          customerNote: cakeState.message || ''
+  /**
+   * UI INITIALIZATION
+   */
+  function initUI() {
+    // Flavor grid
+    const fContainer = document.getElementById('flavor-grid');
+    if (fContainer) {
+      flavors.forEach(f => {
+        const item = document.createElement('div');
+        item.className = `flavor-item ${state.flavor.id === f.id ? 'active' : ''}`;
+        item.innerHTML = `
+                    <div class="macaron-marker" style="background: linear-gradient(135deg, ${f.frosting}, ${f.color})"></div>
+                    <span>${f.name}</span>
+                `;
+        item.onclick = () => {
+          document.querySelectorAll('.flavor-item').forEach(el => el.classList.remove('active'));
+          item.classList.add('active');
+          state.flavor = f;
+          updateUIContent();
+          updateCakeMaterials();
         };
+        fContainer.appendChild(item);
+      });
+    }
 
-        if (typeof DataService !== 'undefined') {
-          orderId = await DataService.saveOrder(orderData);
-          if (orderId) {
-            localStorage.setItem('delice_last_order_id', orderId);
-            if (window.refreshOrderTracking) window.refreshOrderTracking();
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const target = document.getElementById(btn.dataset.target);
+        if (target) target.classList.add('active');
+      };
+    });
+
+    // Option Cards (Frosting, Shape, Occasion)
+    ['glacage', 'format', 'occasion'].forEach(key => {
+      const grid = document.getElementById(`${key}-grid`);
+      if (!grid) return;
+      grid.querySelectorAll('.opt-card').forEach(card => {
+        card.onclick = () => {
+          grid.querySelectorAll('.opt-card').forEach(c => c.classList.remove('active'));
+          card.classList.add('active');
+          state[key] = card.dataset.val;
+          updateUIContent();
+          debounceRebuild();
+        };
+      });
+    });
+
+    // Sliders
+    const sliderEtages = document.getElementById('slider-etages');
+    if (sliderEtages) {
+      sliderEtages.oninput = (e) => {
+        state.etages = parseInt(e.target.value);
+        document.getElementById('etage-count').innerText = state.etages;
+        updateUIContent();
+        debounceRebuild();
+      };
+    }
+
+    const sliderParts = document.getElementById('slider-parts');
+    if (sliderParts) {
+      sliderParts.oninput = (e) => {
+        state.parts = parseInt(e.target.value);
+        document.getElementById('parts-count').innerText = state.parts;
+        updateUIContent();
+        updateSlices();
+      };
+    }
+
+    // Message
+    const msgInput = document.getElementById('msg-input');
+    if (msgInput) {
+      msgInput.oninput = (e) => {
+        state.message = e.target.value;
+        debounceRebuild();
+      };
+    }
+
+    // Photo Upload
+    const photoInput = document.getElementById('photo-cake-input');
+    if (photoInput) {
+      photoInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          state.userPhoto = re.target.result;
+          const preview = document.getElementById('photo-preview');
+          const container = document.getElementById('photo-preview-container');
+          if (preview) {
+            preview.src = state.userPhoto;
+            if (container) container.style.display = 'block';
           }
+          debounceRebuild();
+        };
+        reader.readAsDataURL(file);
+      };
+    }
 
-          // Notify Telegram
-          const telegramMsg = `🍰 <b>Nouvelle commande Cake Studio !</b>\n\n` +
-            `🍫 Saveur: ${cakeState.flavor.label}\n` +
-            `🎨 Glaçage: ${cakeState.color.label}\n` +
-            `⬟ Forme: ${shapeDisplay}\n` +
-            `🍽 Parts: ${cakeState.parts.label}\n` +
-            `🎉 Occasion: ${cakeState.occasion.label}\n` +
-            (cakeState.message ? `✍️ Message: "${cakeState.message}"\n` : '') +
-            `💰 <b>TOTAL: ${finalPrice.toLocaleString('fr-FR')} FCFA</b>`;
+    // Order Button
+    const orderBtn = document.getElementById('order-custom-cake');
+    if (orderBtn) {
+      orderBtn.onclick = handleOrder;
+    }
 
-          fetch('/api/notify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: telegramMsg })
-          }).catch(e => console.error("Telegram notify failed", e));
-        }
-      } catch (err) {
-        console.error("Order save failed", err);
+    // Reset
+    const resetBtn = document.getElementById('reset-config');
+    if (resetBtn) {
+      resetBtn.onclick = () => location.reload();
+    }
+
+    updateUIContent();
+  }
+
+  function updateUIContent() {
+    const summary = document.getElementById('summary-text');
+    if (summary) {
+      summary.innerHTML = `Gâteau <b>${state.format}</b> saveur <b>${state.flavor.name}</b>, de <b>${state.etages}</b> étages pour <b>${state.parts}</b> gourmands.`;
+    }
+  }
+
+  async function handleOrder() {
+    const BASE_SLICE_PRICE = 1500;
+    const totalPrice = state.parts * BASE_SLICE_PRICE;
+
+    const whatsappMsg = `*COMMANDE 3D STUDIO — DÉLICE CAKE* 🎨\n\n` +
+      `• Saveur        : ${state.flavor.name}\n` +
+      `• Glaçage       : ${state.glacage}\n` +
+      `• Format        : ${state.format}\n` +
+      `• Étages        : ${state.etages}\n` +
+      `• Parts         : ${state.parts}\n` +
+      `• Occasion      : ${state.occasion}\n` +
+      (state.message ? `• Message       : "${state.message}"\n` : '') +
+      (state.userPhoto ? `• Photo incluse : Oui (attachée par le client)\n` : '') +
+      `• PRIX ESTIMÉ   : *${totalPrice.toLocaleString('fr-FR')} FCFA*\n\n` +
+      `_Mon design a été configuré en 3D sur le site._`;
+
+    // Save to Firebase
+    try {
+      if (typeof DataService !== 'undefined') {
+        const orderData = {
+          type: '3d_studio',
+          items: [{
+            name: `Gâteau 3D Personnalisé`,
+            details: { ...state, flavor: state.flavor.name },
+            quantity: 1,
+            unitPrice: totalPrice,
+            totalPrice: totalPrice
+          }],
+          totalAmount: totalPrice,
+          status: 'new',
+          createdAt: new Date().toISOString()
+        };
+        const orderId = await DataService.saveOrder(orderData);
+        if (orderId) localStorage.setItem('delice_last_order_id', orderId);
       }
 
-      window.open(`https://api.whatsapp.com/send/?phone=22656808872&text=${encodeURIComponent(msg)}`, '_blank');
+      // Telegram
+      const telegramMsg = `🍰 <b>Nouveau gâteau 3D Studio !</b>\n\n` +
+        `🍫 Saveur: ${state.flavor.name}\n` +
+        `✨ Glaçage: ${state.glacage}\n` +
+        `📐 Format: ${state.format}\n` +
+        `🍰 Parts: ${state.parts}\n` +
+        (state.message ? `✍️ Message: "${state.message}"\n` : '') +
+        `💰 <b>TOTAL: ${totalPrice.toLocaleString('fr-FR')} FCFA</b>`;
+
+      sendTelegramNotification(telegramMsg);
+
+    } catch (e) { console.error("Order save error:", e); }
+
+    window.open(`https://api.whatsapp.com/send/?phone=22656808872&text=${encodeURIComponent(whatsappMsg)}`, '_blank');
+  }
+
+  function debounceRebuild() {
+    clearTimeout(rebuildTimeout);
+    rebuildTimeout = setTimeout(rebuildCake, 150);
+  }
+
+  /**
+   * THREE.JS CORE
+   */
+  function initThree() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(40, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+    camera.position.set(0, 5, controls.zoom);
+    camera.lookAt(0, 2, 0);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    canvasContainer.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.6);
+    sun.position.set(10, 20, 10); sun.castShadow = true;
+    scene.add(sun);
+
+    cakeGroup = new THREE.Group();
+    scene.add(cakeGroup);
+
+    // Plate
+    const plateGeo = new THREE.CylinderGeometry(5.2, 5, 0.2, 64);
+    const plateMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, metalness: 0.1 });
+    plate = new THREE.Mesh(plateGeo, plateMat);
+    plate.position.y = -0.1; plate.receiveShadow = true;
+    scene.add(plate);
+
+    rebuildCake();
+    setupInteractions();
+    animate();
+
+    // Resize observer
+    window.addEventListener('resize', () => {
+      camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
     });
   }
 
-  // Initial render
-  renderCakePreview();
+  function createShapeGeometry(type, r, h) {
+    if (type === 'Carré') return new THREE.BoxGeometry(r * 1.8, h, r * 1.8);
+    if (type === 'Rectangle') return new THREE.BoxGeometry(r * 2.5, h, r * 1.5);
+    if (type === 'Cœur') {
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0.4);
+      shape.bezierCurveTo(0, 0.4, -0.1, 0, -0.5, 0);
+      shape.bezierCurveTo(-1.1, 0, -1.1, 0.7, -1.1, 0.7);
+      shape.bezierCurveTo(-1.1, 1.1, -0.8, 1.54, 0, 1.9);
+      shape.bezierCurveTo(0.8, 1.54, 1.1, 1.1, 1.1, 0.7);
+      shape.bezierCurveTo(1.1, 0.7, 1.1, 0, 0.5, 0);
+      shape.bezierCurveTo(0.2, 0, 0, 0.4, 0, 0.4);
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05 });
+      geo.center(); geo.rotateX(Math.PI / 2); geo.rotateZ(Math.PI);
+      geo.scale(r * 0.9, 1, r * 0.9);
+      return geo;
+    }
+    return new THREE.CylinderGeometry(r, r, h, 64);
+  }
+
+  function rebuildCake() {
+    while (cakeGroup.children.length > 0) {
+      const c = cakeGroup.children[0];
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose());
+      cakeGroup.remove(c);
+    }
+
+    const h = 1.3; let radius = 3.6; let currentY = h / 2;
+
+    for (let i = 0; i < state.etages; i++) {
+      const tier = new THREE.Group();
+      const rT = radius - (i * 0.65);
+
+      // 1. Sponge (Internal)
+      const spongeGeo = createShapeGeometry(state.format, rT * 0.98, h);
+      const spongeMat = new THREE.MeshStandardMaterial({ map: generateTexture(state.flavor.id, 'sponge') });
+      const sponge = new THREE.Mesh(spongeGeo, spongeMat);
+      sponge.castShadow = true; sponge.receiveShadow = true;
+      tier.add(sponge);
+
+      // 2. Frosting (External)
+      if (state.glacage !== 'Naked') {
+        const frostGeo = createShapeGeometry(state.format, rT, h + 0.02);
+        let mat;
+        const tex = generateTexture(state.flavor.id, 'frosting');
+
+        if (state.glacage === 'Texturé') mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, bumpScale: 0.2 });
+        else if (state.glacage === 'Miroir') mat = new THREE.MeshPhongMaterial({ map: tex, shininess: 200, specular: 0xffffff });
+        else mat = new THREE.MeshPhongMaterial({ map: tex, shininess: 60 });
+
+        // --- PHOTO MAPPING ON TOP ETAG ---
+        if (i === state.etages - 1 && state.userPhoto) {
+          const photoTex = new THREE.TextureLoader().load(state.userPhoto);
+          // Use different material for the TOP face if it's a box, 
+          // or a mixed texture if it's a cylinder. Simplified for now:
+          mat.map = photoTex;
+        }
+
+        const frost = new THREE.Mesh(frostGeo, mat);
+        frost.castShadow = true;
+        tier.add(frost);
+      }
+
+      // 3. Chantilly details
+      if (state.glacage === 'Chantilly') {
+        const dGeo = new THREE.SphereGeometry(0.12, 12, 12);
+        const dMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
+        for (let j = 0; j < 16; j++) {
+          const d = new THREE.Mesh(dGeo, dMat);
+          const a = (j / 16) * Math.PI * 2;
+          d.position.set(Math.cos(a) * (rT - 0.15), h / 2, Math.sin(a) * (rT - 0.15));
+          tier.add(d);
+        }
+      }
+
+      tier.position.y = currentY;
+      tier.scale.set(0, 0, 0); // Animated pop-in
+      cakeGroup.add(tier);
+      currentY += h;
+    }
+
+    addDecorations(currentY - h);
+    updateSlices();
+    addPlaqueMessage(currentY - h);
+  }
+
+  function addDecorations(topY) {
+    const r = 3.6 - (state.etages - 1) * 0.65;
+    if (state.occasion === 'Anniversaire') {
+      const candleMat = new THREE.MeshPhongMaterial({ color: 0xFF1F8E });
+      for (let i = 0; i < 3; i++) {
+        const c = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.7), candleMat);
+        const f = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), new THREE.MeshBasicMaterial({ color: 0xFFD700 }));
+        f.position.y = 0.4; c.add(f);
+        const a = (i / 3) * Math.PI * 2;
+        c.position.set(Math.cos(a) * r * 0.5, topY + 0.65 + 0.35, Math.sin(a) * r * 0.5);
+        cakeGroup.add(c);
+      }
+    }
+  }
+
+  function addPlaqueMessage(topY) {
+    if (!state.message) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 400; canvas.height = 100;
+    const ctx = canvas.getContext('2d');
+    // Plaque design
+    ctx.fillStyle = '#4B2C20'; ctx.beginPath(); ctx.roundRect(0, 0, 400, 100, 20); ctx.fill();
+    ctx.strokeStyle = '#C9A84C'; ctx.lineWidth = 5; ctx.stroke();
+    ctx.fillStyle = '#FFFFFF'; ctx.font = "italic 32px 'Playfair Display'";
+    ctx.textAlign = 'center'; ctx.fillText(state.message, 200, 60);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    const plaque = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.05, 0.6), new THREE.MeshPhongMaterial({ map: tex }));
+    plaque.position.set(0, topY + 0.68, 0.8);
+    plaque.rotateX(-0.1);
+    cakeGroup.add(plaque);
+  }
+
+  function updateSlices() {
+    cakeGroup.children.forEach(c => { if (c.userData.isSlice) cakeGroup.remove(c); });
+    const topY = state.etages * 1.3;
+    const r = 3.6 - (state.etages - 1) * 0.65;
+    const mat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.1 });
+    for (let i = 0; i < state.parts; i++) {
+      const a = (i / state.parts) * Math.PI * 2;
+      const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, topY, 0), new THREE.Vector3(Math.cos(a) * r, topY, Math.sin(a) * r)]);
+      const line = new THREE.Line(geo, mat); line.userData.isSlice = true;
+      cakeGroup.add(line);
+    }
+  }
+
+  function updateCakeMaterials() {
+    cakeGroup.traverse(c => {
+      if (c.material && c.material.map && !state.userPhoto) {
+        const type = c.scale.y > 0.9 ? 'frosting' : 'sponge';
+        c.material.map = generateTexture(state.flavor.id, type);
+        c.material.needsUpdate = true;
+      }
+    });
+  }
+
+  function setupInteractions() {
+    const el = canvasContainer;
+    // Mouse logic
+    el.addEventListener('mousedown', e => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
+    window.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      controls.rotY += (e.clientX - prevMouse.x) * 0.01;
+      controls.rotX = Math.max(-0.4, Math.min(0.4, controls.rotX + (e.clientY - prevMouse.y) * 0.01));
+      prevMouse = { x: e.clientX, y: e.clientY };
+    });
+    window.addEventListener('mouseup', () => isDragging = false);
+
+    // Touch logic (Single finger rotate)
+    el.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', e => {
+      if (isDragging && e.touches.length === 1) {
+        controls.rotY += (e.touches[0].clientX - prevMouse.x) * 0.01;
+        controls.rotX = Math.max(-0.4, Math.min(0.4, controls.rotX + (e.touches[0].clientY - prevMouse.y) * 0.01));
+        prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => isDragging = false);
+
+    // Zoom logic
+    el.addEventListener('wheel', e => {
+      controls.zoom = Math.max(4, Math.min(12, controls.zoom + e.deltaY * 0.01));
+    }, { passive: true });
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    if (!isDragging) controls.rotY += 0.003;
+    cakeGroup.rotation.y = controls.rotY;
+    cakeGroup.rotation.x = controls.rotX;
+    camera.position.z += (controls.zoom - camera.position.z) * 0.1;
+
+    cakeGroup.children.forEach(c => {
+      if (c.type === 'Group' && c.scale.y < 1) {
+        c.scale.y += (1 - c.scale.y) * 0.1;
+        c.scale.x = c.scale.z = c.scale.y;
+      }
+    });
+    renderer.render(scene, camera);
+  }
+
+  // Launch
+  initUI();
+  initThree();
+
 })();
+
 
 
 // === Stats counter animation ===

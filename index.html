@@ -445,372 +445,237 @@
     <section class="personalization cake-studio" id="personnalisation">
         <div class="personalization__container">
             <div class="personalization__content reveal-clip">
-                <span class="section-label">Expérience Unique</span>
-                <h2 class="section-title">Délice <em>Cake Studio</em></h2>
+                <span class="section-label">Expérience Immersive</span>
+                <h2 class="section-title">Délice <em>3D Studio</em></h2>
                 <p class="section-sub">
-                    Devenez l'architecte de votre plaisir. Personnalisez votre gâteau en temps réel
-                    et visualisez votre création avant même qu'elle ne sorte de nos fours.
+                    Concevez votre gâteau idéal en 3D. Chaque détail est ajustable en temps réel pour une création qui
+                    vous ressemble.
                 </p>
 
-                <div class="cake-config">
-                    <!-- Tabs row 1 -->
-                    <div class="cake-config__tabs">
-                        <button class="config-tab active" data-category="flavor">
-                            <span class="material-symbols-outlined">restaurant</span> Saveur
-                        </button>
-                        <button class="config-tab" data-category="color">
-                            <span class="material-symbols-outlined">palette</span> Glaçage
-                        </button>
-                        <button class="config-tab" data-category="size">
-                            <span class="material-symbols-outlined">layers</span> Format
-                        </button>
-                    </div>
-                    <!-- Tabs row 2 -->
-                    <div class="cake-config__tabs" style="margin-top: 0.5rem;">
-                        <button class="config-tab" data-category="shape">
-                            <span class="material-symbols-outlined">category</span> Forme
-                        </button>
-                        <button class="config-tab" data-category="parts">
-                            <span class="material-symbols-outlined">pie_chart</span> Parts
-                        </button>
-                        <button class="config-tab" data-category="occasion">
-                            <span class="material-symbols-outlined">celebration</span> Occasion
-                        </button>
-                        <button class="config-tab" data-category="message">
-                            <span class="material-symbols-outlined">edit_note</span> Message
-                        </button>
-                    </div>
+                <div class="studio-layout">
+                    <!-- Left: Configuration Panels -->
+                    <div class="studio-controls">
+                        <nav class="studio-tabs">
+                            <div class="tabs-row">
+                                <button class="tab-btn active" data-target="tab-saveur">
+                                    <svg class="icon">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path d="M12 8v8M8 12h8" />
+                                    </svg> Saveur
+                                </button>
+                                <button class="tab-btn" data-target="tab-glacage">
+                                    <svg class="icon">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                                    </svg> Glaçage
+                                </button>
+                                <button class="tab-btn" data-target="tab-format">
+                                    <svg class="icon">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                        <line x1="9" y1="3" x2="9" y2="21" />
+                                        <line x1="15" y1="3" x2="15" y2="21" />
+                                        <line x1="3" y1="9" x2="21" y2="9" />
+                                        <line x1="3" y1="15" x2="21" y2="15" />
+                                    </svg> Format
+                                </button>
+                            </div>
+                            <div class="tabs-row">
+                                <button class="tab-btn" data-target="tab-etages">
+                                    <svg class="icon">
+                                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                                        <polyline points="13 2 13 9 20 9" />
+                                    </svg> Étages
+                                </button>
+                                <button class="tab-btn" data-target="tab-parts">
+                                    <svg class="icon">
+                                        <path d="M21.21 15.89A10 10 0 1 1 8 2.83M22 12A10 10 0 0 0 12 2v10z" />
+                                    </svg> Parts
+                                </button>
+                                <button class="tab-btn" data-target="tab-occasion">
+                                    <svg class="icon">
+                                        <polyline points="20 12 20 22 4 22 4 12" />
+                                        <rect x="2" y="7" width="20" height="5" />
+                                        <line x1="12" y1="22" x2="12" y2="7" />
+                                        <path d="M7 7V3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v4" />
+                                    </svg> Déco
+                                </button>
+                                <button class="tab-btn" data-target="tab-photo">
+                                    <svg class="icon">
+                                        <path
+                                            d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                        <circle cx="12" cy="13" r="4" />
+                                    </svg> Photo
+                                </button>
+                            </div>
+                        </nav>
 
-                    <div class="cake-config__options">
-                        <!-- Flavor -->
-                        <div class="config-panel active" data-panel="flavor">
-                            <div class="config-grid">
-                                <button class="config-opt active" data-value="choc" data-color="#4A2C2A">
-                                    <div class="opt-dot" style="background:#4A2C2A"></div><span>Chocolat Noir</span>
-                                </button>
-                                <button class="config-opt" data-value="vanilla" data-color="#F3E5AB">
-                                    <div class="opt-dot" style="background:#E8C86A"></div><span>Vanille Bourbon</span>
-                                </button>
-                                <button class="config-opt" data-value="strawberry" data-color="#FF5A5F">
-                                    <div class="opt-dot" style="background:#FF5A5F"></div><span>Fraise Fraîche</span>
-                                </button>
-                                <button class="config-opt" data-value="pistachio" data-color="#93C572">
-                                    <div class="opt-dot" style="background:#93C572"></div><span>Pistache</span>
-                                </button>
-                                <button class="config-opt" data-value="caramel" data-color="#C68642">
-                                    <div class="opt-dot" style="background:#C68642"></div><span>Caramel Beurre
-                                        Salé</span>
-                                </button>
-                                <button class="config-opt" data-value="lemon" data-color="#FFDA00">
-                                    <div class="opt-dot" style="background:#FFDA00; border:1px solid #ccc;"></div>
-                                    <span>Citron Givré</span>
-                                </button>
+                        <div class="studio-viewport">
+                            <!-- SAVEUR -->
+                            <div id="tab-saveur" class="tab-content active">
+                                <div class="flavor-grid" id="flavor-grid"></div>
+                            </div>
+                            <!-- GLAÇAGE -->
+                            <div id="tab-glacage" class="tab-content">
+                                <div class="options-list" id="glacage-grid">
+                                    <div class="opt-card active" data-val="Lisse">
+                                        <div class="opt-label"><svg class="icon">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                            </svg> Lisse & Brillant</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                    <div class="opt-card" data-val="Texturé">
+                                        <div class="opt-label"><svg class="icon">
+                                                <path
+                                                    d="M2 12c.5.5 1.5.5 2 0s1.5-.5 2 0 1.5.5 2 0 1.5-.5 2 0 1.5.5 2 0 1.5-.5 2 0 1.5-.5 2 0 1.5-.5 2 0" />
+                                            </svg> Effet Texturé</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                    <div class="opt-card" data-val="Naked">
+                                        <div class="opt-label"><svg class="icon">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <line x1="12" y1="8" x2="12" y2="16" />
+                                                <line x1="8" y1="12" x2="16" y2="12" />
+                                            </svg> Naked Cake</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                    <div class="opt-card" data-val="Miroir">
+                                        <div class="opt-label"><svg class="icon">
+                                                <path
+                                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" />
+                                            </svg> Miroir</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                    <div class="opt-card" data-val="Chantilly">
+                                        <div class="opt-label"><svg class="icon">
+                                                <path
+                                                    d="M12 2c-4 0-7 3-7 7 0 2 1 3.5 3 4.5V22h8v-8.5c2-1 3-2.5 3-4.5 0-4-3-7-7-7z" />
+                                            </svg> Chantilly</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- FORMAT -->
+                            <div id="tab-format" class="tab-content">
+                                <div class="options-list" id="format-grid">
+                                    <div class="opt-card active" data-val="Rond">
+                                        <div class="opt-label"><svg class="icon">
+                                                <circle cx="12" cy="12" r="10" />
+                                            </svg> Rond</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                    <div class="opt-card" data-val="Carré">
+                                        <div class="opt-label"><svg class="icon">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                            </svg> Carré</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                    <div class="opt-card" data-val="Rectangle">
+                                        <div class="opt-label"><svg class="icon">
+                                                <rect x="3" y="6" width="18" height="12" rx="2" ry="2" />
+                                            </svg> Rectangle</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                    <div class="opt-card" data-val="Cœur">
+                                        <div class="opt-label"><svg class="icon">
+                                                <path
+                                                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                            </svg> Cœur</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- ETAGES -->
+                            <div id="tab-etages" class="tab-content">
+                                <div class="slider-box">
+                                    <div class="slider-header"><span>Étages</span> <span class="val"
+                                            id="etage-count">1</span></div>
+                                    <input type="range" id="slider-etages" class="custom-slider" min="1" max="5"
+                                        value="1">
+                                </div>
+                            </div>
+                            <!-- PARTS -->
+                            <div id="tab-parts" class="tab-content">
+                                <div class="slider-box">
+                                    <div class="slider-header"><span>Nombre de parts</span> <span class="val"
+                                            id="parts-count">8</span></div>
+                                    <input type="range" id="slider-parts" class="custom-slider" min="4" max="50"
+                                        value="8">
+                                </div>
+                            </div>
+                            <!-- OCCASION -->
+                            <div id="tab-occasion" class="tab-content">
+                                <div class="options-list" id="occasion-grid">
+                                    <div class="opt-card active" data-val="Anniversaire">
+                                        <div class="opt-label">Anniversaire</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                    <div class="opt-card" data-val="Mariage">
+                                        <div class="opt-label">Mariage</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                    <div class="opt-card" data-val="Baptême">
+                                        <div class="opt-label">Baptême</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                    <div class="opt-card" data-val="Saint-Valentin">
+                                        <div class="opt-label">Saint-Valentin</div>
+                                        <div class="check-circle"></div>
+                                    </div>
+                                </div>
+                                <div class="message-box" style="margin-top: 1rem;">
+                                    <textarea id="msg-input" class="msg-area"
+                                        placeholder="Votre message sur le gâteau..." maxlength="35"></textarea>
+                                </div>
+                            </div>
+                            <!-- PHOTO -->
+                            <div id="tab-photo" class="tab-content">
+                                <div class="upload-box">
+                                    <label for="cake-photo-upload" class="upload-label">
+                                        <svg class="icon" style="width:30px; height:30px; margin-bottom:10px;">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                                        </svg>
+                                        <span>Ajouter une photo sur le gâteau</span>
+                                        <input type="file" id="photo-cake-input" accept="image/*" style="display:none;">
+                                    </label>
+                                    <div id="photo-preview-container"
+                                        style="display:none; margin-top:1rem; text-align:center;">
+                                        <img id="photo-preview" src=""
+                                            style="max-width:100px; border-radius:8px; border:2px solid var(--pink);">
+                                        <button id="remove-photo"
+                                            style="display:block; margin:0.5rem auto; color:red; background:none; border:none; cursor:pointer; font-size:0.8rem;">Supprimer</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Color (Glacage) -->
-                        <div class="config-panel" data-panel="color">
-                            <div class="config-grid config-grid--colors">
-                                <button class="config-opt active" data-value="pink" data-color="#E8178A">
-                                    <div class="opt-dot" style="background:#E8178A"></div><span>Rose Délice</span>
-                                </button>
-                                <button class="config-opt" data-value="gold" data-color="#D4AF37">
-                                    <div class="opt-dot" style="background:#D4AF37"></div><span>Or Royal</span>
-                                </button>
-                                <button class="config-opt" data-value="blue" data-color="#5DADE2">
-                                    <div class="opt-dot" style="background:#5DADE2"></div><span>Bleu Céleste</span>
-                                </button>
-                                <button class="config-opt" data-value="white" data-color="#E0E0E0">
-                                    <div class="opt-dot" style="background:#E0E0E0; border:1px solid #ddd;"></div>
-                                    <span>Blanc Pur</span>
-                                </button>
-                                <button class="config-opt" data-value="purple" data-color="#9B59B6">
-                                    <div class="opt-dot" style="background:#9B59B6"></div><span>Violet Velours</span>
-                                </button>
-                                <button class="config-opt" data-value="mint" data-color="#1ABC9C">
-                                    <div class="opt-dot" style="background:#1ABC9C"></div><span>Menthe Fraîche</span>
-                                </button>
-                                <button class="config-opt" data-value="coral" data-color="#E74C3C">
-                                    <div class="opt-dot" style="background:#E74C3C"></div><span>Corail Festif</span>
-                                </button>
-                                <button class="config-opt" data-value="black" data-color="#2C3E50">
-                                    <div class="opt-dot" style="background:#2C3E50"></div><span>Nuit Étoilée</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Size -->
-                        <div class="config-panel" data-panel="size">
-                            <div class="config-grid">
-                                <button class="config-opt active" data-value="small" data-tiers="1">
-                                    <span class="material-symbols-outlined opt-icon">cake</span><span>Standard (1
-                                        étage)</span>
-                                </button>
-                                <button class="config-opt" data-value="large" data-tiers="2">
-                                    <span class="material-symbols-outlined opt-icon">layers</span><span>Festif (2
-                                        étages)</span>
-                                </button>
-                                <button class="config-opt" data-value="grand" data-tiers="3">
-                                    <span class="material-symbols-outlined opt-icon">celebration</span><span>Gala (3
-                                        étages)</span>
-                                </button>
-                            </div>
-                        </div>
-                        <!-- Shape -->
-                        <div class="config-panel" data-panel="shape">
-                            <div class="config-grid">
-                                <button class="config-opt active" data-value="square" data-shape-label="Carré élégant">
-                                    <svg class="shape-preview-icon" viewBox="0 0 40 40">
-                                        <rect x="4" y="4" width="32" height="32" rx="4" fill="currentColor" />
-                                    </svg><span>Carré</span>
-                                </button>
-                            </div>
-                            <!-- Custom Shape Description field -->
-                            <div class="custom-shape-wrap" style="margin-top: 1.5rem;">
-                                <label for="custom-shape-input"
-                                    style="font-size: 0.9rem; font-weight: 700; color: var(--black); display: block; margin-bottom: 0.5rem;">
-                                    <span class="material-symbols-outlined"
-                                        style="font-size:1.1rem; vertical-align:middle;">edit</span>
-                                    Autre forme ? Décrivez-la ici :
-                                </label>
-                                <input id="custom-shape-input" type="text"
-                                    placeholder="Ex: Forme de nuage, Chiffre 5, etc." class="cake-message-input"
-                                    style="padding: 0.8rem 1rem; border-radius: 12px;" />
-                            </div>
-                        </div>
-
-                        <!-- Parts -->
-                        <div class="config-panel" data-panel="parts">
-                            <div class="config-grid">
-                                <button class="config-opt active" data-value="8" data-parts-label="8 parts (petit)">
-                                    <span class="material-symbols-outlined opt-icon">looks_one</span><span>8
-                                        parts</span>
-                                </button>
-                                <button class="config-opt" data-value="12" data-parts-label="12 parts (moyen)">
-                                    <span class="material-symbols-outlined opt-icon">looks_two</span><span>12
-                                        parts</span>
-                                </button>
-                                <button class="config-opt" data-value="20" data-parts-label="20 parts (grand)">
-                                    <span class="material-symbols-outlined opt-icon">looks_3</span><span>20 parts</span>
-                                </button>
-                                <button class="config-opt" data-value="30" data-parts-label="30 parts (XXL)">
-                                    <span class="material-symbols-outlined opt-icon">looks_4</span><span>30 parts</span>
-                                </button>
-                                <button class="config-opt" data-value="50" data-parts-label="50 parts (événement)">
-                                    <span class="material-symbols-outlined opt-icon">groups</span><span>50 parts</span>
-                                </button>
-                                <button class="config-opt" data-value="custom" data-parts-label="Nombre personnalisé">
-                                    <span
-                                        class="material-symbols-outlined opt-icon">tune</span><span>Personnalisé</span>
-                                </button>
-                            </div>
-                            <!-- Custom parts input (hidden by default) -->
-                            <div id="custom-parts-container" style="display: none; margin-top: 1rem; padding: 0 1rem;">
-                                <label
-                                    style="display: block; font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Nombre
-                                    de parts souhaité :</label>
-                                <input type="number" id="custom-parts-input" min="1" placeholder="Ex: 45"
-                                    class="config-text-input"
-                                    style="width: 100%; border: 2px solid var(--pink-pale); border-radius: 8px; padding: 0.6rem;" />
-                                <small style="color: var(--pink); font-size: 0.75rem;">* Prix calculé à 1 500 FCFA /
-                                    part</small>
-                            </div>
-                        </div>
-
-                        <!-- Occasion -->
-                        <div class="config-panel" data-panel="occasion">
-                            <div class="config-grid">
-                                <button class="config-opt active" data-value="birthday" data-occ-label="Anniversaire">
-                                    <span
-                                        class="material-symbols-outlined opt-icon">cake</span><span>Anniversaire</span>
-                                </button>
-                                <button class="config-opt" data-value="wedding" data-occ-label="Mariage">
-                                    <span class="material-symbols-outlined opt-icon">favorite</span><span>Mariage</span>
-                                </button>
-                                <button class="config-opt" data-value="baby" data-occ-label="Naissance">
-                                    <span
-                                        class="material-symbols-outlined opt-icon">child_care</span><span>Naissance</span>
-                                </button>
-                                <button class="config-opt" data-value="baptism" data-occ-label="Baptême">
-                                    <span
-                                        class="material-symbols-outlined opt-icon">water_drop</span><span>Baptême</span>
-                                </button>
-                                <button class="config-opt" data-value="graduation" data-occ-label="Diplôme">
-                                    <span class="material-symbols-outlined opt-icon">school</span><span>Diplôme</span>
-                                </button>
-                                <button class="config-opt" data-value="valentine" data-occ-label="Saint-Valentin">
-                                    <span
-                                        class="material-symbols-outlined opt-icon">volunteer_activism</span><span>Saint-Valentin</span>
-                                </button>
-                                <button class="config-opt" data-value="corporate" data-occ-label="Entreprise">
-                                    <span
-                                        class="material-symbols-outlined opt-icon">business_center</span><span>Entreprise</span>
-                                </button>
-                                <button class="config-opt" data-value="other" data-occ-label="Autre occasion">
-                                    <span class="material-symbols-outlined opt-icon">stars</span><span>Autre</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Message -->
-                        <div class="config-panel" data-panel="message">
-                            <div class="message-input-wrap">
-                                <label for="cake-message-input">
-                                    <span class="material-symbols-outlined"
-                                        style="font-size:1.1rem; vertical-align:middle;">edit_note</span>
-                                    Votre message sur le gâteau
-                                </label>
-                                <input id="cake-message-input" type="text" maxlength="40"
-                                    placeholder="Ex: Joyeux Anniversaire Sofia !" class="cake-message-input" />
-                                <span class="char-count"><span id="msg-char-count">0</span>/40</span>
-                                <p class="message-hint">Ce texte sera inscrit en glaçage royal sur votre gâteau.</p>
-                            </div>
+                        <div class="studio-summary">
+                            <p id="summary-text">Personnalisation en cours...</p>
+                            <button class="btn btn--primary order-btn-3d" id="order-custom-cake"
+                                style="width:100%; margin-top:1rem;">
+                                Commander cette création
+                            </button>
                         </div>
                     </div>
-                </div>
 
-                <div class="personalization__cta">
-                    <button class="btn btn--primary" id="order-custom-cake" data-magnetic>
-                        <span class="material-symbols-outlined"
-                            style="font-size:1.1rem; vertical-align:middle; margin-right:6px;">shopping_bag</span>
-                        Commander cette création
-                    </button>
-                    <p class="cta-hint">Prix estimé en fonction de vos choix</p>
-                </div>
-            </div>
-
-            <div class="personalization__visual reveal-clip">
-                <div class="cake-preview-container">
-                    <!-- SVG CAKE VISUALIZER â€” shape-aware via clipPath -->
-                    <svg viewBox="0 0 400 500" class="cake-svg" id="cake-main-svg">
-                        <defs>
-                            <filter id="cake-shadow" x="-30%" y="-30%" width="160%" height="160%">
-                                <feGaussianBlur in="SourceAlpha" stdDeviation="8" />
-                                <feOffset dx="0" dy="12" result="offsetblur" />
-                                <feComponentTransfer>
-                                    <feFuncA type="linear" slope="0.25" />
-                                </feComponentTransfer>
-                                <feMerge>
-                                    <feMergeNode />
-                                    <feMergeNode in="SourceGraphic" />
-                                </feMerge>
-                            </filter>
-                            <linearGradient id="cake-icing-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" style="stop-color:rgba(255,255,255,0.5);stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:rgba(255,255,255,0);stop-opacity:1" />
-                            </linearGradient>
-                            <linearGradient id="shine-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" style="stop-color:rgba(255,255,255,0);stop-opacity:0" />
-                                <stop offset="40%" style="stop-color:rgba(255,255,255,0.15);stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:rgba(255,255,255,0);stop-opacity:0" />
-                            </linearGradient>
-
-                            <!-- Shape ClipPaths for Bottom Tier -->
-                            <clipPath id="clip-square-b">
-                                <rect x="100" y="320" width="200" height="100" rx="8" />
-                            </clipPath>
-
-                            <!-- Shape ClipPaths for Middle Tier -->
-                            <clipPath id="clip-square-m">
-                                <rect x="125" y="240" width="150" height="80" rx="6" />
-                            </clipPath>
-
-                            <!-- Shape ClipPaths for Top Tier -->
-                            <clipPath id="clip-square-t">
-                                <rect x="150" y="178" width="100" height="62" rx="5" />
-                            </clipPath>
-                        </defs>
-
-                        <!-- Plate shadow -->
-                        <ellipse cx="200" cy="430" rx="150" ry="22" fill="rgba(0,0,0,0.06)" />
-                        <!-- Plate -->
-                        <ellipse cx="200" cy="424" rx="135" ry="20" fill="#f8f8f8" stroke="#e0e0e0" stroke-width="2" />
-
-                        <!-- ====== TIER 3 — BOTTOM ====== -->
-                        <g id="tier-3" class="cake-tier" filter="url(#cake-shadow)">
-                            <!-- Bottom Depth layer for 3D effect -->
-                            <rect x="100" y="325" width="200" height="100" rx="10" fill="rgba(0,0,0,0.15)"
-                                class="cake-body-depth" style="filter: blur(2px);" />
-                            <!-- Base shape (changes via clipPath) -->
-                            <rect x="100" y="320" width="200" height="100" rx="10" class="cake-body cake-shape-b"
-                                fill="#E8178A" id="t3-base" />
-                            <!-- Icing drip top -->
-                            <rect x="100" y="320" width="200" height="22" rx="6" fill="url(#cake-icing-grad)"
-                                class="cake-icing-b" id="t3-icing" />
-                            <!-- Flavor lines -->
-                            <line x1="105" y1="354" x2="295" y2="354" stroke="rgba(0,0,0,0.12)" stroke-width="7"
-                                class="flavor-line" />
-                            <line x1="105" y1="383" x2="295" y2="383" stroke="rgba(0,0,0,0.12)" stroke-width="7"
-                                class="flavor-line" />
-                            <!-- Shine -->
-                            <rect x="100" y="320" width="200" height="100" fill="url(#shine-grad)" class="cake-shine-b"
-                                id="t3-shine" />
-                        </g>
-
-                        <!-- ====== TIER 2 — MIDDLE ====== -->
-                        <g id="tier-2" class="cake-tier"
-                            style="opacity:0; transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1);">
-                            <!-- Middle Depth layer -->
-                            <rect x="125" y="244" width="150" height="80" rx="8" fill="rgba(0,0,0,0.12)"
-                                class="cake-body-depth" style="filter: blur(2px);" />
-                            <rect x="125" y="240" width="150" height="80" rx="8" class="cake-body cake-shape-m"
-                                fill="#E8178A" id="t2-base" />
-                            <rect x="125" y="240" width="150" height="16" rx="5" fill="url(#cake-icing-grad)"
-                                class="cake-icing-m" id="t2-icing" />
-                            <line x1="130" y1="268" x2="270" y2="268" stroke="rgba(0,0,0,0.12)" stroke-width="6"
-                                class="flavor-line" />
-                            <line x1="130" y1="295" x2="270" y2="295" stroke="rgba(0,0,0,0.12)" stroke-width="6"
-                                class="flavor-line" />
-                            <rect x="125" y="240" width="150" height="80" fill="url(#shine-grad)"
-                                class="cake-shine-m" />
-                        </g>
-
-                        <!-- ====== TIER 1 — TOP ====== -->
-                        <g id="tier-1" class="cake-tier"
-                            style="opacity:0; transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1);">
-                            <!-- Top Depth layer -->
-                            <rect x="150" y="181" width="100" height="62" rx="6" fill="rgba(0,0,0,0.1)"
-                                class="cake-body-depth" style="filter: blur(2px);" />
-                            <rect x="150" y="178" width="100" height="62" rx="6" class="cake-body cake-shape-t"
-                                fill="#E8178A" id="t1-base" />
-                            <rect x="150" y="178" width="100" height="14" rx="4" fill="url(#cake-icing-grad)"
-                                class="cake-icing-t" id="t1-icing" />
-                            <line x1="155" y1="200" x2="245" y2="200" stroke="rgba(0,0,0,0.12)" stroke-width="5"
-                                class="flavor-line" />
-                            <line x1="155" y1="220" x2="245" y2="220" stroke="rgba(0,0,0,0.12)" stroke-width="5"
-                                class="flavor-line" />
-                            <rect x="150" y="178" width="100" height="62" fill="url(#shine-grad)"
-                                class="cake-shine-t" />
-                        </g>
-
-                        <!-- Topper (3-tier only) -->
-                        <g class="cake-topper" style="opacity:0; transition: opacity 0.4s ease;">
-                            <circle cx="200" cy="170" r="12" fill="#D4AF37" opacity="0.9" />
-                            <line x1="200" y1="155" x2="200" y2="142" stroke="#D4AF37" stroke-width="3"
-                                stroke-linecap="round" />
-                            <polygon
-                                points="200,138 203,145 210,145 205,149 207,156 200,152 193,156 195,149 190,145 197,145"
-                                fill="#D4AF37" />
-                        </g>
-
-                        <!-- Message text -->
-                        <text class="cake-message-text" x="200" y="412" text-anchor="middle"
-                            font-family="'Playfair Display', serif" font-size="11" fill="rgba(255,255,255,0.85)"
-                            font-style="italic"></text>
-                    </svg>
-
-                    <!-- Floating info bubbles -->
-                    <div class="preview-info-bubble info-bubble-1">
-                        <span class="material-symbols-outlined" style="font-size:14px;">star</span> Artisanal
-                    </div>
-                    <div class="preview-info-bubble info-bubble-2">
-                        <span class="material-symbols-outlined" style="font-size:14px;">favorite</span> Sur mesure
-                    </div>
-                    <div class="preview-info-bubble info-bubble-3">
-                        <span class="material-symbols-outlined" style="font-size:14px;">local_florist</span> Fait main
+                    <!-- Right: 3D Canvas -->
+                    <div class="studio-preview">
+                        <div id="cake-viewer"></div>
+                        <div class="status-labels">
+                            <div class="status-label"><svg class="icon">
+                                    <path
+                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" />
+                                </svg> Excellence Artisanale</div>
+                            <div class="status-label" style="animation-delay: 1.5s"><svg class="icon">
+                                    <path
+                                        d="M6 18h12M4 14h16M12 4c-4 0-7 3-7 7 0 2.2 1.5 4 3.5 4.7l.5 4.3h6l.5-4.3c2-.7 3.5-2.5 3.5-4.7 0-4-3-7-7-7z" />
+                                </svg> Fait Main</div>
+                        </div>
+                        <div class="rotate-hint">Explorez à 360°</div>
                     </div>
                 </div>
             </div>
+        </div>
+        </div>
+
         </div>
     </section>
 
@@ -1102,6 +967,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="firebase-config.js"></script>
+    <!-- 3D Engine: Three.js (r128) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="script.js?v=confirm_diagnostics_v1" defer></script>
     <!-- Order Tracking Widget -->
     <style>
