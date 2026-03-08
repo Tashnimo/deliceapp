@@ -809,11 +809,20 @@ document.addEventListener('DOMContentLoaded', () => {
         ordersTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Chargement des commandes...</td></tr>';
 
         if (typeof DataService.subscribeToOrders === 'function') {
-            orderUnsubscribe = DataService.subscribeToOrders((newOrders) => {
+            const unsub = DataService.subscribeToOrders((newOrders) => {
                 orders = newOrders;
                 renderOrdersTable();
                 updateNewOrdersBadge();
             });
+
+            if (unsub) {
+                orderUnsubscribe = unsub;
+            } else {
+                // Fallback if subscribe returns null (non-realtime mode)
+                orders = await DataService.getOrders();
+                renderOrdersTable();
+                updateNewOrdersBadge();
+            }
         } else {
             // Fallback for mock/local
             orders = await DataService.getOrders();
@@ -872,10 +881,18 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredOrders.forEach(o => {
             const tr = document.createElement('tr');
 
+            // Format Status & Badge
+            const currentStatus = o.status || 'new';
+            const statusConfig = STATUS_MAP[currentStatus] || STATUS_MAP['new'];
+            const badgeHtml = `<span class="badge ${statusConfig.class}" style="background-color: ${statusConfig.color}20; color: ${statusConfig.color}; border: 1px solid ${statusConfig.color}40;">${statusConfig.label}</span>`;
+
             // Format Date
             let dateStr = 'Inconnue';
             if (o.createdAt) {
-                const d = new Date(o.createdAt);
+                let d;
+                if (o.createdAt.toDate) d = o.createdAt.toDate();
+                else d = new Date(o.createdAt);
+
                 dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             }
 
