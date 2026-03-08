@@ -2214,11 +2214,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // La clé HF_API_KEY est stockée de manière sécurisée dans les variables
   // d'environnement Vercel. Le frontend appelle uniquement /api/chat.
 
+  let chatHistoryMessages = [];
+  let systemContext = "";
+
   async function initSystemContext() {
     try {
       const products = await DataService.getProducts();
       const activeProducts = products.filter(p => p.status === 'active');
       const kbContent = await DataService.getKnowledgeBase();
+
+      console.log("Délice AI - Chargement des données dynamiques...");
+      console.log("- Produits actifs :", activeProducts.length);
+      console.log("- Base de connaissance récupérée :", kbContent ? "Oui (longueur: " + kbContent.length + ")" : "Non (vide)");
 
       let productListText = activeProducts.map(p => `- ${p.name} : ${p.price} FCFA`).join("\n");
 
@@ -2235,7 +2242,10 @@ Tu parles uniquement en français.
 - Pose toujours les bonnes questions pour faire avancer la commande.
 - Tu dois toujours terminer tes phrases.
 
-## 🛒 MENU DYNAMIQUE (PRIX RÉELS)
+## 📖 INFOS COMPLÉMENTAIRES (BASE DE CONNAISSANCES ADMIN)
+${kbContent || "Pâtisserie artisanale proposant des gâteaux personnalisés et des boules de neige à Ouagadougou."}
+
+## 🛒 MENU DYNAMIQUE (PRODUITS ADMIN)
 ${productListText || "Gâteau d'anniversaire (1500 FCFA/part), Boules de neige (500 FCFA/sachet)"}
 
 ## 🎂 PRODUITS & DÉTAILS
@@ -2254,17 +2264,13 @@ Pour un gâteau, demande TOUJOURS :
 - Retrait : Gratuit à Saaba / Sanyiri.
 - IMPORTANT : Mentionne que le total dans la facture est sans frais de livraison.
 
-## 📌 RÈGLES TECHNIQUES (NE PAS MONTRER)
-- Pour confirmer une commande, ajoute SILENCIEUSEMENT le tag [CONFIRM_ORDER] à la fin de ta réponse de confirmation finale après avoir eu toutes les infos (y compris livraison/retrait).
-- KNOWLEDGE BASE : ${kbContent || "Pâtisserie artisanale à Ouagadougou."}`;
+## 📌 RÈGLES TECHNIQUES (INTERNE)
+- Pour confirmer une commande, ajoute SILENCIEUSEMENT le tag [CONFIRM_ORDER] à la fin de ta réponse de confirmation finale après avoir eu toutes les infos (y compris livraison/retrait).`;
     } catch (e) {
       console.error("AI Context Init Fail:", e);
       systemContext = "Assistant Délice Cake. Aidez le client avec le menu.";
     }
   }
-
-  let chatHistoryMessages = [];
-  let systemContext = "";
 
   window.generateAIResponse = async function (userText) {
     if (!systemContext || systemContext === "") {
@@ -2287,12 +2293,9 @@ Pour un gâteau, demande TOUJOURS :
     };
 
     try {
-      // Appel via le proxy sécurisé Vercel — la clé HF_API_KEY est sur Vercel
       const response = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
@@ -2311,7 +2314,6 @@ Pour un gâteau, demande TOUJOURS :
       console.log("DEBUG AI - Réponse brute :", result);
 
       let botText = "";
-      // Détection flexible du format
       if (result.choices && result.choices[0] && result.choices[0].message) {
         botText = result.choices[0].message.content;
       } else if (Array.isArray(result) && result[0] && result[0].generated_text) {
@@ -2339,9 +2341,4 @@ Pour un gâteau, demande TOUJOURS :
   setTimeout(showProactiveNotifPrompt, 4000);
 });
 
-
-
-
-
-// Vercel Cache Busting Version: 08/03/2026 - Restoration v2 (Definitive Fix)
-
+// Vercel Cache Busting Version: 08/03/2026 - Restoration v4 (Dynamic Context Fix)
