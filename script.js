@@ -1910,19 +1910,37 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           // 2. DELIVERY: Detect if "livraison" is requested (PRIORITY over fallback)
-          const hasLivraisonKeywords = cleanResponseNorm.includes("livraison") || combinedLogNorm.includes("livraison") || cleanResponseNorm.includes("livrer") || combinedLogNorm.includes("livrer");
-          if (hasLivraisonKeywords) {
-            const alreadyHasLivraison = detectedItems.some(it => it.name.toLowerCase().includes("livraison"));
-            if (!alreadyHasLivraison) {
-              detectedItems.push({
-                name: "Frais de livraison",
-                quantity: 1,
-                unitPrice: 1000,
-                totalPrice: 1000,
-                isDelivery: true
-              });
-              estimatedTotal += 1000;
-            }
+          // Robust check for affirmative delivery vs pickup
+          const wantsLivraison = (cleanResponseNorm.includes("livraison") || combinedLogNorm.includes("livraison") || cleanResponseNorm.includes("livrer") || combinedLogNorm.includes("livrer")) &&
+            !cleanResponseNorm.includes("pas de livraison") &&
+            !combinedLogNorm.includes("pas de livraison") &&
+            !cleanResponseNorm.includes("recuperer") &&
+            !cleanResponseNorm.includes("chercher");
+
+          const isPickup = cleanResponseNorm.includes("recuperer") || combinedLogNorm.includes("recuperer") ||
+            cleanResponseNorm.includes("chercher") || combinedLogNorm.includes("chercher") ||
+            cleanResponseNorm.includes("boutique") || cleanResponseNorm.includes("magasin");
+
+          let deliveryItem = null;
+          if (wantsLivraison && !isPickup) {
+            deliveryItem = {
+              name: "Frais de livraison",
+              quantity: 1,
+              unitPrice: 1000,
+              totalPrice: 1000,
+              isDelivery: true
+            };
+            detectedItems.push(deliveryItem);
+            estimatedTotal += 1000;
+          } else {
+            deliveryItem = {
+              name: "Retrait en boutique",
+              quantity: 1,
+              unitPrice: 0,
+              totalPrice: 0,
+              isPickup: true
+            };
+            detectedItems.push(deliveryItem);
           }
 
           // 3. FALLBACK: Catch items the AI mentions but are not in the database (Regex list items)
@@ -1986,8 +2004,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="font-size: 0.9em; margin: 8px 0; border-bottom: 1px solid #ffdeed; padding-bottom: 8px;">
                   ${itemsTable}
                 </div>
-                ${estimatedTotal > 0 ? `Total : <strong>${estimatedTotal.toLocaleString('fr-FR')} FCFA</strong><br/>` : `<i style="font-size:0.8em;">Prix final calculé par l'admin</i><br/>`}
-                <span style="font-size: 0.85em; opacity: 0.8;">Est-ce correct ?</span>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.95em;">
+                  <span>Sous-total:</span>
+                  <span>${(estimatedTotal - (deliveryItem?.isDelivery ? 1000 : 0)).toLocaleString('fr-FR')} FCFA</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.95em; color:${deliveryItem?.isDelivery ? '#E8178A' : '#666'};">
+                  <span>${deliveryItem?.isDelivery ? 'Livraison:' : 'Mode:'}</span>
+                  <span>${deliveryItem?.isDelivery ? '1 000 FCFA' : 'Retrait Gratuit'}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-top:1px dashed #E8178A; padding-top:8px; font-weight:800;">
+                  <span>TOTAL TTC:</span>
+                  <span>${estimatedTotal.toLocaleString('fr-FR')} FCFA</span>
+                </div>
                 <div style="margin-top:12px; display:flex; gap:10px; justify-content: center;">
                   <button id="${confirmId}-yes" class="btn btn--primary" style="padding: 6px 16px; font-size: 0.9em; min-height: 0;">✅ Confirmer</button>
                   <button id="${confirmId}-no" class="btn btn--ghost" style="padding: 6px 16px; font-size: 0.9em; min-height: 0; color: #E8178A; border: 1px solid #E8178A;">❌ Modifier</button>
@@ -2155,18 +2183,16 @@ PRODUITS & PRIX :
 - MENU DYNAMIQUE ACTUEL :
 ${productListText || "Voir produits ci-dessus"}
 
-PROCESSUS DE COMMANDE :
-Pour les gâteaux, demande toujours : Nombre de personnes, Saveur, Date, Personnalisation, Livraison/Retrait. 
-Rappelle l'acompte de 50%.
+PROCESSUS DE COMMANDE (CRITIQUE) :
+1. Demande toujours : Produit, Quantité, Saveur/Personnalisation.
+2. Pose OBLIGATOIREMENT la question du mode de réception : "Souhaitez-vous une livraison (1000 FCFA) ou passerez-vous récupérer votre commande (Gratuit) ?"
+3. N'utilise [CONFIRM_ORDER] qu'APRES avoir obtenu la réponse pour la livraison.
+4. Rappelle l'acompte de 50% Orange Money : +226 75 27 03 26.
 
 LIVRAISON & PAIEMENT :
-- Livraison : 1000 FCFA partout à Ouagadougou (Saaba, Ouaga 2000, etc.). 
-- Orange Money : +226 75 27 03 26 (Acompte 50% obligatoire).
-- WhatsApp / Contact : 56 80 88 72 (Réponse sous 30min à 2h).
+- Livraison : 1000 FCFA partout à Ouagadougou.
+- Retrait : Gratuit à Saaba / Sanyiri.
 - Horaires : Lun-Sam, 8h-18h.
-
-VALIDATION :
-Une fois le récapitulatif validé par le client (Articles, Quantité, Livraison, Total TTC), confirme chaleureusement et termine par [CONFIRM_ORDER].
 
 KNOWLEDGE BASE : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
     } catch (e) {
