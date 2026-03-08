@@ -1860,269 +1860,137 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const botResponse = await generateAIResponse(userMessage);
 
-      // --- ORDER DETECTION LOGIC ---
-      const confirmTagRegex = /(\[|\*)?CONFIRM_ORDER(\]|\*)?/i;
+      // --- NEW STRUCTURED ORDER DETECTION ---
+      const jsonRegex = /\[ORDER_DATA:\s*({.*?})\s*\]/is;
       let cleanResponse = botResponse;
-      let orderConfirmed = false;
+      let structuredData = null;
 
-      if (confirmTagRegex.test(botResponse)) {
-        orderConfirmed = true;
-        cleanResponse = botResponse.replace(confirmTagRegex, "").trim();
-        cleanResponse = cleanResponse.replace(/[,\s"\]\[\*]+$/g, "").trim();
+      const match = botResponse.match(jsonRegex);
+      if (match && match[1]) {
+        try {
+          structuredData = JSON.parse(match[1]);
+          cleanResponse = botResponse.replace(jsonRegex, "").trim();
+          console.log("Délice AI - Données structurées détectées :", structuredData);
+        } catch (e) {
+          console.error("Délice AI - Erreur de parsing JSON :", e);
+        }
       }
 
-      if (orderConfirmed) {
+      if (structuredData) {
         try {
-          console.log("AI confirmed an order! Parsing items...");
+          const items = structuredData.items || [];
+          const deliveryFee = structuredData.delivery || 0;
+          const depositPct = structuredData.depositPercent || 50;
 
-          const normalize = (str) => {
-            if (!str) return "";
-            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/s\b/g, "").trim();
-          };
+          let subtotal = items.reduce((sum, it) => sum + (it.price * it.qty), 0);
+          let totalAmount = subtotal + deliveryFee;
+          let depositToPay = Math.round(subtotal * (depositPct / 100));
+          let remainingPay = subtotal - depositToPay;
 
-          const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const confirmId = 'ai-confirm-' + Math.floor(Math.random() * 10000);
+          const itemsHtml = items.map(it => `
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.95em; color:#333;">
+              <span style="font-weight:500;">${it.qty}x ${it.name}</span>
+              <span style="font-weight:700;">${(it.price * it.qty).toLocaleString('fr-FR')} FCFA</span>
+            </div>
+          `).join('');
 
-          const products = typeof DataService !== 'undefined' ? await DataService.getProducts() : [];
-          const cleanResponseNorm = normalize(cleanResponse);
-
-          // Access chatHistoryMessages (ensure it exists in scope)
-          const historyText = (typeof chatHistoryMessages !== 'undefined') ?
-            chatHistoryMessages.filter(m => m.role !== 'system').slice(-6).map(m => m.content).join(" ") : "";
-          const combinedLogNorm = normalize(historyText + " " + cleanResponse);
-
-          let detectedItems = [];
-          let estimatedTotal = 0;
-
-          // 0. DEPOSIT DETECTION (New)
-          const depositMatch = botResponse.match(/acompte\s*(?:de|:)?\s*(\d+)/i) || historyText.match(/acompte\s*(?:de|:)?\s*(\d+)/i);
-          let detectedDeposit = depositMatch ? parseInt(depositMatch[1], 10) : 0;
-
-          // 1. PRIMARY: Match against official menu
-          products.forEach(p => {
-            const searchTerm = normalize(p.name).replace(/\(.*\)/g, "").replace(/\b(maison|signature|artisanale?|assortis?)\b/g, "").trim();
-            // Check if product is mentioned in either current response OR recent history
-            if (searchTerm && (cleanResponseNorm.includes(searchTerm) || combinedLogNorm.includes(searchTerm))) {
-              const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*[^\\n\\d]{0,30}?\\s*${escapeRegExp(searchTerm)}`, 'i');
-              let match = cleanResponseNorm.match(qtyRegex) || combinedLogNorm.match(qtyRegex);
-
-              let qty = 1;
-              if (match && match[1]) {
-                const val = match[1].toLowerCase();
-                if (val === 'un' || val === 'une') qty = 1;
-                else if (val === 'douzaine') qty = 12;
-                else qty = parseInt(val, 10) || 1;
-              }
-
-              detectedItems.push({
-                name: p.name,
-                quantity: qty,
-                unitPrice: p.price,
-                totalPrice: p.price * qty,
-                isPerSlice: !!p.isPerSlice
-              });
-              estimatedTotal += (p.price * qty);
-            }
-          });
-
-          // 2. DELIVERY: Detect if "livraison" is requested
-          const wantsLivraison = (cleanResponseNorm.includes("livraison") || combinedLogNorm.includes("livraison") || cleanResponseNorm.includes("livrer") || combinedLogNorm.includes("livrer")) &&
-            !cleanResponseNorm.includes("pas de livraison") &&
-            !combinedLogNorm.includes("pas de livraison") &&
-            !cleanResponseNorm.includes("recuperer") &&
-            !cleanResponseNorm.includes("chercher");
-
-          const isPickup = cleanResponseNorm.includes("recuperer") || combinedLogNorm.includes("recuperer") ||
-            cleanResponseNorm.includes("chercher") || combinedLogNorm.includes("chercher") ||
-            cleanResponseNorm.includes("boutique") || cleanResponseNorm.includes("magasin");
-
-          let deliveryItem = null;
-          if (wantsLivraison && !isPickup) {
-            deliveryItem = {
-              name: "Frais de livraison",
-              quantity: 1,
-              unitPrice: 1000,
-              totalPrice: 1000,
-              isDelivery: true
-            };
-            detectedItems.push(deliveryItem);
-            estimatedTotal += 1000;
-          } else {
-            deliveryItem = {
-              name: "Retrait en boutique",
-              quantity: 1,
-              unitPrice: 0,
-              totalPrice: 0,
-              isPickup: true
-            };
-            detectedItems.push(deliveryItem);
-          }
-
-          // 3. SPECIAL HANDLING: If Total is 0 but we have a deposit, infer the total
-          if (estimatedTotal === 0 && detectedDeposit > 0) {
-            // Usually 50% deposit, and if it's a "gateau" mention, we can assume 1500/slice or at least show the inferred total
-            estimatedTotal = detectedDeposit * 2;
-
-            // Try to find if user mentioned "gateau" or any word to name the placeholder
-            let productName = "Commande personnalisée";
-            if (combinedLogNorm.includes("gateau")) productName = "Gâteau personnalisé";
-            else if (combinedLogNorm.includes("sachet") || combinedLogNorm.includes("boule")) productName = "Boules de neige";
-
-            detectedItems.unshift({
-              name: productName,
-              quantity: 1,
-              unitPrice: estimatedTotal,
-              totalPrice: estimatedTotal,
-              isInferred: true
-            });
-          }
-
-          // 4. FALLBACK: Catch extra items mentioned but not in menu
-          const currentItemNames = detectedItems.map(it => normalize(it.name));
-          const fallbackRegex = /(?:^|\n|[\.!\?])\s*(?:[\-\*•]|\d+\.)?\s*(\d+|un|une|douzaine)\s*(?:x|d(?:es|e))?\s*([^,;\.\n\(]+)/gi;
-          let match;
-          while ((match = fallbackRegex.exec(cleanResponse)) !== null) {
-            const qtyStr = match[1].toLowerCase();
-            const itemName = match[2].trim();
-            if (itemName.toUpperCase().includes("CONFIRM_ORDER") || itemName.length < 3) continue;
-            if (itemName.toLowerCase().includes("livraison") || itemName.toLowerCase().includes("acompte")) continue;
-            if (currentItemNames.some(existing => itemName.toLowerCase().includes(existing) || existing.includes(itemName.toLowerCase()))) continue;
-
-            let qty = parseInt(qtyStr, 10);
-            if (isNaN(qty)) {
-              if (qtyStr === 'un' || qtyStr === 'une') qty = 1;
-              else if (qtyStr === 'douzaine') qty = 12;
-              else qty = 1;
-            }
-
-            detectedItems.push({
-              name: itemName,
-              quantity: qty,
-              unitPrice: 0,
-              totalPrice: 0,
-              isUnknown: true
-            });
-          }
-
-          if (detectedItems.length === 0) {
-            detectedItems.push({
-              name: "Commande (voir historique chat)",
-              quantity: 1,
-              unitPrice: 0,
-              totalPrice: 0,
-              isPlaceholder: true
-            });
-          }
-
-          if (detectedItems.length > 0) {
-            const finalOrder = {
-              items: detectedItems,
-              totalAmount: estimatedTotal,
-              depositAmount: detectedDeposit || (estimatedTotal / 2),
-              note: `Commande via Délice AI Chat (${chatId})`,
-              status: 'new'
-            };
-
-            const confirmId = 'ai-confirm-' + Math.floor(Math.random() * 10000);
-            const itemsTable = detectedItems
-              .filter(it => !it.isDelivery && !it.isPickup)
-              .map(it => `• ${it.quantity}x ${it.name}${it.isUnknown ? ' (Prix à confirmer)' : ''}`).join('<br/>');
-
-            const subtotal = estimatedTotal - (deliveryItem?.isDelivery ? 1000 : 0);
-            const depositToPay = detectedDeposit || Math.round(subtotal / 2);
-            const remainingPay = subtotal - depositToPay;
-
-            const confirmHtml = `
-              <div class="chat-confirmation-box" style="margin-top:10px; padding:12px; background:#fff0f6; border-radius:12px; border: 2px solid #E8178A; color: #1a0a14;">
-                <strong style="color:#E8178A; font-family:'Outfit',sans-serif;">🛒 Validation de commande</strong><br/>
-                <div style="font-size: 0.9em; margin: 8px 0; border-bottom: 1px solid #ffdeed; padding-bottom: 8px;">
-                  ${itemsTable || "Détails dans l'historique"}
+          const confirmHtml = `
+            <div class="chat-confirmation-box" style="margin-top:15px; background:#fff; border-radius:18px; border: 1px solid #ffdeed; box-shadow: 0 15px 35px rgba(232, 23, 138, 0.12); overflow:hidden; color:#1a0a14; animation: slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);">
+              <div style="background: linear-gradient(135deg, #E8178A, #ff4d94); color:#fff; padding:12px 18px; font-weight:800; display:flex; align-items:center; gap:10px; font-size:0.9em; letter-spacing:0.5px;">
+                <span class="material-symbols-outlined" style="font-size:1.3rem;">shopping_bag</span>
+                <span>RÉCAPITULATIF DE VOTRE COMMANDE</span>
+              </div>
+              
+              <div style="padding:18px;">
+                <div style="margin-bottom:15px; border-bottom:1px dashed #eee; padding-bottom:12px;">
+                  ${itemsHtml}
                 </div>
-                
-                <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.95em; font-weight:700;">
-                  <span>Sous-total:</span>
+
+                <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:700; font-size:1.05em; color:#1a0a14;">
+                  <span>Sous-total</span>
                   <span>${subtotal.toLocaleString('fr-FR')} FCFA</span>
                 </div>
-                
-                <!-- Breakdown Subtotal -->
-                <div style="padding: 0 10px; font-size: 0.85em; color: #666; margin-bottom: 8px; border-left: 2px solid #ffdeed; margin-left: 4px;">
-                  <div style="display:flex; justify-content:space-between;">
-                    <span>• Acompte (50%):</span>
+
+                <div style="margin:12px 0; padding:12px; background:#fff5f9; border-radius:12px; border-left:5px solid #E8178A;">
+                  <div style="display:flex; justify-content:space-between; font-size:0.95em; color:#E8178A; font-weight:800; margin-bottom:4px;">
+                    <span>ACOMPTE 50% À PAYER</span>
                     <span>${depositToPay.toLocaleString('fr-FR')} FCFA</span>
                   </div>
-                  <div style="display:flex; justify-content:space-between;">
-                    <span>• Solde restants:</span>
+                  <div style="display:flex; justify-content:space-between; font-size:0.85em; color:#777; font-weight:500;">
+                    <span>Reliquat (paiement à la livraison)</span>
                     <span>${remainingPay.toLocaleString('fr-FR')} FCFA</span>
                   </div>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.95em; color:${deliveryItem?.isDelivery ? '#E8178A' : '#666'};">
-                  <span>${deliveryItem?.isDelivery ? 'Livraison:' : 'Mode:'}</span>
-                  <span>${deliveryItem?.isDelivery ? '1 000 FCFA' : 'Retrait Gratuit'}</span>
+                <div style="display:flex; justify-content:space-between; font-size:0.9em; color:#666; margin-bottom:18px; padding:0 4px;">
+                  <span style="display:flex; align-items:center; gap:5px;"><span class="material-symbols-outlined" style="font-size:1rem;">local_shipping</span> ${deliveryFee > 0 ? 'Livraison à domicile' : 'Retrait en boutique'}</span>
+                  <span style="font-weight:700; color:${deliveryFee > 0 ? '#1a0a14' : '#10b981'};">${deliveryFee > 0 ? deliveryFee.toLocaleString('fr-FR') + ' FCFA' : 'GRATUIT'}</span>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; border-top:1px dashed #E8178A; padding-top:8px; font-weight:800; font-size: 1.05em;">
-                  <span>TOTAL TTC:</span>
-                  <span>${estimatedTotal.toLocaleString('fr-FR')} FCFA</span>
+                <div style="display:flex; justify-content:space-between; border-top:2px solid #1a0a14; padding-top:12px; font-weight:900; font-size:1.25em; color:#1a0a14;">
+                  <span>TOTAL TTC</span>
+                  <span style="color:#E8178A;">${totalAmount.toLocaleString('fr-FR')} FCFA</span>
                 </div>
 
-                <div style="margin-top:12px; display:flex; gap:10px; justify-content: center;">
-                  <button id="${confirmId}-yes" class="btn btn--primary" style="padding: 6px 16px; font-size: 0.9em; min-height: 0;">✅ Confirmer</button>
-                  <button id="${confirmId}-no" class="btn btn--ghost" style="padding: 6px 16px; font-size: 0.9em; min-height: 0; color: #E8178A; border: 1px solid #E8178A;">❌ Modifier</button>
+                <div style="margin-top:22px; display:flex; gap:12px;">
+                  <button id="${confirmId}-yes" class="btn btn--primary" style="flex:2; padding:14px; font-size:0.95em; border-radius:12px; box-shadow: 0 4px 12px rgba(232, 23, 138, 0.2);">✅ Confirmer</button>
+                  <button id="${confirmId}-no" class="btn btn--ghost" style="flex:1; padding:14px; font-size:0.9em; border-radius:12px; color:#E8178A; border:1px solid #E8178A; background:transparent;">❌ Annuler</button>
                 </div>
               </div>
-            `;
+            </div>
+          `;
 
-            const promptChatLi = createChatLi('', 'incoming');
-            promptChatLi.innerHTML = `<div class="chat-content">${confirmHtml}</div>`;
-            chatbotMessages.appendChild(promptChatLi);
-            chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
+          const promptChatLi = createChatLi('', 'incoming');
+          promptChatLi.innerHTML = `<div class="chat-content">${confirmHtml}</div>`;
+          chatbotMessages.appendChild(promptChatLi);
+          chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
 
-            document.getElementById(`${confirmId}-yes`).addEventListener('click', async (e) => {
-              const btnContainer = e.target.parentElement;
-              btnContainer.innerHTML = `<div class="typing-dots" style="margin:0 auto;"><span></span><span></span><span></span></div>`;
+          const finalOrder = {
+            items: items.map(it => ({ ...it, totalPrice: it.price * it.qty })),
+            totalAmount: totalAmount,
+            depositAmount: depositToPay,
+            note: `Commande via Délice AI Chat (${chatId})`,
+            status: 'new',
+            customer_id: getCustomerId()
+          };
 
-              try {
-                console.log("Saving order via AI...", finalOrder);
-                if (typeof DataService === 'undefined' || !DataService.saveOrder) {
-                  throw new Error("Service de données non disponible.");
-                }
+          document.getElementById(`${confirmId}-yes`).addEventListener('click', async (e) => {
+            const btnContainer = e.target.parentElement;
+            btnContainer.innerHTML = `<div style="width:100%; text-align:center; padding:10px;"><div class="typing-dots" style="margin:0 auto;"><span></span><span></span><span></span></div></div>`;
 
-                const orderId = await DataService.saveOrder(finalOrder);
-                if (orderId) {
-                  localStorage.setItem('delice_last_order_id', orderId);
-                  btnContainer.innerHTML = `<span style="color: #10b981; font-weight: 800; font-size: 0.9em;">Confirmée ! 🎉 Commande #${orderId.slice(-4).toUpperCase()}</span>`;
+            try {
+              if (typeof DataService === 'undefined' || !DataService.saveOrder) throw new Error("Service indisponible");
+              const orderId = await DataService.saveOrder(finalOrder);
+              if (orderId) {
+                localStorage.setItem('delice_last_order_id', orderId);
+                btnContainer.innerHTML = `<div style="text-align:center; padding:12px; background:#f0fdf4; border-radius:10px; color:#10b981; font-weight:800; border:1px solid #bcf0da; width:100%; animation: fadeInUp 0.3s ease;">C'est noté ! Commande #${orderId.slice(-4).toUpperCase()} transmise. 🎉</div>`;
 
-                  const summary = detectedItems.map(it => `${it.quantity}x ${it.name}`).join(', ');
-                  const adminLink = window.location.origin + "/admin";
-                  const messageTelegram = `🤖 <b>COMMANDE VIA IA !</b>\n📝 Items : ${summary}\n💰 Total : ${estimatedTotal.toLocaleString('fr-FR')} FCFA\n💳 Acompte : ${depositToPay.toLocaleString('fr-FR')} FCFA\n\n<a href="${adminLink}">Gérer sur l'Admin</a>`;
+                const summary = items.map(it => `${it.qty}x ${it.name}`).join(', ');
+                const adminLink = window.location.origin + "/admin";
+                const telegramMsg = `🍰 <b>COMMANDE IA OK !</b>\n👤 Client: <code>${finalOrder.customer_id.slice(-6)}</code>\n🛒 Items: ${summary}\n💰 Total: <b>${totalAmount.toLocaleString('fr-FR')} FCFA</b>\n💳 Acompte: ${depositToPay.toLocaleString('fr-FR')} FCFA\n\n<a href="${adminLink}">Ouvrir l'Admin</a>`;
 
-                  await sendTelegramNotification(messageTelegram);
-                  if (window.refreshOrderTracking) window.refreshOrderTracking();
-                } else {
-                  throw new Error("L'ID de commande n'a pas été retourné.");
-                }
-              } catch (saveErr) {
-                console.error("Délice AI - Order save error:", saveErr);
-                btnContainer.innerHTML = `<span style="color: #ef4444; font-size: 0.8em;">Erreur d'enregistrement. Réessayez.</span>`;
-                setTimeout(() => {
-                  btnContainer.innerHTML = `
-                    <button id="${confirmId}-yes" class="btn btn--primary" style="padding: 6px 16px; font-size: 0.9em; min-height: 0;">✅ Confirmer</button>
-                    <button id="${confirmId}-no" class="btn btn--ghost" style="padding: 6px 16px; font-size: 0.9em; min-height: 0; color: #E8178A; border: 1px solid #E8178A;">❌ Modifier</button>
-                  `;
-                  // Re-attach listeners (simpler to just refresh the whole box if needed, but this is a quick fix)
-                }, 3000);
+                await sendTelegramNotification(telegramMsg);
+                if (window.refreshOrderTracking) window.refreshOrderTracking();
               }
-            });
+            } catch (err) {
+              console.error("Order Save Error:", err);
+              btnContainer.innerHTML = `<div style="color:#ef4444; font-size:0.85em; text-align:center; width:100%;">Désolé, erreur réseau. Veuillez réessayer.</div>`;
+            }
+          });
 
-            document.getElementById(`${confirmId}-no`).addEventListener('click', (e) => {
-              e.target.parentElement.innerHTML = `<span style="color: gray; font-style: italic;">Modification demandée.</span>`;
-            });
-          }
-        } catch (parseErr) {
-          console.error("Order process failed:", parseErr);
+          document.getElementById(`${confirmId}-no`).addEventListener('click', (e) => {
+            const box = e.target.parentElement.closest('.chat-confirmation-box');
+            box.style.opacity = '0.5';
+            box.style.filter = 'grayscale(1)';
+            e.target.parentElement.innerHTML = `<div style="text-align:center; color:#666; font-style:italic; width:100%;">Commande annulée. On continue ?</div>`;
+          });
+
+        } catch (err) {
+          console.error("Order Recap UI Creation Fail:", err);
         }
       }
-      // --- END ORDER DETECTION ---
+      // --- END STRUCTURED ORDER DETECTION ---
 
       const pElement = document.createElement('p');
       pElement.innerHTML = formatAIResponse(cleanResponse);
@@ -2244,51 +2112,39 @@ document.addEventListener('DOMContentLoaded', () => {
       const kbContent = await DataService.getKnowledgeBase();
 
       console.log("Délice AI - Chargement des données dynamiques...");
-      console.log("- Produits actifs :", activeProducts.length);
-      console.log("- Base de connaissance récupérée :", kbContent ? "Oui (longueur: " + kbContent.length + ")" : "Non (vide)");
-
       let productListText = activeProducts.map(p => `- ${p.name} : ${p.price} FCFA`).join("\n");
 
       systemContext = `# 📌 PROMPT SYSTÈME — CHATBOT DÉLICE CAKE
 
-Tu es l’assistant officiel de la pâtisserie Délice Cake, située à Ouagadougou, secteur 51 – Sanyiri.
-Ta mission est de répondre aux clients de manière naturelle, chaleureuse, professionnelle et logique.
-La pâtissière est Fatoumata Mourfou.
-Tu parles uniquement en français.
+Tu es l’assistant officiel de la pâtisserie Délice Cake à Ouagadougou. 
+Ta mission : guider le client vers une commande parfaite avec courtoisie et efficacité.
 
-## 🎯 TON ET STYLE
-- Sois poli, accueillant et clair. Ton humain et convivial.
-- Évite les réponses robotiques ou trop longues. Phrases COURTES.
-- Pose toujours les bonnes questions pour faire avancer la commande.
-- Tu dois toujours terminer tes phrases.
+## 🎯 STYLE & RÈGLES
+- Ton chaleureux, humain, phrases COURTES.
+- Ne JAMAIS inventer de prix ou de produits.
+- Tu parles uniquement en français.
 
-## 📖 INFOS COMPLÉMENTAIRES (BASE DE CONNAISSANCES ADMIN)
-${kbContent || "Pâtisserie artisanale proposant des gâteaux personnalisés et des boules de neige à Ouagadougou."}
+## 📖 INFOS COMPLÉMENTAIRES (BASE ADMIN)
+${kbContent || "Pâtisserie artisanale secteur 51 Sanyiri."}
 
-## 🛒 MENU DYNAMIQUE (PRODUITS ADMIN)
-${productListText || "Gâteau d'anniversaire (1500 FCFA/part), Boules de neige (500 FCFA/sachet)"}
+## 🛒 MENU (PRIX RÉELS)
+${productListText || "Gâteau (1500/part), Boules de neige (500/sac)"}
 
-## 🎂 PRODUITS & DÉTAILS
-- Gâteau d’anniversaire : Génoise moelleuse, chantilly, perso possible (nom, âge, thème). 1500 FCFA la part. Min 24h/48h d'avance.
-- Boules de neige : Moelleuses cœur fondant chocolat. 500 FCFA le sachet.
+## 🛒 PROCESSUS DE COMMANDE
+1. Demande : Nb personnes, Saveur, Date, Perso, Livraison ou Retrait.
+2. Rappelle l'acompte de 50% obligatoire (Orange Money +22675270326).
+3. Livraison partout à Ouaga : 1000 FCFA. Retrait gratuit à Sanyiri.
 
-## 🛒 PROCESSUS DE COMMANDE (OBLIGATOIRE)
-Pour un gâteau, demande TOUJOURS :
-1. Nb de personnes ? 2. Saveur ? 3. Date ? 4. Personnalisation ? 5. Livraison ou retrait ?
-- Acompte obligatoire de 50% pour valider.
-- Propose : "Souhaitez-vous que je vous envoie les modalités de paiement ?"
-
-## 💳 PAIEMENT & LIVRAISON
-- Acompte : 50% (Orange Money +22675270326 ou Espèces).
-- Livraison : 1000 FCFA partout à Ouagadougou.
-- Retrait : Gratuit à Saaba / Sanyiri.
-- IMPORTANT : Mentionne que le total dans la facture est sans frais de livraison.
-
-## 📌 RÈGLES TECHNIQUES (INTERNE)
-- Pour confirmer une commande, ajoute SILENCIEUSEMENT le tag [CONFIRM_ORDER] à la fin de ta réponse de confirmation finale après avoir eu toutes les infos (y compris livraison/retrait).`;
+## 📌 RÈGLES TECHNIQUES (CRITIQUE)
+Dès que tu as TOUTES les informations pour finaliser (Produit, qtés, prix total, mode de livraison), tu DOIS :
+1. Envoyer ta réponse de confirmation normale.
+2. Ajouter SILENCIEUSEMENT à la toute fin de ton message le bloc suivant :
+[ORDER_DATA: {"items": [{"name": "Nom", "qty": 1, "price": 0}], "delivery": 1000, "depositPercent": 50}]
+Remplacement : "items" par la liste des produits, "delivery" (1000 ou 0), "depositPercent" (toujours 50).
+C'est ce bloc qui permet de générer la facture correcte.`;
     } catch (e) {
       console.error("AI Context Init Fail:", e);
-      systemContext = "Assistant Délice Cake. Aidez le client avec le menu.";
+      systemContext = "Assistant Délice Cake.";
     }
   }
 
