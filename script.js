@@ -2543,9 +2543,4 @@ INFOS : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
     });
   }
 
-  // Start tracking on load
-  document.addEventListener('DOMContentLoaded', initOrderTracking);
-
-  // Vercel Cache Busting Version: 08/03/2026 - Real-time Tracking v1
-}
-
+// Vercel Cache Busting Version: 08/03/2026 - Diagnostic v1

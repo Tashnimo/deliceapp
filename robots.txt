@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://delice-cake.com/sitemap.xml
+# Block internal files from indexing
+Disallow: /api/
+Disallow: /*.md
+
+Sitemap: https://deliceapp.vercel.app/sitemap.xml

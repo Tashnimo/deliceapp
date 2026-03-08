@@ -1,4 +1,81 @@
 {
     "version": 2,
-    "cleanUrls": true
+    "cleanUrls": true,
+    "headers": [
+        {
+            "source": "/(.*)\\.md",
+            "headers": [
+                {
+                    "key": "X-Robots-Tag",
+                    "value": "noindex"
+                }
+            ]
+        },
+        {
+            "source": "/api/(.*)",
+            "headers": [
+                {
+                    "key": "Access-Control-Allow-Origin",
+                    "value": "*"
+                },
+                {
+                    "key": "Access-Control-Allow-Methods",
+                    "value": "GET, POST, OPTIONS"
+                }
+            ]
+        },
+        {
+            "source": "/(.*)\\.webp",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        },
+        {
+            "source": "/(.*)\\.js",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=3600, must-revalidate"
+                }
+            ]
+        },
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "SAMEORIGIN"
+                },
+                {
+                    "key": "X-XSS-Protection",
+                    "value": "1; mode=block"
+                },
+                {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
+                }
+            ]
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/api/chat",
+            "destination": "/api/chat.js"
+        },
+        {
+            "source": "/api/notify",
+            "destination": "/api/notify.js"
+        },
+        {
+            "source": "/api/push-notify",
+            "destination": "/api/push-notify.js"
+        }
+    ]
 }
