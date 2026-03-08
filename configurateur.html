@@ -11,16 +11,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --pink-main: #FF1F8E;
+            --pink-primary: #FF1F8E;
+            --pink-hover: #FA5A86;
             --bg-blush: #FFF0F7;
             --gold-accent: #C9A84C;
             --text-dark: #2A1A22;
-            --text-muted: #6B5B63;
-            --panel-bg: rgba(255, 255, 255, 0.75);
-            --glass-border: rgba(255, 255, 255, 0.5);
-            --shadow-soft: 0 12px 40px rgba(255, 31, 142, 0.1);
+            --text-muted: #8E7D86;
+            --panel-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --shadow-premium: 0 15px 45px rgba(255, 31, 142, 0.08);
             --font-heading: 'Playfair Display', serif;
             --font-ui: 'DM Sans', sans-serif;
+            --card-radius: 16px;
         }
 
         * {
@@ -31,7 +33,7 @@
 
         body {
             font-family: var(--font-ui);
-            background: radial-gradient(circle at center, #FFF0F7 0%, #FFD6EC 100%);
+            background: radial-gradient(circle at top right, #FFF5F9 0%, #FFD6EC 100%);
             color: var(--text-dark);
             min-height: 100vh;
             overflow-x: hidden;
@@ -47,21 +49,32 @@
             }
         }
 
+        /* Icons */
+        .icon {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
         /* Left Panel */
         .left-panel {
             flex: 1;
-            max-width: 500px;
-            padding: 2rem;
+            max-width: 480px;
+            padding: 2.5rem;
             display: flex;
             flex-direction: column;
             z-index: 10;
             background: var(--panel-bg);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-right: 1px solid var(--glass-border);
             overflow-y: auto;
             position: relative;
-            animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: slideInLeft 1s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes slideInLeft {
@@ -77,87 +90,99 @@
         }
 
         header {
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
         }
 
         header h1 {
             font-family: var(--font-heading);
-            font-size: 2.2rem;
-            color: var(--pink-main);
-            margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+            color: var(--pink-primary);
+            margin-bottom: 0.2rem;
+            letter-spacing: -0.02em;
         }
 
-        header .reset-link {
-            font-size: 0.85rem;
+        header p {
+            font-size: 0.95rem;
             color: var(--text-muted);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
+            font-style: italic;
+        }
+
+        header .reset-btn {
             float: right;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
             cursor: pointer;
-            transition: color 0.3s;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: none;
+            background: none;
         }
 
-        header .reset-link:hover {
-            color: var(--pink-main);
+        header .reset-btn:hover {
+            color: var(--pink-primary);
         }
 
-        /* Tabs Navigation */
-        .tabs-wrapper {
-            margin-bottom: 1.5rem;
+        /* Navigation Tabs */
+        .tabs-nav {
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
         }
 
         .tabs-row {
             display: flex;
-            gap: 0.4rem;
-            margin-bottom: 0.4rem;
+            gap: 0.6rem;
             flex-wrap: wrap;
         }
 
         .tab-btn {
-            padding: 0.5rem 1rem;
+            padding: 0.6rem 1.2rem;
             border-radius: 50px;
-            border: 1px solid rgba(255, 31, 142, 0.15);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             background: white;
             color: var(--text-dark);
-            font-family: var(--font-ui);
-            font-weight: 500;
+            font-weight: 600;
             font-size: 0.85rem;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
         }
 
         .tab-btn:hover {
-            border-color: var(--pink-main);
+            border-color: var(--pink-primary);
             background: var(--bg-blush);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
         }
 
         .tab-btn.active {
-            background: linear-gradient(135deg, var(--pink-main), #FA5A86);
+            background: linear-gradient(135deg, var(--pink-primary), var(--pink-hover));
             color: white;
             border-color: transparent;
-            box-shadow: 0 4px 15px rgba(255, 31, 142, 0.3);
+            box-shadow: 0 8px 20px rgba(255, 31, 142, 0.25);
         }
 
-        /* Tab Content */
+        /* Content Area */
         .tab-content {
             display: none;
-            animation: fadeIn 0.3s ease-in-out;
+            animation: fadeInContent 0.4s ease;
         }
 
         .tab-content.active {
             display: block;
         }
 
-        @keyframes fadeIn {
+        @keyframes fadeInContent {
             from {
                 opacity: 0;
-                transform: translateY(5px);
+                transform: translateY(10px);
             }
 
             to {
@@ -166,246 +191,316 @@
             }
         }
 
-        .section-title {
+        .section-header {
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+            padding-bottom: 0.5rem;
+        }
+
+        .section-header h2 {
             font-family: var(--font-heading);
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
+            font-size: 1.5rem;
             color: var(--text-dark);
         }
 
-        /* Options Grids */
-        .grid-options {
+        /* Flavor Selection (Macaron Style) */
+        .flavor-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 0.75rem;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 1rem;
         }
 
-        .card-opt {
+        .flavor-item {
             background: white;
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 0.75rem;
+            border-radius: var(--card-radius);
+            padding: 1rem;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.8rem;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .card-opt:hover {
-            transform: scale(1.03);
-            border-color: var(--pink-main);
-            box-shadow: 0 0 10px rgba(255, 31, 142, 0.1);
-        }
-
-        .card-opt.active {
-            border-color: var(--pink-main);
-            box-shadow: 0 0 0 1px var(--pink-main), var(--shadow-soft);
-            background: var(--bg-blush);
-        }
-
-        .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            transition: transform 0.3s;
-        }
-
-        .card-opt:hover .dot {
-            animation: pulse 1s infinite alternate;
-        }
-
-        @keyframes pulse {
-            from {
-                transform: scale(1);
-            }
-
-            to {
-                transform: scale(1.4);
-            }
-        }
-
-        .chip-opt {
-            padding: 0.6rem 1rem;
-            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border: 1px solid var(--glass-border);
-            background: white;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.2s;
             text-align: center;
         }
 
-        .chip-opt.active {
-            border-color: var(--pink-main);
-            background: var(--bg-blush);
-            color: var(--pink-main);
+        .flavor-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--pink-primary);
+            box-shadow: var(--shadow-premium);
         }
 
-        /* Sliders */
-        .control-group {
-            margin-bottom: 1.5rem;
+        .flavor-item.active {
+            border-color: var(--pink-primary);
+            background: #FFF8FB;
+            box-shadow: 0 0 0 1px var(--pink-primary), var(--shadow-premium);
         }
 
-        .label-row {
+        .macaron-marker {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .flavor-item.active .macaron-marker {
+            transform: scale(1.1);
+        }
+
+        .flavor-item span {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        /* Options Blocks */
+        .options-list {
             display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .opt-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
             justify-content: space-between;
-            margin-bottom: 0.5rem;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            transition: 0.2s;
+        }
+
+        .opt-card:hover {
+            border-color: var(--pink-primary);
+        }
+
+        .opt-card.active {
+            background: var(--bg-blush);
+            border-color: var(--pink-primary);
+        }
+
+        .opt-label {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
             font-weight: 600;
             font-size: 0.9rem;
         }
 
-        .slider-ui {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #eee;
-            outline: none;
-        }
-
-        .slider-ui::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
+        .check-circle {
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: var(--pink-main);
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(255, 31, 142, 0.3);
+            border: 2px solid #EEE;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
         }
 
-        /* Textarea */
-        .area-msg {
+        .opt-card.active .check-circle {
+            border-color: var(--pink-primary);
+            background: var(--pink-primary);
+        }
+
+        .opt-card.active .check-circle::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        /* Sliders */
+        .slider-box {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--card-radius);
+            border: 1px solid var(--glass-border);
+            margin-bottom: 2rem;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .slider-header .val {
+            color: var(--pink-primary);
+            font-size: 1.2rem;
+        }
+
+        .custom-slider {
+            -webkit-appearance: none;
             width: 100%;
-            padding: 1rem;
-            border-radius: 12px;
+            height: 6px;
+            border-radius: 10px;
+            background: #F0F0F0;
+            outline: none;
+            margin: 10px 0;
+        }
+
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--pink-primary);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 31, 142, 0.4);
+            transition: 0.2s;
+        }
+
+        .custom-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        /* Message */
+        .msg-area {
+            width: 100%;
+            padding: 1.2rem;
+            border-radius: var(--card-radius);
             border: 1px solid var(--glass-border);
             background: white;
-            font-family: var(--font-heading);
-            font-size: 1rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            min-height: 100px;
             resize: none;
             outline: none;
             transition: 0.3s;
+            color: var(--text-dark);
         }
 
-        .area-msg:focus {
-            border-color: var(--pink-main);
-            box-shadow: 0 0 10px rgba(255, 31, 142, 0.1);
+        .msg-area:focus {
+            border-color: var(--pink-primary);
+            box-shadow: 0 0 15px rgba(255, 31, 142, 0.05);
         }
 
-        /* Bottom Bar */
-        .summary-box {
+        /* Footer Summary */
+        .summary-panel {
             margin-top: auto;
-            padding: 1rem;
+            padding: 1.5rem;
+            border-radius: var(--card-radius);
             background: white;
-            border-radius: 12px;
             border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow-soft);
-            margin-bottom: 1rem;
+            box-shadow: var(--shadow-premium);
+            margin-bottom: 1.5rem;
         }
 
-        .summary-box p {
-            font-size: 0.85rem;
+        .summary-panel p {
+            font-size: 0.9rem;
+            line-height: 1.5;
             color: var(--text-muted);
-            line-height: 1.4;
         }
 
-        .summary-box b {
-            color: var(--pink-main);
-            font-weight: 700;
+        .summary-panel b {
+            color: var(--pink-primary);
         }
 
-        .btn-order {
+        .order-btn {
             width: 100%;
-            padding: 0.9rem;
+            padding: 1.1rem;
             border-radius: 50px;
             border: none;
-            background: linear-gradient(135deg, var(--pink-main), #FA5A86);
+            background: linear-gradient(135deg, var(--pink-primary), var(--pink-hover));
             color: white;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 1.1rem;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 20px rgba(255, 31, 142, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 12px 30px rgba(255, 31, 142, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-        .btn-order:hover {
-            transform: scale(1.02);
-            box-shadow: 0 15px 30px rgba(255, 31, 142, 0.4);
+        .order-btn:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 20px 40px rgba(255, 31, 142, 0.4);
         }
 
         /* Right Panel */
         .right-panel {
-            flex: 1.5;
+            flex: 1.6;
             position: relative;
             min-height: 50vh;
-            display: flex;
-            flex-direction: column;
             overflow: hidden;
         }
 
-        #scene-container {
+        #cake-viewer {
             width: 100%;
             height: 100%;
             cursor: grab;
         }
 
-        #scene-container:active {
+        #cake-viewer:active {
             cursor: grabbing;
         }
 
-        .viewer-badges {
+        .status-labels {
             position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
+            top: 2rem;
+            right: 2rem;
             display: flex;
             flex-direction: column;
-            gap: 0.6rem;
+            gap: 0.8rem;
             pointer-events: none;
         }
 
-        .viewer-badge {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 0.4rem 1rem;
+        .status-label {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 0.6rem 1.2rem;
             border-radius: 50px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 700;
-            color: var(--pink-main);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            animation: float 3s ease-in-out infinite alternate;
+            color: var(--pink-primary);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+            animation: floatLabel 4s ease-in-out infinite alternate;
+            border: 1px solid var(--bg-blush);
         }
 
-        @keyframes float {
+        @keyframes floatLabel {
             from {
                 transform: translateY(0);
             }
 
             to {
-                transform: translateY(-8px);
+                transform: translateY(-12px);
             }
         }
 
-        .hint-rotate {
+        /* Rotate Hint */
+        .rotate-hint {
             position: absolute;
-            bottom: 2rem;
+            bottom: 3rem;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(42, 26, 34, 0.7);
             color: white;
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 500;
+            padding: 0.6rem 1.4rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(5px);
             pointer-events: none;
-            transition: opacity 1s;
+            transition: 1s;
+            z-index: 5;
         }
 
-        /* Mobile Adjust */
         @media (max-width: 767px) {
             .left-panel {
                 max-width: 100%;
@@ -426,120 +521,289 @@
 
     <aside class="left-panel">
         <header>
-            <span class="reset-link" onclick="resetConfig()">🔄 Réinitialiser</span>
+            <button class="reset-btn" onclick="resetConfig()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path
+                        d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                </svg>
+                Réinitialiser
+            </button>
             <h1>Mon Délice 3D</h1>
-            <p>Créez votre chef-d'œuvre virtuel.</p>
+            <p>Atelier de création artisanale</p>
         </header>
 
-        <div class="tabs-wrapper">
+        <nav class="tabs-nav">
             <div class="tabs-row">
-                <button class="tab-btn active" data-target="tab-saveur">👅 Saveur</button>
-                <button class="tab-btn" data-target="tab-glacage">✨ Glaçage</button>
-                <button class="tab-btn" data-target="tab-format">📐 Format</button>
+                <button class="tab-btn active" data-target="tab-saveur">
+                    <svg class="icon">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 8v8M8 12h8" />
+                    </svg> Saveur
+                </button>
+                <button class="tab-btn" data-target="tab-glacage">
+                    <svg class="icon">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg> Glaçage
+                </button>
+                <button class="tab-btn" data-target="tab-format">
+                    <svg class="icon">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <line x1="9" y1="3" x2="9" y2="21" />
+                        <line x1="15" y1="3" x2="15" y2="21" />
+                        <line x1="3" y1="9" x2="21" y2="9" />
+                        <line x1="3" y1="15" x2="21" y2="15" />
+                    </svg> Format
+                </button>
             </div>
             <div class="tabs-row">
-                <button class="tab-btn" data-target="tab-etages">🏗️ Étages</button>
-                <button class="tab-btn" data-target="tab-parts">🍰 Parts</button>
-                <button class="tab-btn" data-target="tab-occasion">🎊 Occasion</button>
-                <button class="tab-btn" data-target="tab-message">💌 Message</button>
+                <button class="tab-btn" data-target="tab-etages">
+                    <svg class="icon">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                        <polyline points="13 2 13 9 20 9" />
+                    </svg> Étages
+                </button>
+                <button class="tab-btn" data-target="tab-parts">
+                    <svg class="icon">
+                        <path d="M21.21 15.89A10 10 0 1 1 8 2.83M22 12A10 10 0 0 0 12 2v10z" />
+                    </svg> Parts
+                </button>
+                <button class="tab-btn" data-target="tab-occasion">
+                    <svg class="icon">
+                        <polyline points="20 12 20 22 4 22 4 12" />
+                        <rect x="2" y="7" width="20" height="5" />
+                        <line x1="12" y1="22" x2="12" y2="7" />
+                        <path d="M7 7V3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v4" />
+                    </svg> Occasion
+                </button>
+                <button class="tab-btn" data-target="tab-message">
+                    <svg class="icon">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg> Message
+                </button>
             </div>
-        </div>
+        </nav>
 
-        <div class="contents">
+        <div class="content-viewport">
+            <!-- SAVEUR -->
             <div id="tab-saveur" class="tab-content active">
-                <h2 class="section-title">Saveur</h2>
-                <div class="grid-options" id="saveur-grid"></div>
+                <div class="section-header">
+                    <h2>Choisir la saveur</h2>
+                </div>
+                <div class="flavor-grid" id="flavor-container"></div>
             </div>
 
+            <!-- GLAÇAGE -->
             <div id="tab-glacage" class="tab-content">
-                <h2 class="section-title">Glaçage</h2>
-                <div class="grid-options" id="glacage-grid">
-                    <div class="card-opt active" data-val="Lisse"><span>🪞 Lisse</span></div>
-                    <div class="card-opt" data-val="Texturé"><span>🌊 Texturé</span></div>
-                    <div class="card-opt" data-val="Naked"><span>🫐 Naked</span></div>
-                    <div class="card-opt" data-val="Miroir"><span>💫 Miroir</span></div>
-                    <div class="card-opt" data-val="Chantilly"><span>☁️ Chantilly</span></div>
+                <div class="section-header">
+                    <h2>Finition extérieure</h2>
+                </div>
+                <div class="options-list" id="glacage-grid">
+                    <div class="opt-card active" data-val="Lisse">
+                        <div class="opt-label">
+                            <svg class="icon">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            </svg> Lisse & Brillant
+                        </div>
+                        <div class="check-circle"></div>
+                    </div>
+                    <div class="opt-card" data-val="Texturé">
+                        <div class="opt-label">
+                            <svg class="icon">
+                                <path
+                                    d="M2 12c.5.5 1.5.5 2 0s1.5-.5 2 0 1.5.5 2 0 1.5-.5 2 0 1.5.5 2 0 1.5-.5 2 0 1.5.5 2 0 1.5-.5 2 0" />
+                            </svg> Effet Texturé
+                        </div>
+                        <div class="check-circle"></div>
+                    </div>
+                    <div class="opt-card" data-val="Naked">
+                        <div class="opt-label">
+                            <svg class="icon">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="16" />
+                                <line x1="8" y1="12" x2="16" y2="12" />
+                            </svg> Look Naturel (Naked)
+                        </div>
+                        <div class="check-circle"></div>
+                    </div>
+                    <div class="opt-card" data-val="Miroir">
+                        <div class="opt-label">
+                            <svg class="icon">
+                                <path
+                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" />
+                            </svg> Glaçage Miroir
+                        </div>
+                        <div class="check-circle"></div>
+                    </div>
+                    <div class="opt-card" data-val="Chantilly">
+                        <div class="opt-label">
+                            <svg class="icon">
+                                <path d="M12 2c-4 0-7 3-7 7 0 2 1 3.5 3 4.5V22h8v-8.5c2-1 3-2.5 3-4.5 0-4-3-7-7-7z" />
+                            </svg> Pointes de Chantilly
+                        </div>
+                        <div class="check-circle"></div>
+                    </div>
                 </div>
             </div>
 
+            <!-- FORMAT -->
             <div id="tab-format" class="tab-content">
-                <h2 class="section-title">Format</h2>
-                <div class="grid-options" id="format-grid">
-                    <div class="card-opt active" data-val="Rond"><span>🔵 Rond</span></div>
-                    <div class="card-opt" data-val="Carré"><span>🟦 Carré</span></div>
-                    <div class="card-opt" data-val="Rectangle"><span>📏 Rectangle</span></div>
-                    <div class="card-opt" data-val="Cœur"><span>❤️ Cœur</span></div>
+                <div class="section-header">
+                    <h2>Forme du gâteau</h2>
+                </div>
+                <div class="options-list" id="format-grid">
+                    <div class="opt-card active" data-val="Rond">
+                        <div class="opt-label"><svg class="icon">
+                                <circle cx="12" cy="12" r="10" />
+                            </svg> Signature Rond</div>
+                        <div class="check-circle"></div>
+                    </div>
+                    <div class="opt-card" data-val="Carré">
+                        <div class="opt-label"><svg class="icon">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            </svg> Moderne Carré</div>
+                        <div class="check-circle"></div>
+                    </div>
+                    <div class="opt-card" data-val="Rectangle">
+                        <div class="opt-label"><svg class="icon">
+                                <rect x="3" y="6" width="18" height="12" rx="2" ry="2" />
+                            </svg> Classique Rectangle</div>
+                        <div class="check-circle"></div>
+                    </div>
+                    <div class="opt-card" data-val="Cœur">
+                        <div class="opt-label"><svg class="icon">
+                                <path
+                                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                            </svg> Émotion Cœur</div>
+                        <div class="check-circle"></div>
+                    </div>
                 </div>
             </div>
 
+            <!-- ETAGES -->
             <div id="tab-etages" class="tab-content">
-                <h2 class="section-title">Étages</h2>
-                <div class="control-group">
-                    <div class="label-row"><span>Hauteur:</span> <span id="val-etages">3</span></div>
-                    <input type="range" id="input-etages" class="slider-ui" min="1" max="5" value="3">
+                <div class="section-header">
+                    <h2>Hauteur & Étages</h2>
+                </div>
+                <div class="slider-box">
+                    <div class="slider-header"><span>Nombre d'étages</span> <span class="val" id="etage-count">3</span>
+                    </div>
+                    <input type="range" id="slider-etages" class="custom-slider" min="1" max="5" value="3">
                 </div>
             </div>
 
+            <!-- PARTS -->
             <div id="tab-parts" class="tab-content">
-                <h2 class="section-title">Parts</h2>
-                <div class="control-group">
-                    <div class="label-row"><span>Parts:</span> <span id="val-parts">12</span></div>
-                    <input type="range" id="input-parts" class="slider-ui" min="4" max="32" value="12">
+                <div class="section-header">
+                    <h2>Volume & Parts</h2>
+                </div>
+                <div class="slider-box">
+                    <div class="slider-header"><span>Nombre de convives</span> <span class="val"
+                            id="parts-count">12</span></div>
+                    <input type="range" id="slider-parts" class="custom-slider" min="4" max="32" value="12">
                 </div>
             </div>
 
+            <!-- OCCASION -->
             <div id="tab-occasion" class="tab-content">
-                <h2 class="section-title">Occasion</h2>
-                <div class="grid-options" id="occasion-grid">
-                    <div class="card-opt active" data-val="Anniversaire"><span>🎂 Anniversaire</span></div>
-                    <div class="card-opt" data-val="Mariage"><span>💍 Mariage</span></div>
-                    <div class="card-opt" data-val="Baptême"><span>👼 Baptême</span></div>
-                    <div class="card-opt" data-val="Saint-Valentin"><span>💕 S-Valentin</span></div>
-                    <div class="card-opt" data-val="Autre"><span>🎁 Autre</span></div>
+                <div class="section-header">
+                    <h2>L'événement</h2>
+                </div>
+                <div class="options-list" id="occasion-grid">
+                    <div class="opt-card active" data-val="Anniversaire">
+                        <div class="opt-label"><svg class="icon">
+                                <path d="M12 2v10" />
+                                <path d="M18 10L12 2 6 10" />
+                            </svg> Anniversaire</div>
+                        <div class="check-circle"></div>
+                    </div>
+                    <div class="opt-card" data-val="Mariage">
+                        <div class="opt-label"><svg class="icon">
+                                <circle cx="8" cy="8" r="6" />
+                                <circle cx="16" cy="16" r="6" />
+                            </svg> Mariage</div>
+                        <div class="check-circle"></div>
+                    </div>
+                    <div class="opt-card" data-val="Baptême">
+                        <div class="opt-label"><svg class="icon">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            </svg> Baptême</div>
+                        <div class="check-circle"></div>
+                    </div>
+                    <div class="opt-card" data-val="Saint-Valentin">
+                        <div class="opt-label"><svg class="icon">
+                                <path
+                                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                            </svg> Saint-Valentin</div>
+                        <div class="check-circle"></div>
+                    </div>
+                    <div class="opt-card" data-val="Autre">
+                        <div class="opt-label"><svg class="icon">
+                                <rect x="2" y="7" width="20" height="14" rx="2" />
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                            </svg> Autre</div>
+                        <div class="check-circle"></div>
+                    </div>
                 </div>
             </div>
 
+            <!-- MESSAGE -->
             <div id="tab-message" class="tab-content">
-                <h2 class="section-title">Message</h2>
-                <textarea id="input-msg" class="area-msg" rows="2" placeholder="Votre message..."
-                    maxlength="40"></textarea>
+                <div class="section-header">
+                    <h2>Message sur plaque</h2>
+                </div>
+                <textarea id="msg-input" class="msg-area"
+                    placeholder="Écrivez votre message ici... (ex: Joyeux Anniversaire)" maxlength="35"></textarea>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">Le message sera inscrit sur
+                    une plaque déposée sur le gâteau.</p>
             </div>
         </div>
 
-        <div class="summary-box">
-            <p id="summary">Chargement...</p>
+        <div class="summary-panel">
+            <p id="summary-text">Initialisation du configurateur...</p>
         </div>
 
-        <button class="btn-order">🛍️ Commander cette création</button>
+        <button class="order-btn">
+            <svg class="icon" style="stroke: white;">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                <path d="M3 6h18" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+            Réserver ma création
+        </button>
     </aside>
 
     <main class="right-panel">
-        <div id="scene-container"></div>
-        <div class="viewer-badges">
-            <div class="viewer-badge">⭐ Artisanal</div>
-            <div class="viewer-badge" style="animation-delay: 1s">🫶 Fait main</div>
-            <div class="viewer-badge" style="animation-delay: 2s">🎯 Sur mesure</div>
+        <div id="cake-viewer"></div>
+        <div class="status-labels">
+            <div class="status-label">✨ Excellence Artisanal</div>
+            <div class="status-label" style="animation-delay: 1.5s">👩‍🍳 Fait Main</div>
+            <div class="status-label" style="animation-delay: 3s">🎯 Design Sur Mesure</div>
         </div>
-        <div id="hint-rotate" class="hint-rotate">↻ Faites tourner</div>
+        <div id="rotate-hint" class="rotate-hint">
+            <svg class="icon" style="width:14px; height:14px; stroke:white;">
+                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            Explorez à 360°
+        </div>
     </main>
 
     <script>
         /**
-         * GLOBAL STATE & DEFINITIONS
+         * ENGINE & STATE
          */
         const flavors = [
-            { id: 'choc', name: 'Chocolat Noir', emoji: '🍫', color: '#2C1008', frosting: '#3D1A00' },
-            { id: 'vanille', name: 'Vanille Bourbon', emoji: '🤍', color: '#F5E6C8', frosting: '#FFFFFF' },
-            { id: 'fraise', name: 'Fraise Fraîche', emoji: '🍓', color: '#E8506A', frosting: '#FF8FA3' },
-            { id: 'pistache', name: 'Pistache', emoji: '🌿', color: '#6B9E5E', frosting: '#8BC34A' },
-            { id: 'caramel', name: 'Caramel Beurre Salé', emoji: '🧈', color: '#C8832A', frosting: '#D4860B' },
-            { id: 'citron', name: 'Citron Givré', emoji: '🍋', color: '#F5F0A0', frosting: '#FFFACD' },
-            { id: 'cafe', name: 'Café Viennois', emoji: '☕', color: '#4A2C17', frosting: '#6F4E37' },
-            { id: 'framboise', name: 'Framboise Royale', emoji: '🍇', color: '#C0185A', frosting: '#E91E63' },
-            { id: 'mangue', name: 'Mangue Passion', emoji: '🥭', color: '#FF8C00', frosting: '#FFB347' },
-            { id: 'matcha', name: 'Matcha Zen', emoji: '🍵', color: '#4A7C59', frosting: '#7BB661' },
-            { id: 'speculoos', name: 'Spéculoos', emoji: '🍪', color: '#C8832A', frosting: '#E1B382' },
-            { id: 'rose', name: 'Rose Litchi', emoji: '🌸', color: '#FFB6C1', frosting: '#FFD1DC' }
+            { id: 'choc', name: 'Chocolat Noir', color: '#2C1008', frosting: '#3D1A00' },
+            { id: 'vanille', name: 'Vanille Bourbon', color: '#F5E6C8', frosting: '#FFFFFF' },
+            { id: 'fraise', name: 'Fraise Fraîche', color: '#E8506A', frosting: '#FF8FA3' },
+            { id: 'pistache', name: 'Pistache', color: '#6B9E5E', frosting: '#8BC34A' },
+            { id: 'caramel', name: 'Caramel Beurre Salé', color: '#C8832A', frosting: '#D4860B' },
+            { id: 'citron', name: 'Citron Givré', color: '#F5F0A0', frosting: '#FFFACD' },
+            { id: 'cafe', name: 'Café Viennois', color: '#4A2C17', frosting: '#6F4E37' },
+            { id: 'framboise', name: 'Framboise Royale', color: '#C0185A', frosting: '#E91E63' },
+            { id: 'mangue', name: 'Mangue Passion', color: '#FF8C00', frosting: '#FFB347' },
+            { id: 'matcha', name: 'Matcha Zen', color: '#4A7C59', frosting: '#7BB661' },
+            { id: 'speculoos', name: 'Spéculoos', color: '#C8832A', frosting: '#E1B382' },
+            { id: 'rose', name: 'Rose Litchi', color: '#FFB6C1', frosting: '#FFD1DC' }
         ];
 
         let state = {
@@ -558,83 +822,57 @@
         let rebuildTimeout;
 
         /**
-         * PROCEDURAL TEXTURE GENERATOR
+         * TEXTURE GENERATOR
          */
-        function getTexture(flavorId, type) {
-            const cacheKey = `${flavorId}-${type}-${state.glacage}`;
-            if (textureCache.has(cacheKey)) return textureCache.get(cacheKey);
+        function generateTexture(flavorId, type) {
+            const key = `${flavorId}-${type}-${state.glacage}`;
+            if (textureCache.has(key)) return textureCache.get(key);
 
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
             const flavor = flavors.find(f => f.id === flavorId);
-            const color = type === 'sponge' ? flavor.color : (state.glacage === 'Chantilly' ? '#FFFFFF' : flavor.frosting);
+            const baseColor = type === 'sponge' ? flavor.color : (state.glacage === 'Chantilly' ? '#FFFFFF' : flavor.frosting);
 
-            // Base fill
-            ctx.fillStyle = color;
+            ctx.fillStyle = baseColor;
             ctx.fillRect(0, 0, 512, 512);
 
-            // Add grain/seeds
-            if (flavorId === 'choc') {
-                for (let i = 0; i < 200; i++) {
-                    ctx.fillStyle = '#3D1A00'; ctx.beginPath();
-                    ctx.ellipse(Math.random() * 512, Math.random() * 512, Math.random() * 4 + 2, Math.random() * 4 + 2, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            } else if (flavorId === 'vanille') {
-                for (let i = 0; i < 300; i++) {
-                    ctx.fillStyle = '#8B6914'; ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 1);
-                }
-            } else if (flavorId === 'fraise') {
-                for (let i = 0; i < 30; i++) {
-                    ctx.fillStyle = '#FFD700'; ctx.beginPath();
-                    ctx.ellipse(Math.random() * 512, Math.random() * 512, 2, 4, Math.random(), 0, Math.PI * 2); ctx.fill();
-                }
-            } else if (flavorId === 'pistache') {
-                ctx.strokeStyle = '#8BC34A'; ctx.lineWidth = 2;
-                for (let i = 0; i < 10; i++) {
-                    ctx.beginPath(); ctx.moveTo(Math.random() * 512, Math.random() * 512);
-                    ctx.bezierCurveTo(Math.random() * 512, Math.random() * 512, Math.random() * 512, Math.random() * 512, Math.random() * 512, Math.random() * 512);
-                    ctx.stroke();
-                }
+            // Details
+            ctx.globalAlpha = 0.4;
+            for (let i = 0; i < 400; i++) {
+                ctx.fillStyle = i % 2 === 0 ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+                ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
             }
-
-            // Frosting Pattern
-            if (type === 'frosting' && state.glacage !== 'Naked') {
-                ctx.globalAlpha = 0.2;
-                ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 40;
-                for (let i = 0; i < 5; i++) {
-                    ctx.beginPath(); ctx.arc(Math.random() * 512, Math.random() * 512, 300, 0, Math.PI * 2); ctx.stroke();
-                }
+            if (flavorId === 'vanille') {
+                ctx.fillStyle = '#442200'; ctx.globalAlpha = 0.3;
+                for (let i = 0; i < 1000; i++) ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 1);
             }
 
             const tex = new THREE.CanvasTexture(canvas);
-            tex.anisotropy = 16;
-            textureCache.set(cacheKey, tex);
+            tex.anisotropy = 8;
+            textureCache.set(key, tex);
             return tex;
         }
 
         /**
-         * UI LOGIC
+         * UI ACTIONS
          */
         function initUI() {
-            // Populate Flavors
-            const fGrid = document.getElementById('saveur-grid');
+            const fContainer = document.getElementById('flavor-container');
             flavors.forEach(f => {
-                const btn = document.createElement('div');
-                btn.className = `card-opt ${state.flavor.id === f.id ? 'active' : ''}`;
-                btn.innerHTML = `<div class="dot" style="background:${f.color}"></div><span>${f.emoji} ${f.name}</span>`;
-                btn.onclick = () => {
-                    document.querySelectorAll('#saveur-grid .card-opt').forEach(el => el.classList.remove('active'));
-                    btn.classList.add('active');
+                const item = document.createElement('div');
+                item.className = `flavor-item ${state.flavor.id === f.id ? 'active' : ''}`;
+                item.innerHTML = `<div class="macaron-marker" style="background: linear-gradient(135deg, ${f.frosting}, ${f.color})"></div><span>${f.name}</span>`;
+                item.onclick = () => {
+                    document.querySelectorAll('.flavor-item').forEach(el => el.classList.remove('active'));
+                    item.classList.add('active');
                     state.flavor = f;
                     updateUIContent();
                     updateCakeMaterials();
                 };
-                fGrid.appendChild(btn);
+                fContainer.appendChild(item);
             });
 
-            // Tab Switching
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.onclick = () => {
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -644,79 +882,64 @@
                 };
             });
 
-            // Generic Chip Options
             ['glacage', 'format', 'occasion'].forEach(key => {
-                document.querySelectorAll(`#${key}-grid .card-opt`).forEach(btn => {
-                    btn.onclick = () => {
-                        document.querySelectorAll(`#${key}-grid .card-opt`).forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-                        state[key] = btn.dataset.val;
+                document.querySelectorAll(`#${key}-grid .opt-card`).forEach(card => {
+                    card.onclick = () => {
+                        document.querySelectorAll(`#${key}-grid .opt-card`).forEach(c => c.classList.remove('active'));
+                        card.classList.add('active');
+                        state[key] = card.dataset.val;
                         updateUIContent();
                         debounceRebuild();
                     };
                 });
             });
 
-            // Sliders
-            document.getElementById('input-etages').oninput = (e) => {
+            document.getElementById('slider-etages').oninput = (e) => {
                 state.etages = parseInt(e.target.value);
-                document.getElementById('val-etages').innerText = state.etages;
-                updateUIContent();
-                debounceRebuild();
-            };
-            document.getElementById('input-parts').oninput = (e) => {
-                state.parts = parseInt(e.target.value);
-                document.getElementById('val-parts').innerText = state.parts;
-                updateUIContent();
-                updateCakeSlices();
+                document.getElementById('etage-count').innerText = state.etages;
+                updateUIContent(); debounceRebuild();
             };
 
-            // Message
-            document.getElementById('input-msg').oninput = (e) => {
+            document.getElementById('slider-parts').oninput = (e) => {
+                state.parts = parseInt(e.target.value);
+                document.getElementById('parts-count').innerText = state.parts;
+                updateUIContent(); updateSlices();
+            };
+
+            document.getElementById('msg-input').oninput = (e) => {
                 state.message = e.target.value;
-                debounceRebuild(); // Ribbon updates
+                debounceRebuild();
             };
 
             updateUIContent();
         }
 
         function updateUIContent() {
-            document.getElementById('summary').innerHTML = `Gâteau <b>${state.format}</b> saveur <b>${state.flavor.name}</b>, <b>${state.etages}</b> étages, <b>${state.parts}</b> parts. Occasion: <b>${state.occasion}</b>.`;
+            document.getElementById('summary-text').innerHTML = `Gâteau <b>${state.format}</b> saveur <b>${state.flavor.name}</b>, de <b>${state.etages}</b> étages pour <b>${state.parts}</b> gourmands.`;
         }
 
-        function resetConfig() {
-            state = { flavor: flavors[0], glacage: 'Lisse', format: 'Rond', etages: 3, parts: 12, occasion: 'Anniversaire', message: '' };
-            location.reload();
-        }
-
-        function debounceRebuild() {
-            clearTimeout(rebuildTimeout);
-            rebuildTimeout = setTimeout(rebuildCake, 100);
-        }
+        function resetConfig() { location.reload(); }
+        function debounceRebuild() { clearTimeout(rebuildTimeout); rebuildTimeout = setTimeout(rebuildCake, 150); }
 
         /**
-         * THREE.JS CORE
+         * 3D ENGINE
          */
         function initThree() {
-            const container = document.getElementById('scene-container');
-            const w = container.clientWidth, h = container.clientHeight;
-
+            const container = document.getElementById('cake-viewer');
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
-            camera.position.set(0, 4, controls.zoom);
+            camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 5, controls.zoom);
             camera.lookAt(0, 2, 0);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setSize(w, h);
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            // Lighting
-            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambient);
-            const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-            sun.position.set(5, 10, 7); sun.castShadow = true;
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const sun = new THREE.DirectionalLight(0xffffff, 0.6);
+            sun.position.set(10, 20, 10); sun.castShadow = true;
             scene.add(sun);
 
             cakeGroup = new THREE.Group();
@@ -724,39 +947,29 @@
 
             // Plate
             const plateGeo = new THREE.CylinderGeometry(5.2, 5, 0.2, 64);
-            const plateMat = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 100 });
+            const plateMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, metalness: 0.1 });
             plate = new THREE.Mesh(plateGeo, plateMat);
             plate.position.y = -0.1; plate.receiveShadow = true;
             scene.add(plate);
 
             rebuildCake();
-            setupControls(container);
+            setupInteractions();
             animate();
-
-            setTimeout(() => document.getElementById('hint-rotate').style.opacity = 0, 3000);
+            setTimeout(() => document.getElementById('rotate-hint').style.opacity = 0, 4000);
         }
 
-        /**
-         * GEOMETRY GENERATORS
-         */
-        function getHeartShape() {
-            const s = 1;
-            const shape = new THREE.Shape();
-            shape.moveTo(0, 0.4 * s);
-            shape.bezierCurveTo(0, 0.4 * s, -0.1 * s, 0, -0.5 * s, 0);
-            shape.bezierCurveTo(-1.1 * s, 0, -1.1 * s, 0.7 * s, -1.1 * s, 0.7 * s);
-            shape.bezierCurveTo(-1.1 * s, 1.1 * s, -0.8 * s, 1.54 * s, 0, 1.9 * s);
-            shape.bezierCurveTo(0.8 * s, 1.54 * s, 1.1 * s, 1.1 * s, 1.1 * s, 0.7 * s);
-            shape.bezierCurveTo(1.1 * s, 0.7 * s, 1.1 * s, 0, 0.5 * s, 0);
-            shape.bezierCurveTo(0.2 * s, 0, 0, 0.4 * s, 0, 0.4 * s);
-            return shape;
-        }
-
-        function createGeometry(type, r, h) {
+        function createShapeGeometry(type, r, h) {
             if (type === 'Carré') return new THREE.BoxGeometry(r * 1.8, h, r * 1.8);
             if (type === 'Rectangle') return new THREE.BoxGeometry(r * 2.5, h, r * 1.5);
             if (type === 'Cœur') {
-                const shape = getHeartShape();
+                const s = 1; const shape = new THREE.Shape();
+                shape.moveTo(0, 0.4 * s);
+                shape.bezierCurveTo(0, 0.4 * s, -0.1 * s, 0, -0.5 * s, 0);
+                shape.bezierCurveTo(-1.1 * s, 0, -1.1 * s, 0.7 * s, -1.1 * s, 0.7 * s);
+                shape.bezierCurveTo(-1.1 * s, 1.1 * s, -0.8 * s, 1.54 * s, 0, 1.9 * s);
+                shape.bezierCurveTo(0.8 * s, 1.54 * s, 1.1 * s, 1.1 * s, 1.1 * s, 0.7 * s);
+                shape.bezierCurveTo(1.1 * s, 0.7 * s, 1.1 * s, 0, 0.5 * s, 0);
+                shape.bezierCurveTo(0.2 * s, 0, 0, 0.4 * s, 0, 0.4 * s);
                 const geo = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05 });
                 geo.center(); geo.rotateX(Math.PI / 2); geo.rotateZ(Math.PI);
                 geo.scale(r * 0.9, 1, r * 0.9);
@@ -765,11 +978,7 @@
             return new THREE.CylinderGeometry(r, r, h, 64);
         }
 
-        /**
-         * CAKE BUILDING
-         */
         function rebuildCake() {
-            // Dispose existing
             while (cakeGroup.children.length > 0) {
                 const c = cakeGroup.children[0];
                 if (c.geometry) c.geometry.dispose();
@@ -777,224 +986,154 @@
                 cakeGroup.remove(c);
             }
 
-            const h = 1.4;
-            let radius = 3.5;
-            let currentY = h / 2;
+            const h = 1.3; let radius = 3.6; let currentY = h / 2;
 
             for (let i = 0; i < state.etages; i++) {
                 const tier = new THREE.Group();
-                const rTier = radius - (i * 0.6);
+                const rT = radius - (i * 0.65);
 
-                // Sponge
-                const geoSponge = createGeometry(state.format, rTier * 0.98, h);
-                const matSponge = new THREE.MeshStandardMaterial({ map: getTexture(state.flavor.id, 'sponge') });
-                const sponge = new THREE.Mesh(geoSponge, matSponge);
+                // Base
+                const spongeGeo = createShapeGeometry(state.format, rT * 0.98, h);
+                const sponge = new THREE.Mesh(spongeGeo, new THREE.MeshStandardMaterial({ map: generateTexture(state.flavor.id, 'sponge') }));
                 sponge.castShadow = true; sponge.receiveShadow = true;
                 tier.add(sponge);
 
                 // Frosting
                 if (state.glacage !== 'Naked') {
-                    const geoFrost = createGeometry(state.format, rTier, h + 0.02);
-                    let matFrost;
-                    if (state.glacage === 'Texturé') {
-                        matFrost = new THREE.MeshStandardMaterial({ map: getTexture(state.flavor.id, 'frosting'), roughness: 0.85, bumpScale: 0.3 });
-                    } else if (state.glacage === 'Miroir') {
-                        matFrost = new THREE.MeshPhongMaterial({ map: getTexture(state.flavor.id, 'frosting'), shininess: 300, specular: 0xffffff });
-                    } else {
-                        // Lisse or Chantilly base
-                        matFrost = new THREE.MeshPhongMaterial({ map: getTexture(state.flavor.id, 'frosting'), shininess: 80 });
-                    }
-                    const frost = new THREE.Mesh(geoFrost, matFrost);
-                    frost.castShadow = true;
-                    tier.add(frost);
+                    const frostGeo = createShapeGeometry(state.format, rT, h + 0.02);
+                    let mat;
+                    if (state.glacage === 'Texturé') mat = new THREE.MeshStandardMaterial({ map: generateTexture(state.flavor.id, 'frosting'), roughness: 0.9, bumpScale: 0.2 });
+                    else if (state.glacage === 'Miroir') mat = new THREE.MeshPhongMaterial({ map: generateTexture(state.flavor.id, 'frosting'), shininess: 200, specular: 0xffffff });
+                    else mat = new THREE.MeshPhongMaterial({ map: generateTexture(state.flavor.id, 'frosting'), shininess: 60 });
+                    const frost = new THREE.Mesh(frostGeo, mat);
+                    frost.castShadow = true; tier.add(frost);
                 }
 
-                // Chantilly dollops
+                // Chantilly
                 if (state.glacage === 'Chantilly') {
-                    const dollopGeo = new THREE.SphereGeometry(0.12, 12, 12);
-                    const dollopMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
-                    for (let j = 0; j < 12; j++) {
-                        const d = new THREE.Mesh(dollopGeo, dollopMat);
-                        const angle = (j / 12) * Math.PI * 2;
-                        d.position.set(Math.cos(angle) * (rTier - 0.1), h / 2, Math.sin(angle) * (rTier - 0.1));
+                    const dGeo = new THREE.SphereGeometry(0.12, 12, 12);
+                    const dMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
+                    for (let j = 0; j < 16; j++) {
+                        const d = new THREE.Mesh(dGeo, dMat);
+                        const a = (j / 16) * Math.PI * 2;
+                        d.position.set(Math.cos(a) * (rT - 0.15), h / 2, Math.sin(a) * (rT - 0.15));
                         tier.add(d);
                     }
                 }
 
-                // Separator
-                if (i > 0) {
-                    const ring = new THREE.Mesh(new THREE.CylinderGeometry(rTier + 0.1, rTier + 0.1, 0.05, 32), new THREE.MeshPhongMaterial({ color: 0xfff5e6 }));
-                    ring.position.y = -h / 2; tier.add(ring);
-                }
-
                 tier.position.y = currentY;
-                tier.userData.targetY = currentY;
-                tier.scale.y = 0; // Animation start
+                tier.scale.set(0, 0, 0); // For animation
                 cakeGroup.add(tier);
                 currentY += h;
             }
 
             addDecorations(currentY - h);
-            updateCakeSlices();
-            addMessageRibbon();
+            updateSlices();
+            addPlaqueMessage(currentY - h);
         }
 
         function addDecorations(topY) {
-            const h = 1.4;
-            const r = 3.5 - (state.etages - 1) * 0.6;
-
+            const r = 3.6 - (state.etages - 1) * 0.65;
             if (state.occasion === 'Anniversaire') {
-                const candleGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.6);
-                const flameGeo = new THREE.SphereGeometry(0.06, 8, 8);
-                const candleMat = new THREE.MeshPhongMaterial({ color: 0xff1f8e });
-                const flameMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
-                for (let i = 0; i < 5; i++) {
-                    const g = new THREE.Group();
-                    const c = new THREE.Mesh(candleGeo, candleMat);
-                    const f = new THREE.Mesh(flameGeo, flameMat);
-                    f.position.y = 0.35; g.add(c); g.add(f);
-                    const angle = (i / 5) * Math.PI * 2;
-                    g.position.set(Math.cos(angle) * r * 0.6, topY + h / 2 + 0.3, Math.sin(angle) * r * 0.6);
-                    cakeGroup.add(g);
+                const candleMat = new THREE.MeshPhongMaterial({ color: 0xFF1F8E });
+                for (let i = 0; i < 3; i++) {
+                    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.7), candleMat);
+                    const f = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), new THREE.MeshBasicMaterial({ color: 0xFFD700 }));
+                    f.position.y = 0.4; c.add(f);
+                    const a = (i / 3) * Math.PI * 2;
+                    c.position.set(Math.cos(a) * r * 0.5, topY + 0.65 + 0.35, Math.sin(a) * r * 0.5);
+                    cakeGroup.add(c);
                 }
             } else if (state.occasion === 'Mariage') {
-                const flowerGeo = new THREE.TorusGeometry(0.15, 0.05, 8, 24);
                 const flowerMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
                 for (let i = 0; i < state.etages; i++) {
-                    const f = new THREE.Mesh(flowerGeo, flowerMat);
-                    const rTier = 3.5 - i * 0.6;
-                    f.position.set(rTier, (i + 0.5) * h, 0); f.rotateY(Math.PI / 2);
-                    cakeGroup.add(f);
-                }
-            } else if (state.occasion === 'Autre') {
-                // Gold ribbons
-                const ribbonMat = new THREE.MeshPhongMaterial({ color: 0xd4af37, shininess: 100 });
-                for (let i = 0; i < state.etages; i++) {
-                    const rTier = 3.5 - i * 0.6;
-                    const r = new THREE.Mesh(new THREE.TorusGeometry(rTier + 0.05, 0.03, 8, 64), ribbonMat);
-                    r.position.y = (i + 0.5) * h; r.rotateX(Math.PI / 2);
-                    cakeGroup.add(r);
+                    const fl = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.06, 8, 24), flowerMat);
+                    fl.position.set(3.6 - i * 0.65, (i + 0.5) * 1.3, 0); fl.rotateY(Math.PI / 2);
+                    cakeGroup.add(fl);
                 }
             }
         }
 
-        function updateCakeSlices() {
-            // Remove existing slice lines
+        function updateSlices() {
             cakeGroup.children.forEach(c => { if (c.userData.isSlice) cakeGroup.remove(c); });
-            const topY = state.etages * 1.4;
-            const r = 3.5 - (state.etages - 1) * 0.6;
-
-            const lineMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 });
+            const topY = state.etages * 1.3;
+            const r = 3.6 - (state.etages - 1) * 0.65;
+            const mat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.1 });
             for (let i = 0; i < state.parts; i++) {
-                const angle = (i / state.parts) * Math.PI * 2;
-                const points = [new THREE.Vector3(0, topY, 0), new THREE.Vector3(Math.cos(angle) * r, topY, Math.sin(angle) * r)];
-                const geo = new THREE.BufferGeometry().setFromPoints(points);
-                const line = new THREE.Line(geo, lineMat);
-                line.userData.isSlice = true;
+                const a = (i / state.parts) * Math.PI * 2;
+                const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, topY, 0), new THREE.Vector3(Math.cos(a) * r, topY, Math.sin(a) * r)]);
+                const line = new THREE.Line(geo, mat); line.userData.isSlice = true;
                 cakeGroup.add(line);
             }
         }
 
-        function addMessageRibbon() {
+        function addPlaqueMessage(topY) {
             if (!state.message) return;
             const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 128;
+            canvas.width = 400; canvas.height = 100;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#FFB6C1'; ctx.fillRect(0, 0, 512, 128);
-            ctx.fillStyle = '#2A1A22'; ctx.font = "italic 40px 'Playfair Display'";
-            ctx.textAlign = 'center'; ctx.fillText(state.message, 256, 75);
+
+            // Draw Chocolate/Sugar Plaque
+            ctx.fillStyle = '#4B2C20'; ctx.beginPath(); ctx.roundRect(0, 0, 400, 100, 20); ctx.fill();
+            ctx.strokeStyle = '#C9A84C'; ctx.lineWidth = 5; ctx.stroke();
+
+            ctx.fillStyle = '#FFFFFF'; ctx.font = "italic 32px 'Playfair Display'";
+            ctx.textAlign = 'center'; ctx.fillText(state.message, 200, 60);
 
             const tex = new THREE.CanvasTexture(canvas);
-            const r = 3.6;
-            const geo = new THREE.CylinderGeometry(r, r, 0.6, 32, 1, true, -Math.PI / 4, Math.PI / 2);
-            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
-            const ribbon = new THREE.Mesh(geo, mat);
-            ribbon.position.y = 0.7;
-            cakeGroup.add(ribbon);
+            const plaque = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.05, 0.6), new THREE.MeshPhongMaterial({ map: tex }));
+            plaque.position.set(0, topY + 0.68, 0.8);
+            plaque.rotateX(-0.1); // Slight tilt
+            cakeGroup.add(plaque);
         }
 
         function updateCakeMaterials() {
-            cakeGroup.children.forEach(tier => {
-                if (tier.type === 'Group') {
-                    tier.children.forEach(m => {
-                        if (m.material && m.material.map) {
-                            const type = m.geometry.type.includes('Box') || m.geometry.type.includes('Cylinder') ? (m.scale.x > 0.99 ? 'frosting' : 'sponge') : 'frosting';
-                            m.material.map = getTexture(state.flavor.id, type);
-                            m.material.needsUpdate = true;
-                        }
-                    });
+            cakeGroup.traverse(c => {
+                if (c.material && c.material.map) {
+                    const type = c.scale.y > 0.9 ? 'frosting' : 'sponge';
+                    c.material.map = generateTexture(state.flavor.id, type);
+                    c.material.needsUpdate = true;
                 }
             });
         }
 
-        /**
-         * CONTROLS & ANIMATION
-         */
-        function setupControls(container) {
-            container.addEventListener('mousedown', e => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
+        function setupInteractions() {
+            const el = document.getElementById('cake-viewer');
+            el.addEventListener('mousedown', e => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
             window.addEventListener('mousemove', e => {
                 if (!isDragging) return;
-                const deltaX = e.clientX - prevMouse.x;
-                const deltaY = e.clientY - prevMouse.y;
-                controls.rotY += deltaX * 0.01;
-                controls.rotX = Math.max(-0.4, Math.min(0.4, controls.rotX + deltaY * 0.01));
+                controls.rotY += (e.clientX - prevMouse.x) * 0.01;
+                controls.rotX = Math.max(-0.4, Math.min(0.4, controls.rotX + (e.clientY - prevMouse.y) * 0.01));
                 prevMouse = { x: e.clientX, y: e.clientY };
             });
             window.addEventListener('mouseup', () => isDragging = false);
-            container.addEventListener('wheel', e => {
-                controls.zoom = Math.max(4, Math.min(12, controls.zoom + e.deltaY * 0.01));
-            }, { passive: true });
-
-            container.ondblclick = () => { controls.rotX = 0; controls.rotY = 0; controls.zoom = 8; };
-
-            // Touch
-            container.addEventListener('touchstart', e => { isDragging = true; prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
-            container.addEventListener('touchmove', e => {
-                if (!isDragging) return;
-                const deltaX = e.touches[0].clientX - prevMouse.x;
-                const deltaY = e.touches[0].clientY - prevMouse.y;
-                controls.rotY += deltaX * 0.01;
-                controls.rotX = Math.max(-0.4, Math.min(0.4, controls.rotX + deltaY * 0.01));
-                prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            });
-            container.addEventListener('touchend', () => isDragging = false);
+            el.addEventListener('wheel', e => { controls.zoom = Math.max(4, Math.min(12, controls.zoom + e.deltaY * 0.01)); }, { passive: true });
+            el.ondblclick = () => { controls.rotX = 0; controls.rotY = 0; controls.zoom = 8; };
         }
 
         function animate() {
             requestAnimationFrame(animate);
-
             if (!isDragging) controls.rotY += 0.003;
-
             cakeGroup.rotation.y = controls.rotY;
             cakeGroup.rotation.x = controls.rotX;
             camera.position.z += (controls.zoom - camera.position.z) * 0.1;
 
-            // Tier scale animation
             cakeGroup.children.forEach(c => {
                 if (c.type === 'Group' && c.scale.y < 1) {
                     c.scale.y += (1 - c.scale.y) * 0.1;
                     c.scale.x = c.scale.z = c.scale.y;
                 }
             });
-
-            // Flame flicker
-            cakeGroup.traverse(c => {
-                if (c.geometry && c.geometry.type === 'SphereGeometry' && c.material.color.getHex() === 0xffd700) {
-                    c.scale.setScalar(0.9 + Math.random() * 0.2);
-                }
-            });
-
             renderer.render(scene, camera);
         }
 
-        function onResize() {
-            const container = document.getElementById('scene-container');
-            camera.aspect = container.clientWidth / container.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
-        }
-
-        window.onload = () => { initUI(); initThree(); window.onresize = onResize; };
+        window.onload = () => {
+            initUI(); initThree(); window.onresize = () => {
+                const c = document.getElementById('cake-viewer');
+                camera.aspect = c.clientWidth / c.clientHeight; camera.updateProjectionMatrix();
+                renderer.setSize(c.clientWidth, c.clientHeight);
+            }
+        };
     </script>
 </body>
 
