@@ -2020,6 +2020,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 await sendTelegramNotification(telegramMsg);
                 if (window.refreshOrderTracking) window.refreshOrderTracking();
 
+                // Prepare and send WhatsApp message
+                const whatsappMsg = `Bonjour Délice Cake ! 🍰\nJe valide la commande préparée avec Délice AI :\n\n*Ma commande :*\n${summary}\n\n*Total :* ${totalAmount.toLocaleString('fr-FR')} FCFA\n*Acompte :* ${depositToPay.toLocaleString('fr-FR')} FCFA\n\nMerci !`;
+
+                const rawWhatsappNum = (typeof DataService !== 'undefined' && DataService.getSiteSettingsSync && DataService.getSiteSettingsSync().whatsappNum) || "22656808872";
+                const cleanWaNum = rawWhatsappNum.replace(/\D/g, '');
+                const whatsappUrl = `https://api.whatsapp.com/send/?phone=${cleanWaNum}&text=${encodeURIComponent(whatsappMsg)}`;
+                window.open(whatsappUrl, '_blank');
+
                 // Trigger notification prompt after 2 seconds
                 setTimeout(() => {
                   if (typeof showProactiveNotifPrompt === 'function') showProactiveNotifPrompt();
