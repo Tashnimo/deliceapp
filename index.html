@@ -1192,6 +1192,32 @@
         }
 
         /* Red */
+
+        .close-track-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 24px;
+            height: 24px;
+            background: var(--pink);
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .close-track-btn:hover {
+            transform: scale(1.15);
+            background: #1a0a14;
+        }
     </style>
     <div id="active-orders-tracking" class="active-orders-container"></div>
 

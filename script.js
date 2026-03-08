@@ -1682,12 +1682,16 @@ function initOrderTracking() {
     }
 
     activeOrders.forEach(order => {
+      // Check if this specific order tracking has been dismissed for this session
+      if (sessionStorage.getItem(`dismiss_track_${order.id}`)) return;
+
       const statusIdx = ['new', 'processing', 'completed'].indexOf(order.status || 'new');
       const status = STATUS_REELS[order.status || 'new'];
 
       const card = document.createElement('div');
       card.className = 'order-tracking-card premium-tracking';
       card.innerHTML = `
+        <button class="close-track-btn" title="Fermer">&times;</button>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
            <div style="display:flex; align-items:center; gap:10px;">
               <div class="track-badge active status-${order.status || 'new'}"></div>
@@ -1713,6 +1717,17 @@ function initOrderTracking() {
            <span style="color:var(--pink); font-weight:700;">${order.totalAmount.toLocaleString()} FCFA</span>
         </div>
       `;
+
+      // Close button logic
+      const closeBtn = card.querySelector('.close-track-btn');
+      closeBtn.onclick = (e) => {
+        e.stopPropagation(); // Don't open modal
+        sessionStorage.setItem(`dismiss_track_${order.id}`, 'true');
+        card.style.transform = 'translateX(-100px)';
+        card.style.opacity = '0';
+        setTimeout(() => card.remove(), 300);
+      };
+
       card.onclick = () => {
         updateUI(order);
         modal.classList.add('active');
