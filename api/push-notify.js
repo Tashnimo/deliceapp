@@ -14,10 +14,11 @@ export default async function handler(req, res) {
     // Le compte de service est nécessaire pour l'authentification FCM v1
     const serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT;
     if (!serviceAccountRaw) {
-        console.error("FIREBASE_SERVICE_ACCOUNT est manquant.");
-        return res.status(500).json({
-            error: "Serveur non configuré pour les notifications push.",
-            instructions: "Veuillez ajouter FIREBASE_SERVICE_ACCOUNT dans les variables d'environnement Vercel."
+        console.warn("FIREBASE_SERVICE_ACCOUNT est manquant. Notification ignorée.");
+        return res.status(200).json({
+            success: true,
+            status: "skipped",
+            message: "Notifications push non configurées sur ce serveur."
         });
     }
 

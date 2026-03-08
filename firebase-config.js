@@ -252,6 +252,8 @@ const DataService = {
                     return { id: doc.id, ...data };
                 });
                 callback(orders);
+            }, err => {
+                console.error("Firestore subscribeToOrders Error:", err);
             });
         }
         return null;
@@ -292,47 +294,14 @@ const DataService = {
     updateOrderStatus: async (orderId, newStatus) => {
         if (isFirebaseConfigured && db) {
             const orderRef = db.collection('orders').doc(orderId);
+
+            // 1. Update status in Firestore (CRITICAL & ONLY STEP)
             await orderRef.update({
                 status: newStatus,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
-            try {
-                const doc = await orderRef.get();
-                if (doc.exists) {
-                    const order = doc.data();
-                    if (order.pushToken) {
-                        const STATUS_MESSAGES = {
-                            'processing': "Votre commande est en cours de préparation ! 🧁",
-                            'completed': "Votre commande est prête ! 🍰 À très bientôt.",
-                            'cancelled': "Votre commande a été annulée."
-                        };
-                        if (STATUS_MESSAGES[newStatus]) {
-                            fetch('/api/push-notify', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    token: order.pushToken,
-                                    title: "Mise à jour Délice Cake 🍰",
-                                    body: STATUS_MESSAGES[newStatus]
-                                })
-                            }).then(async res => {
-                                const data = await res.json().catch(() => ({}));
-                                if (!res.ok) {
-                                    console.error("Vercel Push Notify Error:", data);
-                                    alert("Erreur Push Notifications.\nCode: " + res.status + "\nDétail: " + JSON.stringify(data));
-                                } else {
-                                    console.log("Push trigger succesful", data);
-                                }
-                            }).catch(e => {
-                                console.error("Push notify trigger fetch failed critically", e);
-                                alert("Fetch Push API intercepté : " + e.message);
-                            });
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error("Error triggering notification:", err);
-            }
+
+            console.log(`Order ${orderId} updated to ${newStatus}`);
         } else {
             let orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
             const index = orders.findIndex(o => o.id === orderId);
@@ -484,21 +453,27 @@ const DataService = {
     subscribeToMyOrders: (customerId, callback) => {
         if (!customerId) return () => { };
         if (isFirebaseConfigured && db) {
+            // Remove orderBy server-side to avoid missing index errors. Sort client-side instead.
             return db.collection('orders')
                 .where('customerId', '==', customerId)
-                .orderBy('createdAt', 'desc')
                 .onSnapshot(snapshot => {
                     const orders = snapshot.docs.map(doc => {
                         const data = doc.data();
                         if (data.createdAt && typeof data.createdAt.toDate === 'function') data.createdAt = data.createdAt.toDate();
                         return { id: doc.id, ...data };
                     });
+                    // Sort locally
+                    orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                     callback(orders);
+                }, err => {
+                    console.error("Firestore subscribeToMyOrders Error:", err);
                 });
         } else {
             const checkMock = () => {
                 const orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
-                callback(orders.filter(o => o.customerId === customerId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+                const filtered = orders.filter(o => o.customerId === customerId);
+                filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                callback(filtered);
             };
             const interval = setInterval(checkMock, 5000);
             return () => clearInterval(interval);

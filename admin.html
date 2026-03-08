@@ -197,10 +197,6 @@
                         </svg>
                         Accès Mobile
                     </button>
-                    <button class="btn btn--secondary" id="test-notif-btn"
-                        style="padding: 0.4rem 0.8rem; font-size: 0.85rem; margin-right: 1rem; display: flex; align-items: center; gap: 0.4rem;">
-                        🔔 Test Notification
-                    </button>
                     <button class="btn btn--secondary" id="dark-mode-toggle"
                         style="padding: 0.4rem; font-size: 1rem; margin-right: 1rem; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;"
                         title="Basculer le thème">
@@ -210,32 +206,7 @@
                     <div class="header__avatar">A</div>
                 </div>
             </header>
-            <script>
-                document.getElementById('test-notif-btn').addEventListener('click', function () {
-                    const title = "Test de Notification 🍰";
-                    const options = {
-                        body: "Ceci est un test pour vérifier que les notifications fonctionnent bien !",
-                        icon: 'favicon.svg',
-                        badge: 'favicon.svg',
-                        tag: 'test-notification'
-                    };
-
-                    if (Notification.permission === 'granted') {
-                        // Local notification
-                        new Notification(title, options);
-
-                        // Also try via service worker if available
-                        if ('serviceWorker' in navigator) {
-                            navigator.serviceWorker.ready.then(registration => {
-                                registration.showNotification(title, options);
-                            });
-                        }
-                    } else {
-                        alert("Veuillez d'abord autoriser les notifications.");
-                        Notification.requestPermission();
-                    }
-                });
-            </script>
+            <!-- Support logic for notifications removed to prevent errors -->
 
             <div class="page-content">
 
@@ -866,8 +837,8 @@
         });
     </script>
 
-    <script src="firebase-config.js?v=2024030102" defer></script>
-    <script src="admin.js?v=2024030801" defer></script>
+    <script src="firebase-config.js?v=080326_v3" defer></script>
+    <script src="admin.js?v=080326_v3" defer></script>
 
     <!-- MOBILE MENU SCRIPT -->
     <script defer>

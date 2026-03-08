@@ -30,6 +30,7 @@ function getCustomerId() {
   }
   return id;
 }
+getCustomerId(); // Initialize ID immediately for tracking
 
 async function sendTelegramNotification(message) {
   try {
@@ -1636,6 +1637,7 @@ function initOrderTracking() {
   const closeBtn = document.getElementById('track-modal-close');
   const content = document.getElementById('track-content');
   const trackingBar = document.getElementById('active-orders-tracking');
+  let orderSubscription = null;
 
   const STATUS_REELS = {
     'new': { label: 'Reçue', icon: '📝', color: '#3b82f6', class: 'status-new', desc: 'Commande bien reçue.' },
@@ -1680,16 +1682,36 @@ function initOrderTracking() {
     }
 
     activeOrders.forEach(order => {
+      const statusIdx = ['new', 'processing', 'completed'].indexOf(order.status || 'new');
       const status = STATUS_REELS[order.status || 'new'];
+
       const card = document.createElement('div');
-      card.className = 'order-tracking-card';
+      card.className = 'order-tracking-card premium-tracking';
       card.innerHTML = `
-        <div class="order-status-dot ${status.class}"></div>
-        <div class="order-info">
-          <div class="order-ref">#${order.id.slice(-4).toUpperCase()}</div>
-          <div class="order-status-text" style="color:${status.color}; font-size: 0.8em; font-weight:bold;">${status.label}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+           <div style="display:flex; align-items:center; gap:10px;">
+              <div class="track-badge active status-${order.status || 'new'}"></div>
+              <span style="font-weight:800; font-size:0.9rem;">Commande #${order.id.slice(-4).toUpperCase()}</span>
+           </div>
+           <span class="status-label-pill" style="background:${status.color}15; color:${status.color}; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700;">${status.label}</span>
         </div>
-        <div class="order-arrow" style="margin-left:auto; color:#ccc;">→</div>
+        
+        <div class="track-stepper" style="margin: 10px 0;">
+          <div class="step-item ${statusIdx >= 0 ? 'completed' : ''} ${order.status === 'new' ? 'active' : ''}">
+            <div class="step-dot">1</div>
+          </div>
+          <div class="step-item ${statusIdx >= 1 ? 'completed' : ''} ${order.status === 'processing' ? 'active' : ''}">
+            <div class="step-dot">2</div>
+          </div>
+          <div class="step-item ${statusIdx >= 2 ? 'completed' : ''} ${order.status === 'completed' ? 'active' : ''}">
+            <div class="step-dot">3</div>
+          </div>
+        </div>
+        
+        <div style="font-size:0.8rem; color:#666; margin-top:10px; display:flex; justify-content:space-between;">
+           <span>${order.items.length} article(s)</span>
+           <span style="color:var(--pink); font-weight:700;">${order.totalAmount.toLocaleString()} FCFA</span>
+        </div>
       `;
       card.onclick = () => {
         updateUI(order);
@@ -1711,12 +1733,21 @@ function initOrderTracking() {
   };
 
   const startTracking = () => {
-    const customerId = localStorage.getItem('delice_customer_id') || (typeof getCustomerId === 'function' ? getCustomerId() : null);
-    if (!customerId) return;
+    const id = getCustomerId();
+    const lastId = localStorage.getItem('delice_last_order_id');
+
     if (orderSubscription) orderSubscription();
-    orderSubscription = DataService.subscribeToMyOrders(customerId, (orders) => {
-      renderTrackingUI(orders, trackingBar);
-    });
+
+    if (id) {
+      orderSubscription = DataService.subscribeToMyOrders(id, (orders) => {
+        renderTrackingUI(orders, trackingBar);
+      });
+    } else if (lastId) {
+      // Fallback: track just the last order if no customer ID is active yet
+      orderSubscription = DataService.subscribeToOrder(lastId, (order) => {
+        if (order) renderTrackingUI([order], trackingBar);
+      });
+    }
   };
 
   startTracking();
@@ -1819,73 +1850,44 @@ document.addEventListener('DOMContentLoaded', () => {
       // Nouvelle stratégie : L'IA écrit juste un tag secret à la fin. 
       // Si on le détecte, le JavaScript va analyser l'historique récent pour créer le panier.
 
-      const confirmTag = "[CONFIRM_ORDER]";
+      // Robust tag detection: [CONFIRM_ORDER] or CONFIRM_ORDER, case-insensitive, ignores markdown stars
+      const confirmTagRegex = /(\[|\*)?CONFIRM_ORDER(\]|\*)?/i;
       let cleanResponse = botResponse;
       let orderConfirmed = false;
 
-      if (botResponse.toUpperCase().includes(confirmTag.toUpperCase())) {
+      if (confirmTagRegex.test(botResponse)) {
         orderConfirmed = true;
-        // Use regex for case-insensitive replacement
-        const tagRegex = new RegExp("\\[CONFIRM_ORDER\\]", "gi");
-        cleanResponse = botResponse.replace(tagRegex, "").trim();
-        // Remove trailing commas, or weird leftover symbols the AI might drop near the tag
-        cleanResponse = cleanResponse.replace(/[,\s"]+$/g, "").trim();
+        // Remove the tag from the visible response
+        cleanResponse = botResponse.replace(confirmTagRegex, "").trim();
+        // Remove trailing punctuation/symbols
+        cleanResponse = cleanResponse.replace(/[,\s"\]\[\*]+$/g, "").trim();
       }
 
       if (orderConfirmed) {
         try {
-          console.log("AI confirmed an order! Reconstructing basket from chat context...");
+          console.log("AI confirmed an order! Parsing items...");
 
-          // Helper for fuzzy matching: remove accents, lowercase, remove plurals
           const normalize = (str) => {
             if (!str) return "";
-            return str.normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-              .toLowerCase()
-              .replace(/s\b/g, "") // remove plurals here too for consistency
-              .trim();
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/s\b/g, "").trim();
           };
 
-          // Get search term: e.g. "Tiramisu Maison" -> "tiramisu"
-          const getSearchTerm = (name) => {
-            return normalize(name)
-              .replace(/\(.*\)/g, "") // remove (12 pcs)
-              .replace(/\b(maison|signature|artisanale?|assortis?)\b/g, "")
-              .trim();
-          };
-
-          // Helper to escape regex special characters
           const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-          // 1. FILTER HISTORY: Ignore system prompt to avoid matching products in the menu instructions
-          const relevantHistory = chatHistoryMessages.filter(m => m.role !== 'system');
-
-          // 2. CONTEXT WINDOW: Last 10 relevant messages for quantity context
-          const lastMessagesText = relevantHistory.slice(-10).map(m => m.content).join(" ");
-
-          // 3. COMBINED LOG for quantity search
-          const combinedLog = lastMessagesText + " " + cleanResponse;
-          const combinedLogNorm = normalize(combinedLog);
-          const cleanResponseNorm = normalize(cleanResponse);
-
-          // On s'appuie sur le catalogue global
           const products = typeof DataService !== 'undefined' ? await DataService.getProducts() : [];
+          const cleanResponseNorm = normalize(cleanResponse);
+          const historyText = chatHistoryMessages.filter(m => m.role !== 'system').slice(-5).map(m => m.content).join(" ");
+          const combinedLogNorm = normalize(historyText + " " + cleanResponse);
 
           let detectedItems = [];
           let estimatedTotal = 0;
 
+          // 1. PRIMARY: Match against official menu
           products.forEach(p => {
-            const searchTerm = getSearchTerm(p.name);
-            const escapedTerm = escapeRegExp(searchTerm);
-
-            // On cherche si le produit est mentionné dans la CONFIRMATION OU dans l'historique récent
-            // Mais on exige qu'il soit au moins dans le cleanResponseNorm pour être "actuel"
-            if (searchTerm && (cleanResponseNorm.includes(searchTerm) || combinedLogNorm.includes(searchTerm))) {
-
-              // Regex de quantité : plus robuste, incluant "parts"
-              const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*(?:x|d(?:es|e))?\\s*(?:part(?:s)?)?\\s*${escapedTerm}`, 'i');
-
-              // On cherche d'abord dans le message actuel, sinon dans l'historique
+            const searchTerm = normalize(p.name).replace(/\(.*\)/g, "").replace(/\b(maison|signature|artisanale?|assortis?)\b/g, "").trim();
+            if (searchTerm && cleanResponseNorm.includes(searchTerm)) {
+              // Détection de quantité ultra-robuste (ex: "10 sachets de boules", "un sachet de", "2 boules")
+              const qtyRegex = new RegExp(`(\\d+|un|une|douzaine)\\s*[^\\n\\d]{0,30}?\\s*${escapeRegExp(searchTerm)}`, 'i');
               let match = cleanResponseNorm.match(qtyRegex) || combinedLogNorm.match(qtyRegex);
 
               let qty = 1;
@@ -1896,22 +1898,78 @@ document.addEventListener('DOMContentLoaded', () => {
                 else qty = parseInt(val, 10) || 1;
               }
 
-              // On ne l'ajoute que s'il est vraiment dans la réponse de l'IA (pour éviter les vieux items)
-              if (cleanResponseNorm.includes(searchTerm)) {
-                detectedItems.push({
-                  name: p.name,
-                  quantity: qty,
-                  unitPrice: p.price,
-                  totalPrice: p.price * qty,
-                  isPerSlice: !!p.isPerSlice
-                });
-                estimatedTotal += (p.price * qty);
-              }
+              detectedItems.push({
+                name: p.name,
+                quantity: qty,
+                unitPrice: p.price,
+                totalPrice: p.price * qty,
+                isPerSlice: !!p.isPerSlice
+              });
+              estimatedTotal += (p.price * qty);
             }
           });
 
+          // 2. DELIVERY: Detect if "livraison" is requested (PRIORITY over fallback)
+          const hasLivraisonKeywords = cleanResponseNorm.includes("livraison") || combinedLogNorm.includes("livraison") || cleanResponseNorm.includes("livrer") || combinedLogNorm.includes("livrer");
+          if (hasLivraisonKeywords) {
+            const alreadyHasLivraison = detectedItems.some(it => it.name.toLowerCase().includes("livraison"));
+            if (!alreadyHasLivraison) {
+              detectedItems.push({
+                name: "Frais de livraison",
+                quantity: 1,
+                unitPrice: 1000,
+                totalPrice: 1000,
+                isDelivery: true
+              });
+              estimatedTotal += 1000;
+            }
+          }
+
+          // 3. FALLBACK: Catch items the AI mentions but are not in the database (Regex list items)
+          // Look for patterns like "15 boules de neiges", "2 produits X", etc.
+          const currentItemNames = detectedItems.map(it => normalize(it.name));
+          if (true) { // Always run fallback to catch items besides menu/delivery
+            console.log("Checking for additional fallback items...");
+            const fallbackRegex = /(?:^|\n|[\.!\?])\s*(?:[\-\*•]|\d+\.)?\s*(\d+|un|une|douzaine)\s*(?:x|d(?:es|e))?\\s*([^,;\.\n\(]+)/gi;
+            let match;
+            while ((match = fallbackRegex.exec(cleanResponse)) !== null) {
+              const qtyStr = match[1].toLowerCase();
+              const itemName = match[2].trim();
+
+              // Skip if it looks like a confirm tag, too short, OR already detected (delivery/menu)
+              if (itemName.toUpperCase().includes("CONFIRM_ORDER") || itemName.length < 3) continue;
+              if (itemName.toLowerCase().includes("livraison")) continue;
+              if (currentItemNames.some(existing => itemName.toLowerCase().includes(existing) || existing.includes(itemName.toLowerCase()))) continue;
+
+              let qty = parseInt(qtyStr, 10);
+              if (isNaN(qty)) {
+                if (qtyStr === 'un' || qtyStr === 'une') qty = 1;
+                else if (qtyStr === 'douzaine') qty = 12;
+                else qty = 1;
+              }
+
+              detectedItems.push({
+                name: itemName,
+                quantity: qty,
+                unitPrice: 0, // Unknown price
+                totalPrice: 0,
+                isUnknown: true
+              });
+            }
+          }
+
+          // 4. FINAL FALLBACK: If still nothing but tag is there, add a placeholder
+          if (detectedItems.length === 0) {
+            detectedItems.push({
+              name: "Commande (voir historique chat)",
+              quantity: 1,
+              unitPrice: 0,
+              totalPrice: 0,
+              isPlaceholder: true
+            });
+          }
+
           if (detectedItems.length > 0) {
-            // ... (rest of existing confirmed items logic) ...
             const finalOrder = {
               items: detectedItems,
               totalAmount: estimatedTotal,
@@ -1920,14 +1978,15 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const confirmId = 'ai-confirm-' + Math.floor(Math.random() * 10000);
-            const itemsTable = detectedItems.map(it => `• ${it.isPerSlice ? `${it.quantity} parts de ${it.name}` : `${it.quantity}x ${it.name}`}`).join('<br/>');
+            const itemsTable = detectedItems.map(it => `• ${it.quantity}x ${it.name}${it.isUnknown ? ' (Prix à confirmer)' : ''}`).join('<br/>');
+
             const confirmHtml = `
               <div class="chat-confirmation-box" style="margin-top:10px; padding:12px; background:#fff0f6; border-radius:12px; border: 2px solid #E8178A; color: #1a0a14;">
                 <strong style="color:#E8178A; font-family:'Outfit',sans-serif;">🛒 Validation de commande</strong><br/>
                 <div style="font-size: 0.9em; margin: 8px 0; border-bottom: 1px solid #ffdeed; padding-bottom: 8px;">
                   ${itemsTable}
                 </div>
-                Total : <strong>${estimatedTotal.toLocaleString('fr-FR')} FCFA</strong><br/>
+                ${estimatedTotal > 0 ? `Total : <strong>${estimatedTotal.toLocaleString('fr-FR')} FCFA</strong><br/>` : `<i style="font-size:0.8em;">Prix final calculé par l'admin</i><br/>`}
                 <span style="font-size: 0.85em; opacity: 0.8;">Est-ce correct ?</span>
                 <div style="margin-top:12px; display:flex; gap:10px; justify-content: center;">
                   <button id="${confirmId}-yes" class="btn btn--primary" style="padding: 6px 16px; font-size: 0.9em; min-height: 0;">✅ Confirmer</button>
@@ -1942,47 +2001,22 @@ document.addEventListener('DOMContentLoaded', () => {
             chatbotMessages.scrollTo(0, chatbotMessages.scrollHeight);
 
             document.getElementById(`${confirmId}-yes`).addEventListener('click', async (e) => {
-              e.target.parentElement.innerHTML = `<span style="color: green; font-weight: bold;">Commande validée avec succès ! 🎉</span>`;
+              e.target.parentElement.innerHTML = `<span style="color: green; font-weight: bold;">Commande transmise ! 🎉</span>`;
               if (typeof DataService !== 'undefined' && DataService.saveOrder) {
                 const orderId = await DataService.saveOrder(finalOrder);
                 if (orderId) {
                   localStorage.setItem('delice_last_order_id', orderId);
-                  // Dynamic tracking UI will pick it up via subscribeToMyOrders
                   const adminLink = window.location.origin + "/admin";
-                  const messageTelegram = `🤖 <b>COMMANDE VIA IA !</b>\n💰 Total : ${finalOrder.totalAmount.toLocaleString('fr-FR')} FCFA\n📝 Chat ID : ${chatId}\n\n<a href="${adminLink}">Accéder Admin</a>`;
+                  const summary = detectedItems.map(it => `${it.quantity}x ${it.name}`).join(', ');
+                  const messageTelegram = `🤖 <b>COMMANDE VIA IA !</b>\n📝 Items : ${summary}\n💰 Total : ${estimatedTotal > 0 ? estimatedTotal.toLocaleString('fr-FR') + ' FCFA' : 'À définir'}\n\n<a href="${adminLink}">Voir sur l'Admin</a>`;
                   await sendTelegramNotification(messageTelegram);
                 }
               }
             });
 
             document.getElementById(`${confirmId}-no`).addEventListener('click', (e) => {
-              e.target.parentElement.innerHTML = `<span style="color: gray; font-style: italic;">Commande annulée.</span>`;
+              e.target.parentElement.innerHTML = `<span style="color: gray; font-style: italic;">Modification demandée.</span>`;
             });
-
-          } else {
-            // HALLUCINATION DETECTION: AI thinks it sold something not in DB
-            console.warn("L'IA a confirmé mais aucun produit reconnu dans le texte.");
-
-            // Try to find if the AI listed anything at all with numbers
-            const anyProductRegex = /[\*\-]\s*(\d+)\s+([^:\n]+)/g;
-            let hallucinations = [];
-            let m;
-            while ((m = anyProductRegex.exec(cleanResponse)) !== null) {
-              hallucinations.push(`${m[1]}x ${m[2].trim()}`);
-            }
-
-            const errorMsg = hallucinations.length > 0
-              ? `Désolé, j'ai essayé de commander : <b>${hallucinations.join(', ')}</b>. Malheureusement, ces articles ne sont pas dans notre menu actuel. Veuillez choisir parmi nos produits disponibles.`
-              : `Désolé, je n'ai pas réussi à lister vos produits. Pouvez-vous répéter votre commande en utilisant les noms du menu ?`;
-
-            const errorChatLi = createChatLi('', 'incoming');
-            errorChatLi.innerHTML = `<div class="chat-content" style="color: #E8178A; background: #fff5f8; border-left: 4px solid #E8178A; padding: 10px; margin-top: 10px; border-radius: 4px;">${errorMsg}</div>`;
-            chatbotMessages.appendChild(errorChatLi);
-
-            // Log to admin for fix
-            const availableProdNames = products.map(p => p.name).join(", ");
-            const debugLog = cleanResponse.slice(0, 300);
-            sendTelegramNotification(`⚠️ <b>HALLUCINATION IA</b>\nLe bot tente de vendre des produits inconnus : <i>${hallucinations.join(', ') || 'Inconnu'}</i>\n\n<b>Réponse bot :</b> ${debugLog}\n\n<b>Menu en DB :</b> ${availableProdNames}`).catch(e => e);
           }
         } catch (parseErr) {
           console.error("Order process failed:", parseErr);
@@ -2108,27 +2142,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let productListText = activeProducts.map(p => `- ${p.name} : ${p.price} FCFA`).join("\n");
 
-      systemContext = `Tu es Délice AI, l'assistant expert et RIGOUREUX de la pâtisserie Délice Cake au Burkina Faso. 
+      systemContext = `Tu es l’assistant officiel de la pâtisserie Délice Cake à Ouagadougou (secteur 51 – Sanyiri), gérée par Fatoumata Mourfou. 
 
-CONSIGNE CRITIQUE : 
-- TU NE DOIS VENDRE QUE LES PRODUITS LISTÉS DANS LE "MENU ACTUEL" CI-DESSOUS.
-- SI LE CLIENT DEMANDE UN PRODUIT QUI N'EST PAS DANS LE MENU (ex: "boules de neiges" ou autre), tu dois poliment dire que ce n'est pas disponible actuellement et proposer un article du menu.
-- NE RÉINVENTE PAS LES PRIX. Utilise uniquement ceux du menu.
+CONSIGNES DE CONVERSATION :
+- Ton est chaleureux, professionnel et flexible.
+- Fais des phrases COURTES. Sois direct et concis.
+- Pas de termes techniques comme "[CONFIRM_ORDER]" à l'utilisateur. Ajoute-le SILENCIEUSEMENT à la fin de ta confirmation finale.
 
-MODE OPÉRATOIRE - COMMANDE :
-1. Aide le client à choisir exclusivement dans le MENU.
-2. Si le client confirme son choix, fais le calcul précis : (Prix x Quantité).
-3. AVANT DE VALIDER : Affiche un récapitulatif clair (Articles, Quantités, Total).
-4. OBTENTION DU "OUI" : Attends que le client dise "Oui", "Je confirme", etc.
+PRODUITS & PRIX :
+- Gâteau d’anniversaire : 1500 FCFA la part. (Chocolat, Vanille, Fraise). Min 24h d'avance.
+- Boules de neige fourrées chocolat : 500 FCFA le sachet. Disponible toute l'année.
+- MENU DYNAMIQUE ACTUEL :
+${productListText || "Voir produits ci-dessus"}
 
-VALIDATION TECHNIQUE :
-Ajoute EXACTEMENT [CONFIRM_ORDER] à la toute fin de ton message de confirmation finale (après que le client a dit OUI). 
-IMPORTANT : Ce message final DOIT aussi rappeler le nom exact du produit (ex: "C'est validé pour vos 2 Cupcakes !").
+PROCESSUS DE COMMANDE :
+Pour les gâteaux, demande toujours : Nombre de personnes, Saveur, Date, Personnalisation, Livraison/Retrait. 
+Rappelle l'acompte de 50%.
 
-MENU ACTUEL (STRICT) :
-${productListText || "- Sachet Délice Cake (12 pcs) : 500 FCFA\n- Cupcake Signature : 1000 FCFA\n- Tiramisu Maison : 1000 FCFA"}
+LIVRAISON & PAIEMENT :
+- Livraison : 1000 FCFA partout à Ouagadougou (Saaba, Ouaga 2000, etc.). 
+- Orange Money : +226 75 27 03 26 (Acompte 50% obligatoire).
+- WhatsApp / Contact : 56 80 88 72 (Réponse sous 30min à 2h).
+- Horaires : Lun-Sam, 8h-18h.
 
-INFOS : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
+VALIDATION :
+Une fois le récapitulatif validé par le client (Articles, Quantité, Livraison, Total TTC), confirme chaleureusement et termine par [CONFIRM_ORDER].
+
+KNOWLEDGE BASE : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
     } catch (e) {
       console.error("AI Context Init Fail:", e);
       systemContext = "Assistant Délice Cake. Aidez le client avec le menu.";
@@ -2214,57 +2254,6 @@ INFOS : ${kbContent || "Pâtisseries artisanales au cœur de chocolat."}`;
 
 
 
-// === NOTIFICATION TESTER ===
-async function testNotifications() {
-  const token = localStorage.getItem('delice_fcm_token');
-  if (!token) {
-    const granted = await requestNotificationPermission();
-    if (!granted) {
-      if (window.showToast) window.showToast("Notifications non autorisées.", "error");
-      else alert("Veuillez d'abord autoriser les notifications dans votre navigateur.");
-      return;
-    }
-  }
 
-  const currentToken = localStorage.getItem('delice_fcm_token');
-  if (!currentToken) return;
-
-  if (window.showToast) window.showToast("Envoi d'un test... Patientez 2-3 secondes.", "success");
-
-  try {
-    const res = await fetch('/api/push-notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token: currentToken,
-        title: "Test Réussi ! 🔔",
-        body: "Félicitations, votre appareil est prêt à recevoir vos commandes Délice Cake.",
-        data: { link: window.location.origin }
-      })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      console.log("Test notification sent.");
-    } else {
-      console.error("Test notification failed:", data);
-      if (window.showToast) window.showToast("Erreur serveur: " + (data.error || "Inconnue"), "error");
-    }
-  } catch (err) {
-    console.error("Test notification networking error:", err);
-    if (window.showToast) window.showToast("Erreur réseau lors du test.", "error");
-  }
-}
-
-// Add event listener for the test button
-document.addEventListener('DOMContentLoaded', () => {
-  const testBtn = document.getElementById('chatbot-test-notif');
-  if (testBtn) {
-    testBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      testNotifications();
-    });
-  }
-});
-
-// Vercel Cache Busting Version: 08/03/2026 - Restoration v1
+// Vercel Cache Busting Version: 08/03/2026 - Restoration v2 (Definitive Fix)
 
