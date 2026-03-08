@@ -794,10 +794,11 @@ async function loadSiteSettings() {
 
     // 4. Contact & WhatsApp
     if (settings.whatsappNum) {
+      const cleanWaNum = settings.whatsappNum.replace(/\D/g, ''); // Strip parentheses/spaces for URL
       const waLinks = document.querySelectorAll('a[href^="https://wa.me"]');
       waLinks.forEach(link => {
         const currentMsg = link.href.split('text=')[1] || "";
-        link.href = `https://wa.me/${settings.whatsappNum}${currentMsg ? '?text=' + currentMsg : ''}`;
+        link.href = `https://wa.me/${cleanWaNum}${currentMsg ? '?text=' + currentMsg : ''}`;
       });
       // also update footer/contact text if it contains the number
       const contactBtn = document.getElementById('contact-whatsapp-btn');
@@ -1289,8 +1290,9 @@ function initOrderModal() {
         const encodedMessage = encodeURIComponent(message);
 
         // Use production number as absolute fallback
-        const whatsappNum = (typeof DataService !== 'undefined' && DataService.getSiteSettingsSync && DataService.getSiteSettingsSync().whatsappNum) || "22656808872";
-        const whatsappUrl = `https://wa.me/${whatsappNum}?text=${encodedMessage}`;
+        const rawWhatsappNum = (typeof DataService !== 'undefined' && DataService.getSiteSettingsSync && DataService.getSiteSettingsSync().whatsappNum) || "22656808872";
+        const cleanWaNum = rawWhatsappNum.replace(/\D/g, ''); // Strip parentheses/spaces for URL
+        const whatsappUrl = `https://wa.me/${cleanWaNum}?text=${encodedMessage}`;
 
         // Open WhatsApp
         window.open(whatsappUrl, '_blank');
