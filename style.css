@@ -999,10 +999,12 @@ h3,
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 2rem;
+  justify-content: flex-start;
+  padding-top: 6rem;
+  gap: 1.5rem;
   transform: translateX(100%);
   transition: transform 0.4s cubic-bezier(.77, 0, .18, 1);
+  overflow-y: auto;
 }
 
 .mobile-menu.open {
@@ -1018,6 +1020,23 @@ h3,
   font-size: 2.5rem;
   color: #fff;
   cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-menu__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: #fff;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
 .mobile-menu__link {
@@ -1033,6 +1052,23 @@ h3,
   color: var(--pink);
 }
 
+.mobile-menu__link.active {
+  color: var(--pink);
+  position: relative;
+}
+
+.mobile-menu__link.active::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: var(--pink);
+  border-radius: 2px;
+}
+
 /* ======= BUTTONS ======= */
 .btn {
   display: inline-block;
@@ -1045,6 +1081,16 @@ h3,
   cursor: pointer;
   border: none;
   letter-spacing: 0.01em;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:active,
+.opt-card:active,
+.tab-btn:active,
+.marquee-card:active,
+.nav__cta:active {
+  transform: scale(0.96) !important;
 }
 
 .btn--primary {
@@ -1612,6 +1658,33 @@ h3,
   100% {
     transform: translateX(calc(-50% - 1.25rem));
   }
+}
+
+.carousel-dots {
+  display: none;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .carousel-dots {
+    display: flex;
+  }
+}
+
+.carousel-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(232, 23, 138, 0.2);
+  transition: all 0.3s ease;
+}
+
+.carousel-dots .dot.active {
+  background: var(--pink);
+  width: 20px;
+  border-radius: 4px;
 }
 
 /* Marquee Card - Cartoon/Brutalist Style */

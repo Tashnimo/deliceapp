@@ -129,6 +129,23 @@
     <!-- MOBILE MENU -->
     <div class="mobile-menu" id="mobile-menu">
         <button class="mobile-menu__close" id="mobile-close">&times;</button>
+        <div class="mobile-menu__brand">
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g transform="rotate(-45 24 28)">
+                    <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#E8178A"
+                        stroke-width="2.5" stroke-linecap="round" />
+                    <rect x="20" y="24" width="8" height="20" rx="4" fill="#1a0a14" stroke="#E8178A"
+                        stroke-width="2.5" />
+                </g>
+                <g transform="rotate(45 24 28)">
+                    <path d="M 20 25 C 8 10, 10 2, 24 2 C 38 2, 40 10, 28 25" fill="none" stroke="#E8178A"
+                        stroke-width="2.5" stroke-linecap="round" />
+                    <rect x="20" y="24" width="8" height="20" rx="4" fill="#1a0a14" stroke="#E8178A"
+                        stroke-width="2.5" />
+                </g>
+            </svg>
+            <span>Délice Cake</span>
+        </div>
         <a href="#hero" class="mobile-menu__link" onclick="closeMobile()">Accueil</a>
         <a href="#produits" class="mobile-menu__link" onclick="closeMobile()">Produits</a>
         <a href="#saveurs" class="mobile-menu__link" onclick="closeMobile()">Saveurs</a>
@@ -435,6 +452,7 @@
             <div class="products-marquee__track" id="dynamic-marquee-track">
                 <!-- Les produits seront injectés ici par script.js via Firebase/DataService -->
             </div>
+            <div class="carousel-dots" id="marquee-dots"></div>
         </div>
     </section>
 

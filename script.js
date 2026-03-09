@@ -2538,6 +2538,85 @@ RREGLE D'OR : "price" est TOUJOURS le PRIX UNITAIRE (ex: 1500), "qty" est le nom
 
   // Proactive notification prompt after 4 seconds
   setTimeout(showProactiveNotifPrompt, 4000);
+
+  // ==========================================
+  // MOBILE UX ENHANCEMENTS (Premium Polish)
+  // ==========================================
+  function initMobileUX() {
+    const mobileLinks = document.querySelectorAll('.mobile-menu__link');
+    const sections = ['hero', 'produits', 'saveurs', 'personnalisation', 'contact'];
+    const marqueeTrack = document.getElementById('dynamic-marquee-track');
+    const marqueeDots = document.getElementById('marquee-dots');
+
+    // 1. Mobile ScrollSpy
+    const observerOptions = {
+      root: null,
+      rootMargin: '-30% 0px -60% 0px',
+      threshold: 0
+    };
+
+    const scrollObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('id');
+          mobileLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if (href === `#${id}`) {
+              link.classList.add('active');
+            } else if (href && sections.includes(href.substring(1))) {
+              link.classList.remove('active');
+            }
+          });
+        }
+      });
+    }, observerOptions);
+
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) scrollObserver.observe(el);
+    });
+
+    // 2. Carousel Dots for Products
+    if (marqueeTrack && marqueeDots) {
+      const setupDots = () => {
+        const cards = marqueeTrack.querySelectorAll('.marquee-card');
+        const cardCount = cards.length;
+        if (cardCount === 0) return;
+
+        marqueeDots.innerHTML = '';
+        for (let i = 0; i < cardCount; i++) {
+          const dot = document.createElement('div');
+          dot.className = 'dot' + (i === 0 ? ' active' : '');
+          marqueeDots.appendChild(dot);
+        }
+
+        // On mobile,marquee animation is often disabled/paused for manual scroll
+        marqueeTrack.addEventListener('scroll', () => {
+          const dots = marqueeDots.querySelectorAll('.dot');
+          const scrollLeft = marqueeTrack.scrollLeft;
+          const cardWidth = cards[0].offsetWidth + 40; // card + gap
+          const activeIndex = Math.min(cardCount - 1, Math.round(scrollLeft / cardWidth));
+
+          dots.forEach((dot, i) => dot.classList.toggle('active', i === activeIndex));
+        }, { passive: true });
+      };
+
+      // setup if already present
+      if (marqueeTrack.querySelector('.marquee-card')) {
+        setupDots();
+      }
+
+      // Observe for future cards
+      const trackObserver = new MutationObserver(() => {
+        if (marqueeTrack.querySelector('.marquee-card')) {
+          setupDots();
+          trackObserver.disconnect();
+        }
+      });
+      trackObserver.observe(marqueeTrack, { childList: true });
+    }
+  }
+  initMobileUX();
 });
 
 // Vercel Cache Busting Version: 08/03/2026 - Restoration v4 (Dynamic Context Fix)
