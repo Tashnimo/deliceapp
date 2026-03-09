@@ -422,9 +422,14 @@ document.addEventListener('DOMContentLoaded', function init3DStudio() {
 
     // Resize observer
     window.addEventListener('resize', () => {
-      camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+      const isMobile = window.innerWidth <= 991;
+      const targetH = isMobile ? 260 : (canvasContainer.clientHeight || 500);
+      const targetW = canvasContainer.clientWidth || 400;
+
+      camera.aspect = targetW / targetH;
       camera.updateProjectionMatrix();
-      renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+      renderer.setSize(targetW, targetH);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     });
   }
 
