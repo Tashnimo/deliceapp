@@ -930,6 +930,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 itemsHtml += `<div style="margin-top:0.5rem; font-size:0.85rem; padding:0.4rem; background:rgba(232, 23, 138, 0.1); border-left:2px solid var(--primary); border-radius:4px;"><i>Note: ${o.note}</i></div>`;
             }
 
+            // Expose OTP Token if method is mobile_money_otp
+            let paymentInfoHtml = '';
+            if (o.paymentMethod === 'mobile_money_otp' && o.paymentToken) {
+                paymentInfoHtml = `
+                    <div style="margin-top:0.8rem; padding:8px 10px; background:#fffbfd; border:1px dashed var(--pink); border-radius:6px; display:inline-block;">
+                        <span style="font-size:0.75rem; color:var(--grey-text); display:block; margin-bottom:2px;">CODE DE VÉRIFICATION OTP :</span>
+                        <strong style="color:var(--pink); font-size:1.1rem; letter-spacing:1px; user-select:all;">${o.paymentToken}</strong>
+                    </div>
+                `;
+            } else if (o.paymentMethod === 'cash') {
+                paymentInfoHtml = `<div style="margin-top:0.5rem; font-size:0.8rem; color:var(--grey-text);">Paiement à la livraison</div>`;
+            }
+
             const hasToken = !!o.pushToken;
             const tokenIcon = hasToken ?
                 `<span title="Appareil enregistré" style="color:#10B981; cursor:help;">🔔 Enregistré</span>` :
@@ -939,7 +952,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="white-space:nowrap; font-size:0.9rem;">${dateStr}</td>
                 <td style="max-width:300px;">
                     ${itemsHtml}
-                    <div style="margin-top:5px; font-size:0.75rem;">${tokenIcon}</div>
+                    ${paymentInfoHtml}
+                    <div style="margin-top:8px; font-size:0.75rem;">${tokenIcon}</div>
                 </td>
                 <td><strong>${new Intl.NumberFormat('fr-FR').format(o.totalAmount || 0)}</strong> FCFA</td>
                 <td>

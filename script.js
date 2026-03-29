@@ -1533,35 +1533,30 @@ function initOrderModal() {
           await sendTelegramNotification(messageTelegram);
         }
 
-        // 2. CONSTRUCT AND OPEN WHATSAPP MESSAGE
-        let message = `Bonjour Délice Cake ! 🍰\nJe souhaite passer une commande :\n\n*Mes délices :*\n${selectedProducts.join('\n')}`;
+        // 2. SHOW PAYMENT CHOICE MODAL (instead of going directly to WhatsApp)
+        closeModal(); // Close the order modal
 
-        if (currentTotalStr && currentTotalStr !== '0 FCFA') {
-          message += `\n\n*Total estimé :* ${numericTotal.toLocaleString('fr-FR')} FCFA`;
+        // Store order data for the payment modal
+        window.__pendingPayment = {
+          orderId: orderId,
+          items: orderItemsData,
+          totalAmount: numericTotal,
+          note: note,
+          selectedProducts: selectedProducts
+        };
+
+        // Show payment modal
+        const paymentModal = document.getElementById('payment-modal');
+        const paymentTotal = document.getElementById('payment-modal-total');
+        if (paymentTotal) paymentTotal.textContent = `Total : ${numericTotal.toLocaleString('fr-FR')} FCFA`;
+        if (paymentModal) {
+          paymentModal.classList.add('active');
+          document.body.style.overflow = 'hidden';
         }
 
-        if (note) {
-          message += `\n\n*Personnalisation / Note :*\n${note}`;
-        }
-
-        message += `\n\nMerci !`;
-
-        // Encode for URL
-        const encodedMessage = encodeURIComponent(message);
-
-        // Use production number as absolute fallback
-        const rawWhatsappNum = (typeof DataService !== 'undefined' && DataService.getSiteSettingsSync && DataService.getSiteSettingsSync().whatsappNum) || "22656808872";
-        const cleanWaNum = rawWhatsappNum.replace(/\D/g, ''); // Strip parentheses/spaces for URL
-        const whatsappUrl = `https://api.whatsapp.com/send/?phone=${cleanWaNum}&text=${encodedMessage}`;
-
-        // Open WhatsApp
-        window.open(whatsappUrl, '_blank');
-
-        // Optional: Close modal after sending
-        closeModal();
       } catch (error) {
         console.error("Erreur lors de l'envoi de la commande :", error);
-        alert("Une erreur est survenue lors de l'enregistrement de votre commande. Veuillez réessayer ou nous contacter directement via WhatsApp.");
+        alert("Une erreur est survenue. Veuillez réessayer ou nous contacter via WhatsApp.");
       } finally {
         if (submitBtn) {
           submitBtn.textContent = originalBtnText;
@@ -1570,8 +1565,136 @@ function initOrderModal() {
       }
     });
   }
+
+  // === PAYMENT MODAL LOGIC ===
+  initPaymentModal();
   initOrderTracking();
 } // End initOrderModal
+
+// ======= PAYMENT MODAL CONTROLLER (OTP FLOW) =======
+function initPaymentModal() {
+  const paymentModal = document.getElementById('payment-modal');
+  const otpModal = document.getElementById('otp-modal');
+  if (!paymentModal || !otpModal) return;
+
+  const closePaymentBtn = document.getElementById('payment-modal-close');
+  const closeOtpBtn = document.getElementById('otp-modal-close');
+  const payOnlineBtn = document.getElementById('pay-online-btn'); // Now "Mobile Money OTP"
+  const payCashBtn = document.getElementById('pay-cash-btn');
+  const sendWhatsappBtn = document.getElementById('otp-whatsapp-btn');
+
+  const closePaymentModal = () => {
+    paymentModal.classList.remove('active');
+    document.body.style.overflow = '';
+  };
+
+  const closeOtpModal = () => {
+    otpModal.classList.remove('active');
+    document.body.style.overflow = '';
+  };
+
+  if (closePaymentBtn) closePaymentBtn.addEventListener('click', closePaymentModal);
+  if (closeOtpBtn) closeOtpBtn.addEventListener('click', closeOtpModal);
+  paymentModal.addEventListener('click', (e) => { if (e.target === paymentModal) closePaymentModal(); });
+  otpModal.addEventListener('click', (e) => { if (e.target === otpModal) closeOtpModal(); });
+
+  // OPTION A: Pay via Mobile Money (OTP Flow)
+  if (payOnlineBtn) {
+    payOnlineBtn.addEventListener('click', () => {
+      const pending = window.__pendingPayment;
+      if (!pending) { closePaymentModal(); return; }
+
+      // 1. Generate local 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      window.__pendingPayment.otp = otp;
+      
+      // Update data service
+      if (typeof DataService !== 'undefined' && DataService.updateOrderPayment) {
+        DataService.updateOrderPayment(pending.orderId, { status: 'pending', method: 'mobile_money_otp', token: otp });
+      }
+
+      // 2. Populate OTP Modal
+      document.getElementById('otp-total-amount').textContent = `${pending.totalAmount.toLocaleString('fr-FR')} FCFA`;
+      document.getElementById('otp-code-value').textContent = otp;
+
+      // 3. Switch Modals
+      closePaymentModal();
+      otpModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+  }
+
+  // OPTION B: Pay at Delivery (WhatsApp)
+  if (payCashBtn) {
+    payCashBtn.addEventListener('click', () => {
+      const pending = window.__pendingPayment;
+      if (!pending) { closePaymentModal(); return; }
+
+      if (typeof DataService !== 'undefined' && DataService.updateOrderPayment && pending.orderId) {
+        DataService.updateOrderPayment(pending.orderId, { status: 'pending', method: 'cash' });
+      }
+
+      let message = `Bonjour Délice Cake ! \u{1F370}\nJe souhaite passer une commande (Paiement à la livraison) :\n\n*Mes délices :*\n${pending.selectedProducts.join('\n')}`;
+      if (pending.totalAmount > 0) message += `\n\n*Total estimé :* ${pending.totalAmount.toLocaleString('fr-FR')} FCFA`;
+      if (pending.note) message += `\n\n*Personnalisation / Note :*\n${pending.note}`;
+      message += `\n\nMerci !`;
+
+      const rawWhatsappNum = (typeof DataService !== 'undefined' && DataService.getSiteSettingsSync && DataService.getSiteSettingsSync().whatsappNum) || "22656808872";
+      const cleanWaNum = rawWhatsappNum.replace(/\D/g, '');
+      window.open(`https://api.whatsapp.com/send/?phone=${cleanWaNum}&text=${encodeURIComponent(message)}`, '_blank');
+
+      closePaymentModal();
+      setTimeout(() => { if (typeof showProactiveNotifPrompt === 'function') showProactiveNotifPrompt(); }, 2000);
+    });
+  }
+
+  // ACTION: Send WhatsApp from OTP Modal
+  if (sendWhatsappBtn) {
+    sendWhatsappBtn.addEventListener('click', () => {
+      const pending = window.__pendingPayment;
+      if (!pending) { closeOtpModal(); return; }
+
+      let message = `Bonjour Délice Cake ! \u{1F370}\nJe viens de payer par Mobile Money pour ma commande.\n\n*Code secret OTP : ${pending.otp}*\n\nVoici le détail de ma commande :\n${pending.selectedProducts.join('\n')}`;
+      if (pending.totalAmount > 0) message += `\n\n*Total payé :* ${pending.totalAmount.toLocaleString('fr-FR')} FCFA`;
+      if (pending.note) message += `\n\n*Personnalisation :*\n${pending.note}`;
+      message += `\n\n_(Veuillez joindre la capture d'écran du transfert si possible)_`;
+
+      const rawWhatsappNum = (typeof DataService !== 'undefined' && DataService.getSiteSettingsSync && DataService.getSiteSettingsSync().whatsappNum) || "22656808872";
+      const cleanWaNum = rawWhatsappNum.replace(/\D/g, '');
+      window.open(`https://api.whatsapp.com/send/?phone=${cleanWaNum}&text=${encodeURIComponent(message)}`, '_blank');
+
+      closeOtpModal();
+      setTimeout(() => {
+         const toast = document.createElement('div');
+         toast.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#10b981,#059669);color:white;padding:16px 28px;border-radius:16px;box-shadow:0 10px 30px rgba(16,185,129,0.3);z-index:10000;font-family:Outfit,sans-serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:10px;animation:slideDown 0.5s cubic-bezier(0.18,0.89,0.32,1.28);';
+         toast.textContent = '\u2705 Paiement soumis. Nous allons le vérifier rapidement.';
+         document.body.appendChild(toast);
+         setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.4s'; setTimeout(() => toast.remove(), 500); }, 5000);
+         
+         if (typeof showProactiveNotifPrompt === 'function') showProactiveNotifPrompt();
+      }, 2000);
+    });
+  }
+}
+
+// ======= UTILS: COPY TEXT =======
+window.copyText = function(elementId) {
+    const textToCopy = document.getElementById(elementId).innerText;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        const btn = document.querySelector(`button[onclick="copyText('${elementId}')"]`);
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '✅';
+        btn.style.opacity = '1';
+        setTimeout(() => {
+            btn.innerHTML = originalContent;
+            btn.style.opacity = '0.6';
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+    });
+};
+
+
 
 // Suggest notifications if not already granted
 setTimeout(() => {
