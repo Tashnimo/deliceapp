@@ -1509,36 +1509,11 @@ function initOrderModal() {
         const currentTotalStr = document.getElementById('order-total').textContent;
         const numericTotal = orderItemsData.reduce((sum, item) => sum + item.totalPrice, 0);
 
-        // 1. SAVE TO DATABASE (FIREBASE OR LOCAL)
-        let orderId = null;
-        if (typeof DataService !== 'undefined' && DataService.saveOrder) {
-          orderId = await DataService.saveOrder({
-            items: orderItemsData,
-            totalAmount: numericTotal,
-            note: note,
-            status: 'new' // 'new', 'processing', 'completed', 'cancelled'
-          });
-          // Stocker l'ID pour le suivi
-          if (orderId) {
-            localStorage.setItem('delice_last_order_id', orderId);
-            // The listener on subscribeToMyOrders will handle the UI update
-          }
+        // 1. CLOSE MODAL AND PREPARE DATA
+        closeModal();
 
-          // Send Telegram Notification
-          const adminLink = window.location.origin + "/admin";
-          const messageTelegram = `🍰 <b>NOUVELLE COMMANDE !</b>\n\n` +
-            `💰 Total : ${numericTotal.toLocaleString('fr-FR')} FCFA\n` +
-            `📝 Note : ${note || 'Aucune'}\n\n` +
-            `<a href="${adminLink}">Accéder à l'espace Admin</a>`;
-          await sendTelegramNotification(messageTelegram);
-        }
-
-        // 2. SHOW PAYMENT CHOICE MODAL (instead of going directly to WhatsApp)
-        closeModal(); // Close the order modal
-
-        // Store order data for the payment modal
+        // Store order data for the payment modal (saving happens after choice)
         window.__pendingPayment = {
-          orderId: orderId,
           items: orderItemsData,
           totalAmount: numericTotal,
           note: note,
@@ -1600,7 +1575,7 @@ function initPaymentModal() {
 
   // OPTION A: Pay via Mobile Money (OTP Flow)
   if (payOnlineBtn) {
-    payOnlineBtn.addEventListener('click', () => {
+    payOnlineBtn.addEventListener('click', async () => {
       const pending = window.__pendingPayment;
       if (!pending) { closePaymentModal(); return; }
 
@@ -1608,9 +1583,27 @@ function initPaymentModal() {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       window.__pendingPayment.otp = otp;
       
-      // Update data service
-      if (typeof DataService !== 'undefined' && DataService.updateOrderPayment) {
-        DataService.updateOrderPayment(pending.orderId, { status: 'pending', method: 'mobile_money_otp', token: otp });
+      // Update data service by creating the order NOW
+      if (typeof DataService !== 'undefined' && DataService.saveOrder) {
+          const orderId = await DataService.saveOrder({
+             items: pending.items,
+             totalAmount: pending.totalAmount,
+             note: pending.note,
+             status: 'new',
+             paymentMethod: 'mobile_money_otp',
+             paymentToken: otp,
+             paymentStatus: 'pending'
+          });
+          if (orderId) localStorage.setItem('delice_last_order_id', orderId);
+          window.__pendingPayment.orderId = orderId;
+          
+          const adminLink = window.location.origin + "/admin";
+          const messageTelegram = `🍰 <b>NOUVELLE COMMANDE ! (Mobile Money)</b>\n\n` +
+            `💰 Total : ${pending.totalAmount.toLocaleString('fr-FR')} FCFA\n` +
+             `🔐 OTP : ${otp}\n` +
+            `📝 Note : ${pending.note || 'Aucune'}\n\n` +
+            `<a href="${adminLink}">Accéder à l'espace Admin</a>`;
+          if (typeof sendTelegramNotification === 'function') await sendTelegramNotification(messageTelegram);
       }
 
       // 2. Populate OTP Modal
@@ -1626,12 +1619,28 @@ function initPaymentModal() {
 
   // OPTION B: Pay at Delivery (WhatsApp)
   if (payCashBtn) {
-    payCashBtn.addEventListener('click', () => {
+    payCashBtn.addEventListener('click', async () => {
       const pending = window.__pendingPayment;
       if (!pending) { closePaymentModal(); return; }
 
-      if (typeof DataService !== 'undefined' && DataService.updateOrderPayment && pending.orderId) {
-        DataService.updateOrderPayment(pending.orderId, { status: 'pending', method: 'cash' });
+      if (typeof DataService !== 'undefined' && DataService.saveOrder) {
+          const orderId = await DataService.saveOrder({
+             items: pending.items,
+             totalAmount: pending.totalAmount,
+             note: pending.note,
+             status: 'new',
+             paymentMethod: 'cash',
+             paymentStatus: 'pending'
+          });
+          if (orderId) localStorage.setItem('delice_last_order_id', orderId);
+          window.__pendingPayment.orderId = orderId;
+          
+          const adminLink = window.location.origin + "/admin";
+          const messageTelegram = `🍰 <b>NOUVELLE COMMANDE ! (Cash)</b>\n\n` +
+            `💰 Total : ${pending.totalAmount.toLocaleString('fr-FR')} FCFA\n` +
+            `📝 Note : ${pending.note || 'Aucune'}\n\n` +
+            `<a href="${adminLink}">Accéder à l'espace Admin</a>`;
+          if (typeof sendTelegramNotification === 'function') await sendTelegramNotification(messageTelegram);
       }
 
       let message = `Bonjour Délice Cake ! \u{1F370}\nJe souhaite passer une commande (Paiement à la livraison) :\n\n*Mes délices :*\n${pending.selectedProducts.join('\n')}`;
