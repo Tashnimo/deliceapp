@@ -546,5 +546,30 @@ const DataService = {
             return snapshot.docs.map(doc => doc.data());
         }
         return [];
+    },
+
+    updateOrderPayment: async (orderId, paymentData) => {
+        if (isFirebaseConfigured && db) {
+            try {
+                await db.collection('orders').doc(orderId).set({
+                    paymentStatus: paymentData.status || 'pending',
+                    paymentMethod: paymentData.method || 'cash',
+                    paymentToken: paymentData.token || null,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                console.log("Order payment updated successfully:", orderId);
+            } catch (err) {
+                console.error("Failed to update order payment in Firestore:", err);
+            }
+        } else {
+            let orders = JSON.parse(localStorage.getItem('delice_mock_orders') || '[]');
+            const index = orders.findIndex(o => o.id === orderId);
+            if (index > -1) {
+                orders[index].paymentStatus = paymentData.status || 'pending';
+                orders[index].paymentMethod = paymentData.method || 'cash';
+                if (paymentData.token) orders[index].paymentToken = paymentData.token;
+                localStorage.setItem('delice_mock_orders', JSON.stringify(orders));
+            }
+        }
     }
 };
